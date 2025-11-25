@@ -1,12 +1,12 @@
 import sys
 import json
+import os
+import shutil
 from util_service import start_service, stop_service, get_service_status
 from util_log import setup_logging
 from util_time import sleep_ex
 from util_subprocess import run_batch, run_powershell
 
-SERVICE_NAME = "stagentsvc"
-CONFIG_FILE = "config.json"
 SHORT_SEC = 15
 STD_SEC = 30
 LONG_SEC = 60
@@ -17,91 +17,181 @@ except Exception as e:
     print(f"Critical error during logging setup: {e}", file=sys.stderr)
     sys.exit(1)
 
-def load_config():  
-    defaults = {
-        "loop_times": 1000,
-        "stop_svc_per_n_run": 1
-    }
-
-    try:
-        with open(CONFIG_FILE, 'r') as f:
-            config = json.load(f)
-        logger.info(f"Loaded configuration from {CONFIG_FILE}")
+class StressTest:
+    def __init__(self):
+        self.service_name = "stagentsvc"
+        self.config_file = "config.json"
+        self.stagent_root = r"C:\ProgramData\netskope\stagent"
         
-        loop_times = config.get('loop_times', defaults['loop_times'])
-        stop_svc_per_n_run = config.get('stop_svc_per_n_run', defaults['stop_svc_per_n_run'])
+        self.loop_times = 1000
+        self.stop_svc_per_n_run = 1
+        self.failclose_per_n_run = 20
 
-    except FileNotFoundError:
-        logger.warning(f"{CONFIG_FILE} not found. Using default values.")
-        loop_times = defaults['loop_times']
-        stop_svc_per_n_run = defaults['stop_svc_per_n_run']
-    except json.JSONDecodeError:
-        logger.error(f"Error decoding {CONFIG_FILE}. Please check for valid JSON. Exiting.")
-        sys.exit(1)
-    except Exception as e:
-        logger.error(f"Error loading config: {e}. Exiting.")
-        sys.exit(1)
-
-    if not isinstance(loop_times, int) or loop_times <= 0:
-        logger.error(f"invalid 'loop_times'. Exiting.")
-        sys.exit(1)
-        
-    if not isinstance(stop_svc_per_n_run, int) or stop_svc_per_n_run < 0:
-        logger.error(f"invalid 'stop_svc_per_n_run'. Exiting.")
-        sys.exit(1)
-
-    logger.info(f"Configuration set: loop_times = {loop_times}, stop_svc_per_n_run = {stop_svc_per_n_run}")
-    return loop_times, stop_svc_per_n_run
-
-def main_loop(loop_times, stop_svc_per_n_run):
-    logger.info(f"--- Start Testing. Total iterations: {loop_times} ---")
-    logger.info(f"Stop service every {stop_svc_per_n_run} run(s) (0 = never)")
-    logger.info("Press Ctrl+C to stop the loop.")
-    logger.info("-" * 30)
-
-    for loop_count in range(1, loop_times + 1):
+    def load_config(self):
         try:
-            logger.info(f"==== Iteration {loop_count} / {loop_times} ====")
+            with open(self.config_file, 'r') as f:
+                config = json.load(f)
+            logger.info(f"Loaded configuration from {self.config_file}")
+            
+            self.loop_times = config.get('loop_times', self.loop_times)
+            self.stop_svc_per_n_run = config.get('stop_svc_per_n_run', self.stop_svc_per_n_run)
+            self.failclose_per_n_run = config.get('failclose_per_n_run', self.failclose_per_n_run)
 
-            current_status = get_service_status(SERVICE_NAME)
-            logger.info(f"Current status: {current_status}")
-            if current_status != "RUNNING":
-                start_service(SERVICE_NAME)
-                logger.info(f"Waiting for {STD_SEC} seconds")
-                sleep_ex(STD_SEC)
+        except FileNotFoundError:
+            logger.warning(f"{self.config_file} not found. Using default values.")
+        except json.JSONDecodeError:
+            logger.error(f"Error decoding {self.config_file}. Please check for valid JSON. Exiting.")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"Error loading config: {e}. Exiting.")
+            sys.exit(1)
+
+        if not isinstance(self.loop_times, int) or self.loop_times <= 0:
+            logger.error(f"invalid 'loop_times'. Exiting.")
+            sys.exit(1)
+            
+        if not isinstance(self.stop_svc_per_n_run, int) or self.stop_svc_per_n_run < 0:
+            logger.error(f"invalid 'stop_svc_per_n_run'. Exiting.")
+            sys.exit(1)
+            
+        if not isinstance(self.failclose_per_n_run, int) or self.failclose_per_n_run < 0:
+            logger.error(f"invalid 'failclose_per_n_run'. Exiting.")
+            sys.exit(1)
+
+        logger.info(f"Configuration set: loop_times = {self.loop_times}, stop_svc_per_n_run = {self.stop_svc_per_n_run}, failclose_per_n_run = {self.failclose_per_n_run}")
+
+    def process_failclose_change(self):
+        logger.info("Executing FailClose configuration change...")
+        try:
+            nsconfig_path = os.path.join(self.stagent_root, "nsconfig.json")
+            backup_path = os.path.join(".", "data", "nsconfig-bk.json")
+            devconfig_src = os.path.join(".", "data", "devconfig.json")
+
+            if os.path.exists(nsconfig_path):
+                shutil.copy(nsconfig_path, backup_path)
+                logger.info(f"Backed up nsconfig.json to {backup_path}")
             else:
-                sleep_ex(5)
+                logger.warning(f"Original file {nsconfig_path} not found during backup.")
 
-            logger.info(f"Running batch file to open 20 tabs")
-            run_batch("10tab.bat")
-            sleep_ex(LONG_SEC)
+            if os.path.exists(devconfig_src):
+                shutil.copy(devconfig_src, self.stagent_root)
+                logger.info(f"Copied {devconfig_src} to {self.stagent_root}")
+            else:
+                logger.warning(f"Source file {devconfig_src} not found.")
 
-            if stop_svc_per_n_run > 0 and loop_count % stop_svc_per_n_run == 0:
-                logger.info(f"Attempting to STOP '{SERVICE_NAME}'")
-                stop_service(SERVICE_NAME)
-                current_status = get_service_status(SERVICE_NAME)
+            if os.path.exists(nsconfig_path):
+                with open(nsconfig_path, 'r') as f:
+                    ns_data = json.load(f)
+                
+                fc_section = ns_data.get("failClose", {})
+                current_val = fc_section.get("fail_close", "false")
+
+                if current_val == "true":
+                    new_config = {
+                        "fail_close": "false",
+                        "exclude_npa": "false",
+                        "notification": "false",
+                        "captive_portal_timeout": "0"
+                    }
+                    logger.info("Switching FailClose from TRUE to FALSE")
+                else:
+                    new_config = {
+                        "fail_close": "true",
+                        "exclude_npa": "false",
+                        "notification": "false",
+                        "captive_portal_timeout": "0"
+                    }
+                    logger.info("Switching FailClose from FALSE to TRUE")
+                
+                ns_data["failClose"] = new_config
+
+                with open(nsconfig_path, 'w') as f:
+                    json.dump(ns_data, f, indent=4)
+                logger.info("nsconfig.json updated successfully.")
+            else:
+                logger.error(f"Target file {nsconfig_path} not found for modification.")
+
+        except Exception as e:
+            logger.error(f"Error during FailClose config change: {e}")
+
+    def cleanup_config(self):
+        logger.info("--- Performing Final Cleanup ---")
+        try:
+            backup_path = os.path.join(".", "data", "nsconfig-bk.json")
+            target_nsconfig = os.path.join(self.stagent_root, "nsconfig.json")
+            target_devconfig = os.path.join(self.stagent_root, "devconfig.json")
+
+            if os.path.exists(backup_path):
+                shutil.move(backup_path, target_nsconfig)
+                logger.info(f"Restored {backup_path} back to {target_nsconfig}")
+            else:
+                logger.warning(f"Backup file {backup_path} not found. Cannot restore.")
+
+            if os.path.exists(target_devconfig):
+                os.remove(target_devconfig)
+                logger.info(f"Removed {target_devconfig}")
+            else:
+                logger.info(f"{target_devconfig} not found, skipping removal.")
+
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
+
+    def run(self):
+        logger.info(f"--- Start Testing. Total iterations: {self.loop_times} ---")
+        logger.info(f"Stop service every {self.stop_svc_per_n_run} run(s) (0 = never)")
+        logger.info(f"Switch FailClose every {self.failclose_per_n_run} run(s) (0 = never)")
+        logger.info("Press Ctrl+C to stop the loop.")
+        logger.info("-" * 30)
+
+        for loop_count in range(1, self.loop_times + 1):
+            try:
+                logger.info(f"==== Iteration {loop_count} / {self.loop_times} ====")
+
+                current_status = get_service_status(self.service_name)
                 logger.info(f"Current status: {current_status}")
-            else:
-                logger.info(f"Skipping service stop for this iteration (run {loop_count}).")
+                if current_status != "RUNNING":
+                    start_service(self.service_name)
+                    logger.info(f"Waiting for {STD_SEC} seconds")
+                    sleep_ex(STD_SEC)
+                else:
+                    sleep_ex(5)
 
-            sleep_ex(STD_SEC)
-            run_powershell("close_msedge.ps1")
+                logger.info(f"Running batch file to open 20 tabs")
+                run_batch("10tab.bat")
+                sleep_ex(LONG_SEC)
 
-        except KeyboardInterrupt:
-            logger.info("Loop stopped by user. Exiting.")
-            return
-        except Exception:
-            logger.exception("An error occurred:")
-            logger.info(f"Retrying in {STD_SEC} seconds")
-            sleep_ex(STD_SEC)
+                if self.failclose_per_n_run > 0 and loop_count % self.failclose_per_n_run == 0:
+                    self.process_failclose_change()
 
-    logger.info(f"--- Testing finished after {loop_times} iterations. ---")
+                if self.stop_svc_per_n_run > 0 and loop_count % self.stop_svc_per_n_run == 0:
+                    logger.info(f"Attempting to STOP '{self.service_name}'")
+                    stop_service(self.service_name)
+                    current_status = get_service_status(self.service_name)
+                    logger.info(f"Current status: {current_status}")
+                else:
+                    logger.info(f"Skipping service stop for this iteration (run {loop_count}).")
+
+                sleep_ex(STD_SEC)
+                run_powershell("close_msedge.ps1")
+
+            except KeyboardInterrupt:
+                logger.info("Loop stopped by user. Exiting.")
+                self.cleanup_config()
+                return
+            except Exception:
+                logger.exception("An error occurred:")
+                logger.info(f"Retrying in {STD_SEC} seconds")
+                sleep_ex(STD_SEC)
+
+        self.cleanup_config()
+        logger.info(f"--- Testing finished after {self.loop_times} iterations. ---")
 
 if __name__ == "__main__":
     try:
         logger.info(f"Logging initialized. Log file: {log_file}")
-        loop_times, stop_svc_per_n_run = load_config()
-        main_loop(loop_times, stop_svc_per_n_run)
+        test_runner = StressTest()
+        test_runner.load_config()
+        test_runner.run()
     except KeyboardInterrupt:
         logger.info("Loop stopped by user. Exiting.")
         sys.exit(0)
