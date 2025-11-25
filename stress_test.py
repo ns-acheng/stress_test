@@ -178,7 +178,7 @@ class StressTest:
         sleep_ex(LONG_SEC)
 
     def run(self):
-        self.header_msg
+        self.header_msg()
 
         for loop_count in range(1, self.loop_times + 1):
             try:
