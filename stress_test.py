@@ -7,6 +7,7 @@ from util_log import setup_logging
 from util_time import sleep_ex
 from util_subprocess import run_batch, run_powershell
 
+TINY_SEC = 5
 SHORT_SEC = 15
 STD_SEC = 30
 LONG_SEC = 60
@@ -20,12 +21,14 @@ except Exception as e:
 class StressTest:
     def __init__(self):
         self.service_name = "stagentsvc"
+        self.drv_name = "stadrv"
         self.config_file = "config.json"
         self.stagent_root = r"C:\ProgramData\netskope\stagent"
         
         self.loop_times = 1000
-        self.stop_svc_per_n_run = 1
-        self.failclose_per_n_run = 20
+        self.stop_svc_interval = 1
+        self.stop_drv_interval = 0
+        self.failclose_interval = 20
 
     def load_config(self):
         try:
@@ -34,14 +37,10 @@ class StressTest:
             logger.info(f"Loaded configuration from {self.config_file}")
             
             self.loop_times = config.get('loop_times', self.loop_times)
-            self.stop_svc_per_n_run = config.get('stop_svc_per_n_run', self.stop_svc_per_n_run)
-            self.failclose_per_n_run = config.get('failclose_per_n_run', self.failclose_per_n_run)
+            self.stop_svc_interval = config.get('stop_svc_interval', self.stop_svc_interval)
+            self.stop_drv_interval = config.get('stop_drv_interval', self.stop_drv_interval)
+            self.failclose_interval = config.get('failclose_interval', self.failclose_interval)
 
-        except FileNotFoundError:
-            logger.warning(f"{self.config_file} not found. Using default values.")
-        except json.JSONDecodeError:
-            logger.error(f"Error decoding {self.config_file}. Please check for valid JSON. Exiting.")
-            sys.exit(1)
         except Exception as e:
             logger.error(f"Error loading config: {e}. Exiting.")
             sys.exit(1)
@@ -50,15 +49,17 @@ class StressTest:
             logger.error(f"invalid 'loop_times'. Exiting.")
             sys.exit(1)
             
-        if not isinstance(self.stop_svc_per_n_run, int) or self.stop_svc_per_n_run < 0:
-            logger.error(f"invalid 'stop_svc_per_n_run'. Exiting.")
+        if not isinstance(self.stop_svc_interval, int) or self.stop_svc_interval < 0:
+            logger.error(f"invalid 'stop_svc_interval'. Exiting.")
             sys.exit(1)
             
-        if not isinstance(self.failclose_per_n_run, int) or self.failclose_per_n_run < 0:
-            logger.error(f"invalid 'failclose_per_n_run'. Exiting.")
+        if not isinstance(self.failclose_interval, int) or self.failclose_interval < 0:
+            logger.error(f"invalid 'failclose_interval'. Exiting.")
             sys.exit(1)
 
-        logger.info(f"Configuration set: loop_times = {self.loop_times}, stop_svc_per_n_run = {self.stop_svc_per_n_run}, failclose_per_n_run = {self.failclose_per_n_run}")
+        if not isinstance(self.stop_drv_interval, int) or self.stop_drv_interval < 0:
+            logger.error(f"invalid 'stop_drv_interval'. Exiting.")
+            sys.exit(1)
 
     def restore_config(self):
         logger.info("--- Restoring Original Configuration ---")
@@ -82,7 +83,7 @@ class StressTest:
         except Exception as e:
             logger.error(f"Error during config restoration: {e}")
 
-    def process_failclose_change(self):
+    def exec_failclose_change(self):
         logger.info("Executing FailClose configuration change...")
         try:
             nsconfig_path = os.path.join(self.stagent_root, "nsconfig.json")
@@ -137,40 +138,63 @@ class StressTest:
         except Exception as e:
             logger.error(f"Error during FailClose config change: {e}")
 
-    def run(self):
+    def header_msg(self):
         logger.info(f"--- Start Testing. Total iterations: {self.loop_times} ---")
         logger.info(f"Stop service every {self.stop_svc_per_n_run} run(s) (0 = never)")
         logger.info(f"Switch FailClose every {self.failclose_per_n_run} run(s) (0 = never)")
-        logger.info("Press Ctrl+C to stop the loop.")
-        logger.info("-" * 30)
+        logger.info(f"Stop/Start driver every {self.stop_drv_per_n_run} run(s) (0 = never)")
+        logger.info("=" * 30)
+
+    def exec_start_service(self):
+        current_status = get_service_status(self.service_name)
+        logger.info(f"Current status: {current_status}")
+        if current_status != "RUNNING":
+            start_service(self.service_name)
+            logger.info(f"Waiting for {STD_SEC} seconds")
+            sleep_ex(STD_SEC)
+
+    def exec_stop_service(self):
+        current_status = get_service_status(self.service_name)
+        logger.info(f"Current status: {current_status}")
+        if current_status == "RUNNING":
+            logger.info(f"To STOP '{self.service_name}'")
+            stop_service(self.service_name)
+            self.cur_svc_status = get_service_status(self.service_name)
+            logger.info(f"Current status: {self.cur_svc_status}")
+            sleep_ex(TINY_SEC)
+
+    def exec_restart_driver(self):
+        logger.info(f"To STOP and START driver 'stadrv'")
+        stop_service(self.drv_name)
+        current_status = get_service_status(self.service_name)
+        logger.info(f"Current status: {current_status}")
+        sleep_ex(SHORT_SEC)
+        start_service(self.drv_name)
+        sleep_ex(TINY_SEC)
+    
+    def exec_browser_tabs(self):
+        logger.info(f"Running batch file to open browser tabs")
+        run_batch(r"data\5tab.bat")
+        sleep_ex(LONG_SEC)
+
+    def run(self):
+        self.header_msg
 
         for loop_count in range(1, self.loop_times + 1):
             try:
                 logger.info(f"==== Iteration {loop_count} / {self.loop_times} ====")
 
-                current_status = get_service_status(self.service_name)
-                logger.info(f"Current status: {current_status}")
-                if current_status != "RUNNING":
-                    start_service(self.service_name)
-                    logger.info(f"Waiting for {STD_SEC} seconds")
-                    sleep_ex(STD_SEC)
-                else:
-                    sleep_ex(5)
-
-                logger.info(f"Running batch file to open browser tabs")
-                run_batch(r"data\5tab.bat")
-                sleep_ex(LONG_SEC)
+                self.exec_start_service()
+                self.exec_browser_tabs()
 
                 if self.failclose_per_n_run > 0 and loop_count % self.failclose_per_n_run == 0:
-                    self.process_failclose_change()
+                    self.exec_failclose_change()
 
                 if self.stop_svc_per_n_run > 0 and loop_count % self.stop_svc_per_n_run == 0:
-                    logger.info(f"Attempting to STOP '{self.service_name}'")
-                    stop_service(self.service_name)
-                    current_status = get_service_status(self.service_name)
-                    logger.info(f"Current status: {current_status}")
-                else:
-                    logger.info(f"Skipping service stop for this iteration (run {loop_count}).")
+                    self.exec_stop_service()
+                    # stop the driver only when service is stopped
+                    if self.stop_drv_per_n_run > 0 and loop_count % self.stop_drv_per_n_run == 0:
+                        self.exec_restart_driver()
 
                 sleep_ex(STD_SEC)
                 run_powershell("close_msedge.ps1")
