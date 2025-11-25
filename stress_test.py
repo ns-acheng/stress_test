@@ -60,6 +60,28 @@ class StressTest:
 
         logger.info(f"Configuration set: loop_times = {self.loop_times}, stop_svc_per_n_run = {self.stop_svc_per_n_run}, failclose_per_n_run = {self.failclose_per_n_run}")
 
+    def restore_config(self):
+        logger.info("--- Restoring Original Configuration ---")
+        try:
+            backup_path = os.path.join(".", "data", "nsconfig-bk.json")
+            target_nsconfig = os.path.join(self.stagent_root, "nsconfig.json")
+            target_devconfig = os.path.join(self.stagent_root, "devconfig.json")
+
+            if os.path.exists(backup_path):
+                shutil.move(backup_path, target_nsconfig)
+                logger.info(f"Restored {backup_path} back to {target_nsconfig}")
+            else:
+                logger.warning(f"Backup file {backup_path} not found. Cannot restore.")
+
+            if os.path.exists(target_devconfig):
+                os.remove(target_devconfig)
+                logger.info(f"Removed {target_devconfig}")
+            else:
+                logger.info(f"{target_devconfig} not found, skipping removal.")
+
+        except Exception as e:
+            logger.error(f"Error during config restoration: {e}")
+
     def process_failclose_change(self):
         logger.info("Executing FailClose configuration change...")
         try:
@@ -67,11 +89,12 @@ class StressTest:
             backup_path = os.path.join(".", "data", "nsconfig-bk.json")
             devconfig_src = os.path.join(".", "data", "devconfig.json")
 
-            if os.path.exists(nsconfig_path):
-                shutil.copy(nsconfig_path, backup_path)
-                logger.info(f"Backed up nsconfig.json to {backup_path}")
-            else:
-                logger.warning(f"Original file {nsconfig_path} not found during backup.")
+            if not os.path.exists(backup_path):
+                if os.path.exists(nsconfig_path):
+                    shutil.copy(nsconfig_path, backup_path)
+                    logger.info(f"Backed up nsconfig.json to {backup_path}")
+                else:
+                    logger.warning(f"Original file {nsconfig_path} not found during backup.")
 
             if os.path.exists(devconfig_src):
                 shutil.copy(devconfig_src, self.stagent_root)
@@ -114,28 +137,6 @@ class StressTest:
         except Exception as e:
             logger.error(f"Error during FailClose config change: {e}")
 
-    def cleanup_config(self):
-        logger.info("--- Performing Final Cleanup ---")
-        try:
-            backup_path = os.path.join(".", "data", "nsconfig-bk.json")
-            target_nsconfig = os.path.join(self.stagent_root, "nsconfig.json")
-            target_devconfig = os.path.join(self.stagent_root, "devconfig.json")
-
-            if os.path.exists(backup_path):
-                shutil.move(backup_path, target_nsconfig)
-                logger.info(f"Restored {backup_path} back to {target_nsconfig}")
-            else:
-                logger.warning(f"Backup file {backup_path} not found. Cannot restore.")
-
-            if os.path.exists(target_devconfig):
-                os.remove(target_devconfig)
-                logger.info(f"Removed {target_devconfig}")
-            else:
-                logger.info(f"{target_devconfig} not found, skipping removal.")
-
-        except Exception as e:
-            logger.error(f"Error during cleanup: {e}")
-
     def run(self):
         logger.info(f"--- Start Testing. Total iterations: {self.loop_times} ---")
         logger.info(f"Stop service every {self.stop_svc_per_n_run} run(s) (0 = never)")
@@ -156,7 +157,7 @@ class StressTest:
                 else:
                     sleep_ex(5)
 
-                logger.info(f"Running batch file to open 20 tabs")
+                logger.info(f"Running batch file to open browser tabs")
                 run_batch(r"data\5tab.bat")
                 sleep_ex(LONG_SEC)
 
@@ -176,14 +177,14 @@ class StressTest:
 
             except KeyboardInterrupt:
                 logger.info("Loop stopped by user. Exiting.")
-                self.cleanup_config()
+                self.restore_config()
                 return
             except Exception:
                 logger.exception("An error occurred:")
                 logger.info(f"Retrying in {STD_SEC} seconds")
                 sleep_ex(STD_SEC)
 
-        self.cleanup_config()
+        self.restore_config()
         logger.info(f"--- Testing finished after {self.loop_times} iterations. ---")
 
 if __name__ == "__main__":

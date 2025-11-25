@@ -1,5 +1,5 @@
 {
   "loop_times": 1000,
   "stop_svc_per_n_run": 1,
-  "failclose_per_n_run": 20
+  "failclose_per_n_run": 3
 }
