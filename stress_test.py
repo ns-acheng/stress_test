@@ -140,9 +140,9 @@ class StressTest:
 
     def header_msg(self):
         logger.info(f"--- Start Testing. Total iterations: {self.loop_times} ---")
-        logger.info(f"Stop service every {self.stop_svc_per_n_run} run(s) (0 = never)")
-        logger.info(f"Switch FailClose every {self.failclose_per_n_run} run(s) (0 = never)")
-        logger.info(f"Stop/Start driver every {self.stop_drv_per_n_run} run(s) (0 = never)")
+        logger.info(f"Stop service every {self.stop_svc_interval} run(s) (0 = never)")
+        logger.info(f"Switch FailClose every {self.failclose_interval} run(s) (0 = never)")
+        logger.info(f"Stop/Start driver every {self.stop_drv_interval} run(s) (0 = never)")
         logger.info("=" * 30)
 
     def exec_start_service(self):
@@ -187,13 +187,13 @@ class StressTest:
                 self.exec_start_service()
                 self.exec_browser_tabs()
 
-                if self.failclose_per_n_run > 0 and loop_count % self.failclose_per_n_run == 0:
+                if self.failclose_interval > 0 and loop_count % self.failclose_interval == 0:
                     self.exec_failclose_change()
 
-                if self.stop_svc_per_n_run > 0 and loop_count % self.stop_svc_per_n_run == 0:
+                if self.stop_svc_interval > 0 and loop_count % self.stop_svc_interval == 0:
                     self.exec_stop_service()
                     # stop the driver only when service is stopped
-                    if self.stop_drv_per_n_run > 0 and loop_count % self.stop_drv_per_n_run == 0:
+                    if self.stop_drv_interval > 0 and loop_count % self.stop_drv_interval == 0:
                         self.exec_restart_driver()
 
                 sleep_ex(STD_SEC)
