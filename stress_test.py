@@ -157,7 +157,7 @@ class StressTest:
                     sleep_ex(5)
 
                 logger.info(f"Running batch file to open 20 tabs")
-                run_batch("10tab.bat")
+                run_batch(r"data\5tab.bat")
                 sleep_ex(LONG_SEC)
 
                 if self.failclose_per_n_run > 0 and loop_count % self.failclose_per_n_run == 0:
