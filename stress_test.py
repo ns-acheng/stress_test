@@ -3,6 +3,7 @@ import json
 import os
 import shutil
 import random
+import glob
 from util_service import start_service, stop_service, get_service_status
 from util_log import setup_logging
 from util_time import sleep_ex
@@ -194,14 +195,33 @@ class StressTest:
         if not self.urls:
             logger.warning("No URLs loaded to open.")
             return
+
+        logger.info(f"Open browser tabs")
+
         count = min(len(self.urls), 10)
         selected_urls = random.sample(self.urls, count)
         logger.info(f"Opening URLs: {selected_urls}")
         args = " ".join(selected_urls)
-        cmd = f"start open_urls.bat {args}"
-        
+        cmd = rf"data\open_urls.bat {args}"
+
         run_batch(cmd)
         sleep_ex(LONG_SEC)
+
+    def check_crash_dumps(self):
+        dump_paths = [
+            r"C:\dump\stAgentSvc.exe\*.dmp",
+            r"C:\ProgramData\netskope\stagent\logs\*.dmp"
+        ]
+        found = False
+        for path in dump_paths:
+            files = glob.glob(path)
+            if files:
+                logger.error(f"CRASH DUMP DETECTED at: {path}")
+                for f in files:
+                    logger.error(f"File: {f}")
+                found = True
+        
+        return found
 
     def run(self):
         self.header_msg()
@@ -224,6 +244,11 @@ class StressTest:
 
                 sleep_ex(STD_SEC)
                 run_powershell("close_msedge.ps1")
+                sleep_ex(SHORT_SEC)
+
+                if self.check_crash_dumps():
+                    logger.error("Crash dump found. Stopping test.")
+                    break
 
             except KeyboardInterrupt:
                 logger.info("Loop stopped by user. Exiting.")
