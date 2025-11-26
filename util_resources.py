@@ -81,15 +81,14 @@ def _get_num_processors():
     return sys_info.dwNumberOfProcessors
 
 def get_system_memory_usage():
-    memory_status = MEMORYSTATUSEX()
-    memory_status.dwLength = ctypes.sizeof(MEMORYSTATUSEX)
-    ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(memory_status))
-    return memory_status.dwMemoryLoad / 100.0
+    mem_status = MEMORYSTATUSEX()
+    mem_status.dwLength = ctypes.sizeof(MEMORYSTATUSEX)
+    ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(mem_status))
+    return mem_status.dwMemoryLoad / 100.0
 
 def get_pid_by_name(process_name: str) -> int:
-    hSnapshot = ctypes.windll.kernel32.CreateToolhelp32Snapshot(
-        TH32CS_SNAPPROCESS, 0
-    )
+    k32 = ctypes.windll.kernel32
+    hSnapshot = k32.CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)
     
     if hSnapshot == INVALID_HANDLE_VALUE:
         return 0
@@ -97,8 +96,8 @@ def get_pid_by_name(process_name: str) -> int:
     entry = PROCESSENTRY32()
     entry.dwSize = ctypes.sizeof(PROCESSENTRY32)
 
-    if not ctypes.windll.kernel32.Process32FirstW(hSnapshot, ctypes.byref(entry)):
-        ctypes.windll.kernel32.CloseHandle(hSnapshot)
+    if not k32.Process32FirstW(hSnapshot, ctypes.byref(entry)):
+        k32.CloseHandle(hSnapshot)
         return 0
 
     target_pid = 0
@@ -107,17 +106,18 @@ def get_pid_by_name(process_name: str) -> int:
             target_pid = entry.th32ProcessID
             break
 
-        if not ctypes.windll.kernel32.Process32NextW(hSnapshot, ctypes.byref(entry)):
+        if not k32.Process32NextW(hSnapshot, ctypes.byref(entry)):
             break
 
-    ctypes.windll.kernel32.CloseHandle(hSnapshot)
+    k32.CloseHandle(hSnapshot)
     return target_pid
 
 def get_process_memory_usage(pid: int) -> int:
     if pid == 0: 
         return 0
-        
-    process_handle = ctypes.windll.kernel32.OpenProcess(
+    
+    k32 = ctypes.windll.kernel32
+    process_handle = k32.OpenProcess(
         PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
         False,
         pid
@@ -141,75 +141,86 @@ def get_process_memory_usage(pid: int) -> int:
         else:
             return 0
     finally:
-        ctypes.windll.kernel32.CloseHandle(process_handle)
+        k32.CloseHandle(process_handle)
 
 def get_process_handle_count(pid: int) -> int:
     if pid == 0:
         return 0
-        
-    process_handle = ctypes.windll.kernel32.OpenProcess(
-        PROCESS_QUERY_INFORMATION,
-        False,
-        pid
-    )
+    
+    k32 = ctypes.windll.kernel32
+    process_handle = k32.OpenProcess(PROCESS_QUERY_INFORMATION, False, pid)
     
     if not process_handle:
         return 0
         
     try:
         count = wintypes.DWORD()
-        success = ctypes.windll.kernel32.GetProcessHandleCount(
-            process_handle,
-            ctypes.byref(count)
-        )
+        success = k32.GetProcessHandleCount(process_handle, ctypes.byref(count))
         return count.value if success else 0
     finally:
-        ctypes.windll.kernel32.CloseHandle(process_handle)
+        k32.CloseHandle(process_handle)
 
 def get_process_cpu_usage(pid: int, interval: float = 0.5) -> float:
     if pid == 0:
         return 0.0
 
-    process_handle = ctypes.windll.kernel32.OpenProcess(
-        PROCESS_QUERY_INFORMATION,
-        False,
-        pid
-    )
+    k32 = ctypes.windll.kernel32
+    process_handle = k32.OpenProcess(PROCESS_QUERY_INFORMATION, False, pid)
 
     if not process_handle:
         return 0.0
 
     try:
-        creation, exit_time, kernel_start, user_start = FILETIME(), FILETIME(), FILETIME(), FILETIME()
+        creation = FILETIME()
+        exit_time = FILETIME()
+        k_start = FILETIME()
+        u_start = FILETIME()
         sys_start = FILETIME()
         
-        ctypes.windll.kernel32.GetProcessTimes(process_handle, ctypes.byref(creation), ctypes.byref(exit_time), ctypes.byref(kernel_start), ctypes.byref(user_start))
-        ctypes.windll.kernel32.GetSystemTimeAsFileTime(ctypes.byref(sys_start))
+        k32.GetProcessTimes(
+            process_handle, 
+            ctypes.byref(creation), 
+            ctypes.byref(exit_time), 
+            ctypes.byref(k_start), 
+            ctypes.byref(u_start)
+        )
+        k32.GetSystemTimeAsFileTime(ctypes.byref(sys_start))
         
         time.sleep(interval)
         
-        kernel_end, user_end = FILETIME(), FILETIME()
+        k_end = FILETIME()
+        u_end = FILETIME()
         sys_end = FILETIME()
         
-        ctypes.windll.kernel32.GetProcessTimes(process_handle, ctypes.byref(creation), ctypes.byref(exit_time), ctypes.byref(kernel_end), ctypes.byref(user_end))
-        ctypes.windll.kernel32.GetSystemTimeAsFileTime(ctypes.byref(sys_end))
+        k32.GetProcessTimes(
+            process_handle, 
+            ctypes.byref(creation), 
+            ctypes.byref(exit_time), 
+            ctypes.byref(k_end), 
+            ctypes.byref(u_end)
+        )
+        k32.GetSystemTimeAsFileTime(ctypes.byref(sys_end))
         
-        proc_kernel_delta = _filetime_to_int(kernel_end) - _filetime_to_int(kernel_start)
-        proc_user_delta = _filetime_to_int(user_end) - _filetime_to_int(user_start)
+        p_k_delta = _filetime_to_int(k_end) - _filetime_to_int(k_start)
+        p_u_delta = _filetime_to_int(u_end) - _filetime_to_int(u_start)
         sys_delta = _filetime_to_int(sys_end) - _filetime_to_int(sys_start)
         
         if sys_delta == 0:
             return 0.0
             
-        num_processors = _get_num_processors()
-        cpu_percent = ((proc_kernel_delta + proc_user_delta) / sys_delta) * 100.0 / num_processors
+        num_procs = _get_num_processors()
+        cpu_pct = ((p_k_delta + p_u_delta) / sys_delta) * 100.0 / num_procs
         
-        return max(0.0, cpu_percent)
+        return max(0.0, cpu_pct)
 
     finally:
-        ctypes.windll.kernel32.CloseHandle(process_handle)
+        k32.CloseHandle(process_handle)
 
-def log_resource_usage(process_name: str, log_dir="log", log_file="resource_monitor.csv"):
+def log_resource_usage(
+    process_name: str, 
+    log_dir="log", 
+    log_file="resource_monitor.csv"
+):
     pid = get_pid_by_name(process_name)
     if pid == 0:
         return False
@@ -225,7 +236,11 @@ def log_resource_usage(process_name: str, log_dir="log", log_file="resource_moni
         
     full_path = os.path.join(log_dir, log_file)
     now_str = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
-    log_line = f"{now_str}, {cpu_percent:.0f}%, {mem_mb:.1f} MB, {handle_count}\n"
+    
+    log_line = (
+        f"{now_str}, {cpu_percent:.0f}%, "
+        f"{mem_mb:.1f} MB, {handle_count}\n"
+    )
     
     with open(full_path, "a") as f:
         f.write(log_line)
@@ -233,7 +248,7 @@ def log_resource_usage(process_name: str, log_dir="log", log_file="resource_moni
     return True
 
 if __name__ == "__main__":
-    target = "explorer.exe"
+    target = "stAgentSvc.exe"
     try:
         while True:
             log_resource_usage(target)
