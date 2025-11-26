@@ -198,7 +198,7 @@ class StressTest:
         selected_urls = random.sample(self.urls, count)
         logger.info(f"Opening URLs: {selected_urls}")
         args = " ".join(selected_urls)
-        cmd = f"data\\open_urls.bat {args}"
+        cmd = f"start open_urls.bat {args}"
         
         run_batch(cmd)
         sleep_ex(LONG_SEC)
