@@ -5,7 +5,7 @@ from datetime import datetime
 
 class LogSetup:
     def __init__(self):
-        self.timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        self.timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
 
     def get_timestamp(self):
         return self.timestamp
