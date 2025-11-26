@@ -2,6 +2,7 @@ import sys
 import json
 import os
 import shutil
+import random
 from util_service import start_service, stop_service, get_service_status
 from util_log import setup_logging
 from util_time import sleep_ex
@@ -23,12 +24,14 @@ class StressTest:
         self.service_name = "stagentsvc"
         self.drv_name = "stadrv"
         self.config_file = "config.json"
+        self.url_file = r"data\url.txt"
         self.stagent_root = r"C:\ProgramData\netskope\stagent"
         
         self.loop_times = 1000
         self.stop_svc_interval = 1
         self.stop_drv_interval = 0
         self.failclose_interval = 20
+        self.urls = []
 
     def load_config(self):
         try:
@@ -60,6 +63,21 @@ class StressTest:
         if not isinstance(self.stop_drv_interval, int) or self.stop_drv_interval < 0:
             logger.error(f"invalid 'stop_drv_interval'. Exiting.")
             sys.exit(1)
+
+    def load_urls(self):
+        try:
+            if not os.path.exists(self.url_file):
+                logger.error(f"{self.url_file} not found.")
+                return
+
+            with open(self.url_file, 'r') as f:
+                lines = f.readlines()
+            
+            self.urls = [line.strip() for line in lines if line.strip()]
+            logger.info(f"Loaded {len(self.urls)} URLs from {self.url_file}")
+            
+        except Exception as e:
+            logger.error(f"Error loading URLs: {e}")
 
     def restore_config(self):
         logger.info("--- Restoring Original Configuration ---")
@@ -173,12 +191,21 @@ class StressTest:
         sleep_ex(TINY_SEC)
     
     def exec_browser_tabs(self):
-        logger.info(f"Open browser tabs")
-        run_batch(r"data\5tab.bat")
+        if not self.urls:
+            logger.warning("No URLs loaded to open.")
+            return
+        count = min(len(self.urls), 10)
+        selected_urls = random.sample(self.urls, count)
+        logger.info(f"Opening URLs: {selected_urls}")
+        args = " ".join(selected_urls)
+        cmd = f"data\\open_urls.bat {args}"
+        
+        run_batch(cmd)
         sleep_ex(LONG_SEC)
 
     def run(self):
         self.header_msg()
+        self.load_urls()
 
         for loop_count in range(1, self.loop_times + 1):
             try:
@@ -192,7 +219,6 @@ class StressTest:
 
                 if self.stop_svc_interval > 0 and loop_count % self.stop_svc_interval == 0:
                     self.exec_stop_service()
-                    # stop the driver only when service is stopped
                     if self.stop_drv_interval > 0 and loop_count % self.stop_drv_interval == 0:
                         self.exec_restart_driver()
 
