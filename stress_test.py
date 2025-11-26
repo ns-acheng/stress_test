@@ -8,6 +8,7 @@ from util_service import start_service, stop_service, get_service_status
 from util_log import setup_logging
 from util_time import sleep_ex
 from util_subprocess import run_batch, run_powershell
+from util_memory import get_system_memory_usage
 
 TINY_SEC = 5
 SHORT_SEC = 15
@@ -83,6 +84,7 @@ class StressTest:
     def restore_config(self):
         logger.info("--- Restoring Original Configuration ---")
         try:
+            # Json backup remains in data folder
             backup_path = os.path.join(".", "data", "nsconfig-bk.json")
             target_nsconfig = os.path.join(self.stagent_root, "nsconfig.json")
             target_devconfig = os.path.join(self.stagent_root, "devconfig.json")
@@ -106,6 +108,7 @@ class StressTest:
         logger.info("Executing FailClose configuration change...")
         try:
             nsconfig_path = os.path.join(self.stagent_root, "nsconfig.json")
+            # Json files remain in data folder
             backup_path = os.path.join(".", "data", "nsconfig-bk.json")
             devconfig_src = os.path.join(".", "data", "devconfig.json")
 
@@ -176,7 +179,6 @@ class StressTest:
         current_status = get_service_status(self.service_name)
         logger.info(f"Current status: {current_status}")
         if current_status == "RUNNING":
-            logger.info(f"To STOP '{self.service_name}'")
             stop_service(self.service_name)
             self.cur_svc_status = get_service_status(self.service_name)
             logger.info(f"Current status: {self.cur_svc_status}")
@@ -197,14 +199,32 @@ class StressTest:
             return
 
         logger.info(f"Open browser tabs")
-
         count = min(len(self.urls), 10)
         selected_urls = random.sample(self.urls, count)
         logger.info(f"Opening URLs: {selected_urls}")
         args = " ".join(selected_urls)
+        
+        # Batch file is in the SAME folder as the script (no data\ prefix)
         cmd = f"open_urls.bat {args}"
 
         run_batch(cmd)
+        sleep_ex(STD_SEC)
+        
+        mem_usage = get_system_memory_usage()
+        logger.info(f"System memory usage: {mem_usage:.2%}")
+
+        if mem_usage < 0.85:
+            logger.info(f"Memory usage under 85%, opening more tabs")
+            selected_urls_2 = random.sample(self.urls, count)
+            logger.info(f"Opening URLs (batch 2): {selected_urls_2}")
+            args_2 = " ".join(selected_urls_2)
+            
+            # Batch file is in the SAME folder
+            cmd_2 = f"open_urls.bat {args_2}"
+            run_batch(cmd_2)
+        else:
+            logger.info(f"Memory usage high, skipping additional tabs")
+            
         sleep_ex(LONG_SEC)
 
     def check_crash_dumps(self):
