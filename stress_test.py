@@ -8,15 +8,22 @@ from util_service import start_service, stop_service, get_service_status
 from util_log import setup_logging
 from util_time import sleep_ex
 from util_subprocess import run_batch, run_powershell
-from util_memory import get_system_memory_usage
+from util_resources import (
+    get_system_memory_usage, 
+    log_resource_usage, 
+    enable_debug_privilege
+)
 
 TINY_SEC = 5
 SHORT_SEC = 15
 STD_SEC = 30
 LONG_SEC = 60
 
+if not os.path.exists("log"):
+    os.makedirs("log")
+
 try:
-    logger, log_file = setup_logging()
+    logger, log_file = setup_logging() 
 except Exception as e:
     print(f"Critical error during logging setup: {e}", file=sys.stderr)
     sys.exit(1)
@@ -25,7 +32,7 @@ class StressTest:
     def __init__(self):
         self.service_name = "stagentsvc"
         self.drv_name = "stadrv"
-        self.config_file = "config.json"
+        self.config_file = r"data\config.json"
         self.url_file = r"data\url.txt"
         self.stagent_root = r"C:\ProgramData\netskope\stagent"
         
@@ -34,6 +41,8 @@ class StressTest:
         self.stop_drv_interval = 0
         self.failclose_interval = 20
         self.urls = []
+        
+        self.tool_dir = "tool"
 
     def load_config(self):
         try:
@@ -84,8 +93,7 @@ class StressTest:
     def restore_config(self):
         logger.info("--- Restoring Original Configuration ---")
         try:
-            # Json backup remains in data folder
-            backup_path = os.path.join(".", "data", "nsconfig-bk.json")
+            backup_path = os.path.join("data", "nsconfig-bk.json")
             target_nsconfig = os.path.join(self.stagent_root, "nsconfig.json")
             target_devconfig = os.path.join(self.stagent_root, "devconfig.json")
 
@@ -108,9 +116,8 @@ class StressTest:
         logger.info("Executing FailClose configuration change...")
         try:
             nsconfig_path = os.path.join(self.stagent_root, "nsconfig.json")
-            # Json files remain in data folder
-            backup_path = os.path.join(".", "data", "nsconfig-bk.json")
-            devconfig_src = os.path.join(".", "data", "devconfig.json")
+            backup_path = os.path.join("data", "nsconfig-bk.json")
+            devconfig_src = os.path.join("data", "devconfig.json")
 
             if not os.path.exists(backup_path):
                 if os.path.exists(nsconfig_path):
@@ -204,8 +211,7 @@ class StressTest:
         logger.info(f"Opening URLs: {selected_urls}")
         args = " ".join(selected_urls)
         
-        # Batch file is in the SAME folder as the script (no data\ prefix)
-        cmd = f"open_urls.bat {args}"
+        cmd = os.path.join(self.tool_dir, f"open_urls.bat {args}")
 
         run_batch(cmd)
         sleep_ex(STD_SEC)
@@ -213,17 +219,16 @@ class StressTest:
         mem_usage = get_system_memory_usage()
         logger.info(f"System memory usage: {mem_usage:.2%}")
 
+        log_resource_usage("stAgentSvc.exe", log_dir="log")
+
         if mem_usage < 0.85:
             logger.info(f"Memory usage under 85%, opening more tabs")
             selected_urls_2 = random.sample(self.urls, count)
             logger.info(f"Opening URLs (batch 2): {selected_urls_2}")
             args_2 = " ".join(selected_urls_2)
             
-            # Batch file is in the SAME folder
-            cmd_2 = f"open_urls.bat {args_2}"
+            cmd_2 = os.path.join(self.tool_dir, f"open_urls.bat {args_2}")
             run_batch(cmd_2)
-        else:
-            logger.info(f"Memory usage high, skipping additional tabs")
             
         sleep_ex(LONG_SEC)
 
@@ -244,6 +249,8 @@ class StressTest:
         return found
 
     def run(self):
+        enable_debug_privilege()
+        
         self.header_msg()
         self.load_urls()
 
@@ -263,7 +270,10 @@ class StressTest:
                         self.exec_restart_driver()
 
                 sleep_ex(STD_SEC)
-                run_powershell("close_msedge.ps1")
+                
+                ps_script = os.path.join(self.tool_dir, "close_msedge.ps1")
+                run_powershell(ps_script)
+                
                 sleep_ex(SHORT_SEC)
 
                 if self.check_crash_dumps():

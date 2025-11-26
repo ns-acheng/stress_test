@@ -8,6 +8,10 @@ TH32CS_SNAPPROCESS = 0x00000002
 INVALID_HANDLE_VALUE = ctypes.c_void_p(-1).value
 PROCESS_QUERY_INFORMATION = 0x0400
 PROCESS_VM_READ = 0x0010
+SE_DEBUG_NAME = "SeDebugPrivilege"
+TOKEN_ADJUST_PRIVILEGES = 0x0020
+TOKEN_QUERY = 0x0008
+SE_PRIVILEGE_ENABLED = 0x00000002
 
 class MEMORYSTATUSEX(ctypes.Structure):
     _fields_ = [
@@ -71,6 +75,56 @@ class SYSTEM_INFO(ctypes.Structure):
         ("wProcessorLevel", wintypes.WORD),
         ("wProcessorRevision", wintypes.WORD),
     ]
+
+class LUID(ctypes.Structure):
+    _fields_ = [
+        ("LowPart", wintypes.DWORD),
+        ("HighPart", wintypes.LONG),
+    ]
+
+class LUID_AND_ATTRIBUTES(ctypes.Structure):
+    _fields_ = [
+        ("Luid", LUID),
+        ("Attributes", wintypes.DWORD),
+    ]
+
+class TOKEN_PRIVILEGES(ctypes.Structure):
+    _fields_ = [
+        ("PrivilegeCount", wintypes.DWORD),
+        ("Privileges", LUID_AND_ATTRIBUTES * 1),
+    ]
+
+def enable_debug_privilege():
+    k32 = ctypes.windll.kernel32
+    advapi32 = ctypes.windll.advapi32
+    
+    hToken = wintypes.HANDLE()
+    
+    if not k32.OpenProcessToken(
+        k32.GetCurrentProcess(),
+        TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,
+        ctypes.byref(hToken)
+    ):
+        return False
+
+    luid = LUID()
+    if not advapi32.LookupPrivilegeValueW(None, SE_DEBUG_NAME, ctypes.byref(luid)):
+        k32.CloseHandle(hToken)
+        return False
+
+    tp = TOKEN_PRIVILEGES()
+    tp.PrivilegeCount = 1
+    tp.Privileges[0].Luid = luid
+    tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED
+
+    if not advapi32.AdjustTokenPrivileges(
+        hToken, False, ctypes.byref(tp), 0, None, None
+    ):
+        k32.CloseHandle(hToken)
+        return False
+        
+    k32.CloseHandle(hToken)
+    return True
 
 def _filetime_to_int(ft):
     return (ft.dwHighDateTime << 32) + ft.dwLowDateTime
@@ -221,6 +275,8 @@ def log_resource_usage(
     log_dir="log", 
     log_file="resource_monitor.csv"
 ):
+    enable_debug_privilege()
+
     pid = get_pid_by_name(process_name)
     if pid == 0:
         return False
