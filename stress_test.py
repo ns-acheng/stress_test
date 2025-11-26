@@ -95,7 +95,7 @@ class StressTest:
                     shutil.copy(nsconfig_path, backup_path)
                     logger.info(f"Backed up nsconfig.json to {backup_path}")
                 else:
-                    logger.warning(f"Original file {nsconfig_path} not found during backup.")
+                    logger.warning(f"Original file {nsconfig_path} not found.")
 
             if os.path.exists(devconfig_src):
                 shutil.copy(devconfig_src, self.stagent_root)
@@ -117,7 +117,7 @@ class StressTest:
                         "notification": "false",
                         "captive_portal_timeout": "0"
                     }
-                    logger.info("Switching FailClose from TRUE to FALSE")
+                    logger.info("Switching FailClose to FALSE")
                 else:
                     new_config = {
                         "fail_close": "true",
@@ -125,7 +125,7 @@ class StressTest:
                         "notification": "false",
                         "captive_portal_timeout": "0"
                     }
-                    logger.info("Switching FailClose from FALSE to TRUE")
+                    logger.info("Switching FailClose to TRUE")
                 
                 ns_data["failClose"] = new_config
 
@@ -133,7 +133,7 @@ class StressTest:
                     json.dump(ns_data, f, indent=4)
                 logger.info("nsconfig.json updated successfully.")
             else:
-                logger.error(f"Target file {nsconfig_path} not found for modification.")
+                logger.error(f"Target file {nsconfig_path} not found.")
 
         except Exception as e:
             logger.error(f"Error during FailClose config change: {e}")
@@ -143,7 +143,7 @@ class StressTest:
         logger.info(f"Stop service every {self.stop_svc_interval} run(s) (0 = never)")
         logger.info(f"Switch FailClose every {self.failclose_interval} run(s) (0 = never)")
         logger.info(f"Stop/Start driver every {self.stop_drv_interval} run(s) (0 = never)")
-        logger.info("=" * 30)
+        logger.info("=" * 50)
 
     def exec_start_service(self):
         current_status = get_service_status(self.service_name)
@@ -173,7 +173,7 @@ class StressTest:
         sleep_ex(TINY_SEC)
     
     def exec_browser_tabs(self):
-        logger.info(f"Running batch file to open browser tabs")
+        logger.info(f"Open browser tabs")
         run_batch(r"data\5tab.bat")
         sleep_ex(LONG_SEC)
 
@@ -210,6 +210,7 @@ class StressTest:
 
         self.restore_config()
         logger.info(f"--- Testing finished after {self.loop_times} iterations. ---")
+
 
 if __name__ == "__main__":
     try:
