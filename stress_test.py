@@ -5,7 +5,7 @@ import shutil
 import random
 import glob
 from util_service import start_service, stop_service, get_service_status
-from util_log import setup_logging
+from util_log import LogSetup
 from util_time import sleep_ex
 from util_subprocess import run_batch, run_powershell
 from util_resources import (
@@ -23,7 +23,9 @@ if not os.path.exists("log"):
     os.makedirs("log")
 
 try:
-    logger, log_file = setup_logging() 
+    log_helper = LogSetup()
+    logger = log_helper.setup_logging()
+    current_timestamp = log_helper.get_timestamp()
 except Exception as e:
     print(f"Critical error during logging setup: {e}", file=sys.stderr)
     sys.exit(1)
@@ -219,7 +221,7 @@ class StressTest:
         mem_usage = get_system_memory_usage()
         logger.info(f"System memory usage: {mem_usage:.2%}")
 
-        log_resource_usage("stAgentSvc.exe", log_dir="log")
+        log_resource_usage("stAgentSvc.exe", current_timestamp, log_dir="log")
 
         if mem_usage < 0.85:
             logger.info(f"Memory usage under 85%, opening more tabs")
@@ -295,7 +297,7 @@ class StressTest:
 
 if __name__ == "__main__":
     try:
-        logger.info(f"Logging initialized. Log file: {log_file}")
+        logger.info(f"Logging initialized with timestamp: {current_timestamp}")
         test_runner = StressTest()
         test_runner.load_config()
         test_runner.run()

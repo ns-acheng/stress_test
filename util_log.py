@@ -1,31 +1,42 @@
 import logging
 import sys
+import os
 from datetime import datetime
 
-def setup_logging():
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
+class LogSetup:
+    def __init__(self):
+        self.timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 
-    if logger.hasHandlers():
-        logger.handlers.clear()
+    def get_timestamp(self):
+        return self.timestamp
 
-    timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    log_filename = f'stress_test_{timestamp}.log'
+    def setup_logging(self):
+        if not os.path.exists("log"):
+            os.makedirs("log")
+            
+        logger = logging.getLogger()
+        logger.setLevel(logging.INFO)
 
-    formatter = logging.Formatter(
-        '%(asctime)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
-    )
+        if logger.hasHandlers():
+            logger.handlers.clear()
 
-    file_handler = logging.FileHandler(log_filename)
-    file_handler.setLevel(logging.INFO)
-    file_handler.setFormatter(formatter)
+        log_filename = f'{self.timestamp}_stress_test.log'
+        log_path = os.path.join("log", log_filename)
 
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(logging.INFO)
-    console_handler.setFormatter(formatter)
+        formatter = logging.Formatter(
+            '%(asctime)s - %(levelname)s - %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
 
-    logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
+        file_handler = logging.FileHandler(log_path)
+        file_handler.setLevel(logging.INFO)
+        file_handler.setFormatter(formatter)
 
-    return logger, log_filename
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(logging.INFO)
+        console_handler.setFormatter(formatter)
+
+        logger.addHandler(file_handler)
+        logger.addHandler(console_handler)
+
+        return logger

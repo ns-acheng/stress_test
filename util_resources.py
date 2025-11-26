@@ -272,8 +272,8 @@ def get_process_cpu_usage(pid: int, interval: float = 0.5) -> float:
 
 def log_resource_usage(
     process_name: str, 
-    log_dir="log", 
-    log_file="resource_monitor.csv"
+    timestamp: str,
+    log_dir="log"
 ):
     enable_debug_privilege()
 
@@ -290,6 +290,7 @@ def log_resource_usage(
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
         
+    log_file = f"{timestamp}_svc_resources.log"
     full_path = os.path.join(log_dir, log_file)
     now_str = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
     
@@ -305,9 +306,10 @@ def log_resource_usage(
 
 if __name__ == "__main__":
     target = "stAgentSvc.exe"
+    ts = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     try:
         while True:
-            log_resource_usage(target)
+            log_resource_usage(target, ts)
             time.sleep(4.5) 
     except KeyboardInterrupt:
         pass
