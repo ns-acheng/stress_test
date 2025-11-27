@@ -80,7 +80,7 @@ class StressTest:
             sys.exit(1)
 
         if not isinstance(self.max_mem_usage, int) or not (50 <= self.max_mem_usage <= 99):
-            logger.warning(f"Invalid 'max_mem_usage' {self.max_mem_usage}. Must be between 50 and 99. Resetting to 85.")
+            logger.warning(f"Invalid 'max_mem_usage' {self.max_mem_usage}. Must be 50 ~ 99. Reset to 85.")
             self.max_mem_usage = 85
 
     def load_urls(self):
@@ -190,11 +190,13 @@ class StressTest:
             start_service(self.service_name)
             logger.info(f"Waiting for {STD_SEC} seconds")
             sleep_ex(STD_SEC)
+        log_resource_usage("stAgentSvc.exe", current_timestamp, log_dir="log")
 
     def exec_stop_service(self):
         current_status = get_service_status(self.service_name)
         logger.info(f"Current status: {current_status}")
         if current_status == "RUNNING":
+            log_resource_usage("stAgentSvc.exe", current_timestamp, log_dir="log")
             stop_service(self.service_name)
             self.cur_svc_status = get_service_status(self.service_name)
             logger.info(f"Current status: {self.cur_svc_status}")
@@ -214,38 +216,38 @@ class StressTest:
             logger.warning("No URLs loaded to open.")
             return
 
-        logger.info(f"Open browser tabs")
-        count = min(len(self.urls), 10)
-        selected_urls = random.sample(self.urls, count)
+        logger.info(f"Starting browser tab opening loop. Target Memory: {self.max_mem_usage}%")
         
-        logger.info("Opening URLs:\n" + "\n".join(selected_urls))
+        batch_limit = 50 
+        batch_count = 0
         
-        args = " ".join(selected_urls)
-        
-        cmd = os.path.join(self.tool_dir, f"open_urls.bat {args}")
+        while batch_count < batch_limit:
+            mem_usage = get_system_memory_usage() # returns float 0.0 - 1.0
+            mem_percent = mem_usage * 100.0   
+            logger.info(f"Current System Memory: {mem_percent:.2f}% (Target: {self.max_mem_usage}%)")
 
-        run_batch(cmd)
-        sleep_ex(STD_SEC)
-        
-        mem_usage = get_system_memory_usage()
-        logger.info(f"System memory usage: {mem_usage:.2%}")
+            if mem_percent >= self.max_mem_usage:
+                logger.info(f"Memory threshold reached ({mem_percent:.2f}% >= {self.max_mem_usage}%).")
+                break
+            
+            # 3. Open Tabs
+            count = min(len(self.urls), 10)
+            selected_urls = random.sample(self.urls, count)
+            logger.info(f"Opening batch {batch_count + 1} ({len(selected_urls)} URLs)...")
+            
+            args = " ".join(selected_urls)
+            cmd = os.path.join(self.tool_dir, f"open_urls.bat {args}")
+            run_batch(cmd)
 
-        log_resource_usage("stAgentSvc.exe", current_timestamp, log_dir="log")
-
-        mem_threshold = self.max_mem_usage / 100.0
-        
-        if mem_usage < mem_threshold:
-            logger.info(f"Memory usage under {self.max_mem_usage}%, opening more tabs")
-            selected_urls_2 = random.sample(self.urls, count)
+            # 4. Wait for browser and Record stAgentSvc Memory
+            # We log *after* opening to see the effect on the agent
+            sleep_ex(STD_SEC)
+            log_resource_usage("stAgentSvc.exe", current_timestamp, log_dir="log")
             
-            logger.info("Opening URLs (batch 2):\n" + "\n".join(selected_urls_2))
+            batch_count += 1
             
-            args_2 = " ".join(selected_urls_2)
-            
-            cmd_2 = os.path.join(self.tool_dir, f"open_urls.bat {args_2}")
-            run_batch(cmd_2)
-            
-        sleep_ex(LONG_SEC)
+        if batch_count >= batch_limit:
+            logger.warning(f"Reached maximum batch limit ({batch_limit}) without hitting memory target.")
 
     def check_crash_dumps(self):
         dump_paths = [
