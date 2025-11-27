@@ -6,8 +6,7 @@ from datetime import datetime
 
 TH32CS_SNAPPROCESS = 0x00000002
 INVALID_HANDLE_VALUE = ctypes.c_void_p(-1).value
-PROCESS_QUERY_INFORMATION = 0x0400
-PROCESS_VM_READ = 0x0010
+PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 SE_DEBUG_NAME = "SeDebugPrivilege"
 TOKEN_ADJUST_PRIVILEGES = 0x0020
 TOKEN_QUERY = 0x0008
@@ -155,15 +154,17 @@ def get_pid_by_name(process_name: str) -> int:
         return 0
 
     target_pid = 0
-    while True:
-        if entry.szExeFile.lower() == process_name.lower():
-            target_pid = entry.th32ProcessID
-            break
+    try:
+        while True:
+            if entry.szExeFile.lower() == process_name.lower():
+                target_pid = entry.th32ProcessID
+                break
 
-        if not k32.Process32NextW(hSnapshot, ctypes.byref(entry)):
-            break
-
-    k32.CloseHandle(hSnapshot)
+            if not k32.Process32NextW(hSnapshot, ctypes.byref(entry)):
+                break
+    finally:
+        k32.CloseHandle(hSnapshot)
+        
     return target_pid
 
 def get_process_memory_usage(pid: int) -> int:
@@ -172,7 +173,7 @@ def get_process_memory_usage(pid: int) -> int:
     
     k32 = ctypes.windll.kernel32
     process_handle = k32.OpenProcess(
-        PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
+        PROCESS_QUERY_LIMITED_INFORMATION,
         False,
         pid
     )
@@ -202,7 +203,7 @@ def get_process_handle_count(pid: int) -> int:
         return 0
     
     k32 = ctypes.windll.kernel32
-    process_handle = k32.OpenProcess(PROCESS_QUERY_INFORMATION, False, pid)
+    process_handle = k32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
     
     if not process_handle:
         return 0
@@ -219,7 +220,7 @@ def get_process_cpu_usage(pid: int, interval: float = 0.5) -> float:
         return 0.0
 
     k32 = ctypes.windll.kernel32
-    process_handle = k32.OpenProcess(PROCESS_QUERY_INFORMATION, False, pid)
+    process_handle = k32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
 
     if not process_handle:
         return 0.0
