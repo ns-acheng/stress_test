@@ -192,7 +192,7 @@ def get_process_memory_usage(pid: int) -> int:
         )
         
         if success:
-            return counters.WorkingSetSize
+            return counters.PrivateUsage
         else:
             return 0
     finally:
