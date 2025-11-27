@@ -42,6 +42,7 @@ class StressTest:
         self.stop_svc_interval = 1
         self.stop_drv_interval = 0
         self.failclose_interval = 20
+        self.max_mem_usage = 85
         self.urls = []
         
         self.tool_dir = "tool"
@@ -56,6 +57,7 @@ class StressTest:
             self.stop_svc_interval = config.get('stop_svc_interval', self.stop_svc_interval)
             self.stop_drv_interval = config.get('stop_drv_interval', self.stop_drv_interval)
             self.failclose_interval = config.get('failclose_interval', self.failclose_interval)
+            self.max_mem_usage = config.get('max_mem_usage', self.max_mem_usage)
 
         except Exception as e:
             logger.error(f"Error loading config: {e}. Exiting.")
@@ -76,6 +78,10 @@ class StressTest:
         if not isinstance(self.stop_drv_interval, int) or self.stop_drv_interval < 0:
             logger.error(f"invalid 'stop_drv_interval'. Exiting.")
             sys.exit(1)
+
+        if not isinstance(self.max_mem_usage, int) or not (50 <= self.max_mem_usage <= 99):
+            logger.warning(f"Invalid 'max_mem_usage' {self.max_mem_usage}. Must be between 50 and 99. Resetting to 85.")
+            self.max_mem_usage = 85
 
     def load_urls(self):
         try:
@@ -174,6 +180,7 @@ class StressTest:
         logger.info(f"Stop service every {self.stop_svc_interval} run(s) (0 = never)")
         logger.info(f"Switch FailClose every {self.failclose_interval} run(s) (0 = never)")
         logger.info(f"Stop/Start driver every {self.stop_drv_interval} run(s) (0 = never)")
+        logger.info(f"Max Memory Usage Threshold: {self.max_mem_usage}%")
         logger.info("=" * 50)
 
     def exec_start_service(self):
@@ -210,7 +217,9 @@ class StressTest:
         logger.info(f"Open browser tabs")
         count = min(len(self.urls), 10)
         selected_urls = random.sample(self.urls, count)
-        logger.info(f"Opening URLs: {selected_urls}")
+        
+        logger.info("Opening URLs:\n" + "\n".join(selected_urls))
+        
         args = " ".join(selected_urls)
         
         cmd = os.path.join(self.tool_dir, f"open_urls.bat {args}")
@@ -223,10 +232,14 @@ class StressTest:
 
         log_resource_usage("stAgentSvc.exe", current_timestamp, log_dir="log")
 
-        if mem_usage < 0.85:
-            logger.info(f"Memory usage under 85%, opening more tabs")
+        mem_threshold = self.max_mem_usage / 100.0
+        
+        if mem_usage < mem_threshold:
+            logger.info(f"Memory usage under {self.max_mem_usage}%, opening more tabs")
             selected_urls_2 = random.sample(self.urls, count)
-            logger.info(f"Opening URLs (batch 2): {selected_urls_2}")
+            
+            logger.info("Opening URLs (batch 2):\n" + "\n".join(selected_urls_2))
+            
             args_2 = " ".join(selected_urls_2)
             
             cmd_2 = os.path.join(self.tool_dir, f"open_urls.bat {args_2}")
