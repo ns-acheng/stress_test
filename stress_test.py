@@ -409,7 +409,7 @@ class StressTest:
                 logger.info(f"Retrying in {STD_SEC} seconds")
                 sleep_ex(STD_SEC)
 
-        logger.info(f"--- Finished {self.loop_times} iterations. ---")
+        logger.info(f"--- Finished {count} iterations. ---")
 
 
 if __name__ == "__main__":
