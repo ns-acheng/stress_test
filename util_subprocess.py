@@ -88,16 +88,15 @@ def _run_nsdiag_generic(nsdiag_path: str, args: list, description: str) -> bool:
             print(f"Error details: {e.stderr.strip()}", file=sys.stderr)
         return False
 
-def nsdiag_collect_log(timestamp: str, is_64bit: bool = True):
+def nsdiag_collect_log(timestamp: str, is_64bit: bool = True, log_path: str = None):
     nsdiag_path = _get_nsdiag_path(is_64bit)
-    cwd = os.getcwd()
-    log_folder = os.path.join(cwd, "log")
-    output_file = os.path.join(log_folder, f"{timestamp}_log_bundle.zip")
-    success = _run_nsdiag_generic(nsdiag_path, ["-o", output_file], "log collection")
-    
-    if success:
+    output_file = os.path.join(log_path, f"{timestamp}_log_bundle.zip")
+    print(f"Start collecting logs using nsdiag...")
+    if _run_nsdiag_generic(nsdiag_path, ["-o", output_file], "log collection"):
         print(f"Log bundle location: {output_file}")
 
 def nsdiag_update_config(is_64bit: bool = True):
     nsdiag_path = _get_nsdiag_path(is_64bit)
-    _run_nsdiag_generic(nsdiag_path, ["-u"], "config update")
+    print(f"Start updating configuration using nsdiag...")
+    if _run_nsdiag_generic(nsdiag_path, ["-u"], "config update"):
+        print(f"Configuration update attempt completed.")
