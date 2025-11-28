@@ -36,16 +36,32 @@ class StressTest:
         self.drv_name = "stadrv"
         self.config_file = r"data\config.json"
         self.url_file = r"data\url.txt"
+        self.tool_dir = "tool"
         self.stagent_root = r"C:\ProgramData\netskope\stagent"
-        
+        self.is_64bit = False
+
         self.loop_times = 1000
         self.stop_svc_interval = 1
         self.stop_drv_interval = 0
         self.failclose_interval = 20
         self.max_mem_usage = 85
         self.urls = []
+
+    def setup(self):
+        enable_debug_privilege()
+        self.load_config()
+        self.load_urls()
         
-        self.tool_dir = "tool"
+        check_path = r"C:\Program Files\Netskope\STAgent\stAgentSvc.exe"
+        if os.path.exists(check_path):
+            self.is_64bit = True
+            logger.info(f"Detected 64-bit Agent: {check_path}")
+        else:
+            self.is_64bit = False
+            logger.info("64-bit Agent path not found.")
+
+    def tear_down(self):
+        self.restore_config()
 
     def load_config(self):
         try:
@@ -222,7 +238,7 @@ class StressTest:
         batch_count = 0
         
         while batch_count < batch_limit:
-            mem_usage = get_system_memory_usage() # returns float 0.0 - 1.0
+            mem_usage = get_system_memory_usage()
             mem_percent = mem_usage * 100.0   
             logger.info(f"Current System Memory: {mem_percent:.2f}% (Target: {self.max_mem_usage}%)")
 
@@ -230,7 +246,6 @@ class StressTest:
                 logger.info(f"Memory threshold reached ({mem_percent:.2f}% >= {self.max_mem_usage}%).")
                 break
             
-            # 3. Open Tabs
             count = min(len(self.urls), 10)
             selected_urls = random.sample(self.urls, count)
             logger.info(f"Opening batch {batch_count + 1} ({len(selected_urls)} URLs)...")
@@ -239,8 +254,6 @@ class StressTest:
             cmd = os.path.join(self.tool_dir, f"open_urls.bat {args}")
             run_batch(cmd)
 
-            # 4. Wait for browser and Record stAgentSvc Memory
-            # We log *after* opening to see the effect on the agent
             sleep_ex(STD_SEC)
             log_resource_usage("stAgentSvc.exe", current_timestamp, log_dir="log")
             
@@ -266,10 +279,7 @@ class StressTest:
         return found
 
     def run(self):
-        enable_debug_privilege()
-        
         self.header_msg()
-        self.load_urls()
 
         for loop_count in range(1, self.loop_times + 1):
             try:
@@ -299,23 +309,23 @@ class StressTest:
 
             except KeyboardInterrupt:
                 logger.info("Loop stopped by user. Exiting.")
-                self.restore_config()
                 return
             except Exception:
                 logger.exception("An error occurred:")
                 logger.info(f"Retrying in {STD_SEC} seconds")
                 sleep_ex(STD_SEC)
 
-        self.restore_config()
         logger.info(f"--- Testing finished after {self.loop_times} iterations. ---")
 
 
 if __name__ == "__main__":
+    test_runner = StressTest()
     try:
         logger.info(f"Logging initialized with timestamp: {current_timestamp}")
-        test_runner = StressTest()
-        test_runner.load_config()
+        test_runner.setup()
         test_runner.run()
     except KeyboardInterrupt:
         logger.info("Loop stopped by user. Exiting.")
+    finally:
+        test_runner.tear_down()
         sys.exit(0)
