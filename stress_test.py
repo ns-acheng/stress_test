@@ -284,6 +284,8 @@ class StressTest:
                 self.exec_start_service()
                 if not self.is_local_cfg:
                     nsdiag_update_config(self.is_64bit)
+                else:
+                    print("self.is_local_cfg is True, skip nsdiag_update_config")
 
                 self.exec_browser_tabs()
 
