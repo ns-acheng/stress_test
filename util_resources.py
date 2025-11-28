@@ -284,6 +284,7 @@ def log_resource_usage(
         
     mem_bytes = get_process_memory_usage(pid)
     mem_kb = mem_bytes / 1024
+    mem_mb = mem_bytes / (1024 * 1024)
     
     handle_count = get_process_handle_count(pid)
     cpu_percent = get_process_cpu_usage(pid, interval=0.5)
@@ -297,7 +298,7 @@ def log_resource_usage(
     
     log_line = (
         f"{now_str}, {cpu_percent:.0f}%, "
-        f"{mem_kb:.0f} KB, {handle_count}\n"
+        f"{mem_mb:.1f}MB, {mem_kb:.0f} KB, {handle_count}\n"
     )
     
     with open(full_path, "a") as f:
