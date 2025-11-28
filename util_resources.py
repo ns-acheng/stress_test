@@ -107,7 +107,9 @@ def enable_debug_privilege():
         return False
 
     luid = LUID()
-    if not advapi32.LookupPrivilegeValueW(None, SE_DEBUG_NAME, ctypes.byref(luid)):
+    if not advapi32.LookupPrivilegeValueW(
+        None, SE_DEBUG_NAME, ctypes.byref(luid)
+    ):
         k32.CloseHandle(hToken)
         return False
 
@@ -203,14 +205,18 @@ def get_process_handle_count(pid: int) -> int:
         return 0
     
     k32 = ctypes.windll.kernel32
-    process_handle = k32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+    process_handle = k32.OpenProcess(
+        PROCESS_QUERY_LIMITED_INFORMATION, False, pid
+    )
     
     if not process_handle:
         return 0
         
     try:
         count = wintypes.DWORD()
-        success = k32.GetProcessHandleCount(process_handle, ctypes.byref(count))
+        success = k32.GetProcessHandleCount(
+            process_handle, ctypes.byref(count)
+        )
         return count.value if success else 0
     finally:
         k32.CloseHandle(process_handle)
@@ -220,7 +226,9 @@ def get_process_cpu_usage(pid: int, interval: float = 0.5) -> float:
         return 0.0
 
     k32 = ctypes.windll.kernel32
-    process_handle = k32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+    process_handle = k32.OpenProcess(
+        PROCESS_QUERY_LIMITED_INFORMATION, False, pid
+    )
 
     if not process_handle:
         return 0.0
@@ -264,7 +272,9 @@ def get_process_cpu_usage(pid: int, interval: float = 0.5) -> float:
             return 0.0
             
         num_procs = _get_num_processors()
-        cpu_pct = ((p_k_delta + p_u_delta) / sys_delta) * 100.0 / num_procs
+        cpu_pct = (
+            ((p_k_delta + p_u_delta) / sys_delta) * 100.0 / num_procs
+        )
         
         return max(0.0, cpu_pct)
 
@@ -292,7 +302,7 @@ def log_resource_usage(
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
         
-    log_file = f"{timestamp}_svc_resources.log"
+    log_file = f"{process_name}_resources.log"
     full_path = os.path.join(log_dir, log_file)
     now_str = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
     
