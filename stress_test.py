@@ -26,9 +26,6 @@ SHORT_SEC = 15
 STD_SEC = 30
 LONG_SEC = 60
 
-if not os.path.exists("log"):
-    os.makedirs("log")
-
 try:
     log_helper = LogSetup()
     logger = log_helper.setup_logging()
@@ -83,7 +80,6 @@ class StressTest:
         self.restore_client_config()
 
     def input_monitor(self):
-        logger.info("Input monitor started. Press ESC to stop test.")
         while True:
             if msvcrt.kbhit():
                 try:
@@ -259,6 +255,7 @@ class StressTest:
         if self.custom_dump_path:
             logger.info(f"Custom Dump Path: {self.custom_dump_path}")
         logger.info(f"Log Folder: {current_log_dir}")
+        logger.info("--> Press ESC or Ctrl+C to stop the test immediately. <--")
         logger.info("=" * 50)
 
     def exec_start_service(self):
