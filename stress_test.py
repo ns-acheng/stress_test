@@ -47,23 +47,26 @@ class StressTest:
         self.max_mem_usage = 85
         self.urls = []
 
+        self.backup_path = os.path.join("data", "nsconfig-bk.json")
+        self.target_nsconfig = os.path.join(self.stagent_root, "nsconfig.json")
+        self.target_devconfig = os.path.join(self.stagent_root, "devconfig.json")
+
     def setup(self):
         enable_debug_privilege()
-        self.load_config()
+        self.load_tool_config()
         self.load_urls()
+        self.restore_client_config(remove_only=True)
         
         check_path = r"C:\Program Files\Netskope\STAgent\stAgentSvc.exe"
         if os.path.exists(check_path):
             self.is_64bit = True
-            logger.info(f"Detected 64-bit Agent: {check_path}")
         else:
             self.is_64bit = False
-            logger.info("64-bit Agent path not found.")
 
     def tear_down(self):
-        self.restore_config()
+        self.restore_client_config()
 
-    def load_config(self):
+    def load_tool_config(self):
         try:
             with open(self.config_file, 'r') as f:
                 config = json.load(f)
@@ -114,50 +117,42 @@ class StressTest:
         except Exception as e:
             logger.error(f"Error loading URLs: {e}")
 
-    def restore_config(self):
-        logger.info("--- Restoring Original Configuration ---")
+    def restore_client_config(self, remove_only=False):
         try:
-            backup_path = os.path.join("data", "nsconfig-bk.json")
-            target_nsconfig = os.path.join(self.stagent_root, "nsconfig.json")
-            target_devconfig = os.path.join(self.stagent_root, "devconfig.json")
-
-            if os.path.exists(backup_path):
-                shutil.move(backup_path, target_nsconfig)
-                logger.info(f"Restored {backup_path} back to {target_nsconfig}")
+            if os.path.exists(self.backup_path):
+                if remove_only:
+                    os.remove(self.backup_path)
+                    logger.info(f"Removed backup file {self.backup_path}")
+                else:
+                    shutil.move(self.backup_path, self.target_nsconfig)
+                    logger.info(f"Restored {self.backup_path} back to {self.target_nsconfig}")
             else:
-                logger.warning(f"Backup file {backup_path} not found. Cannot restore.")
+                logger.warning(f"Backup file {self.backup_path} not found. Cannot restore.")
 
-            if os.path.exists(target_devconfig):
-                os.remove(target_devconfig)
-                logger.info(f"Removed {target_devconfig}")
-            else:
-                logger.info(f"{target_devconfig} not found, skipping removal.")
-
+            if os.path.exists(self.target_devconfig):
+                os.remove(self.target_devconfig)
+                logger.info(f"Removed {self.target_devconfig}")
         except Exception as e:
             logger.error(f"Error during config restoration: {e}")
 
     def exec_failclose_change(self):
         logger.info("Executing FailClose configuration change...")
         try:
-            nsconfig_path = os.path.join(self.stagent_root, "nsconfig.json")
-            backup_path = os.path.join("data", "nsconfig-bk.json")
-            devconfig_src = os.path.join("data", "devconfig.json")
-
-            if not os.path.exists(backup_path):
-                if os.path.exists(nsconfig_path):
-                    shutil.copy(nsconfig_path, backup_path)
-                    logger.info(f"Backed up nsconfig.json to {backup_path}")
+            if not os.path.exists(self.backup_path):
+                if os.path.exists(self.target_nsconfig):
+                    shutil.copy(self.target_nsconfig, self.backup_path)
+                    logger.info(f"Backed up nsconfig.json to {self.backup_path}")
                 else:
-                    logger.warning(f"Original file {nsconfig_path} not found.")
+                    logger.warning(f"Original file {self.target_nsconfig} not found.")
 
-            if os.path.exists(devconfig_src):
-                shutil.copy(devconfig_src, self.stagent_root)
-                logger.info(f"Copied {devconfig_src} to {self.stagent_root}")
+            if os.path.exists(self.target_devconfig):
+                shutil.copy(self.target_devconfig, self.stagent_root)
+                logger.info(f"Copied {self.target_devconfig} to {self.stagent_root}")
             else:
-                logger.warning(f"Source file {devconfig_src} not found.")
+                logger.warning(f"Source file {self.target_devconfig} not found.")
 
-            if os.path.exists(nsconfig_path):
-                with open(nsconfig_path, 'r') as f:
+            if os.path.exists(self.target_nsconfig):
+                with open(self.target_nsconfig, 'r') as f:
                     ns_data = json.load(f)
                 
                 fc_section = ns_data.get("failClose", {})
@@ -182,12 +177,11 @@ class StressTest:
                 
                 ns_data["failClose"] = new_config
 
-                with open(nsconfig_path, 'w') as f:
+                with open(self.target_nsconfig, 'w') as f:
                     json.dump(ns_data, f, indent=4)
-                logger.info("nsconfig.json updated successfully.")
+                logger.info(f"{self.target_nsconfig} updated successfully.")
             else:
-                logger.error(f"Target file {nsconfig_path} not found.")
-
+                logger.error(f"Target file {self.target_nsconfig} not found.")
         except Exception as e:
             logger.error(f"Error during FailClose config change: {e}")
 
@@ -234,7 +228,7 @@ class StressTest:
 
         logger.info(f"Starting browser tab opening loop. Target Memory: {self.max_mem_usage}%")
         
-        batch_limit = 50 
+        batch_limit = 20 
         batch_count = 0
         
         while batch_count < batch_limit:
@@ -251,7 +245,7 @@ class StressTest:
             logger.info(f"Opening batch {batch_count + 1} ({len(selected_urls)} URLs)...")
             
             args = " ".join(selected_urls)
-            cmd = os.path.join(self.tool_dir, f"open_urls.bat {args}")
+            cmd = os.path.join(self.tool_dir, f"open_msedge_tabs.bat {args}")
             run_batch(cmd)
 
             sleep_ex(STD_SEC)
@@ -260,7 +254,7 @@ class StressTest:
             batch_count += 1
             
         if batch_count >= batch_limit:
-            logger.warning(f"Reached maximum batch limit ({batch_limit}) without hitting memory target.")
+            logger.warning(f"Reached maximum batch limit ({batch_limit})")
 
     def check_crash_dumps(self):
         dump_paths = [
