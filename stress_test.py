@@ -58,7 +58,9 @@ class StressTest:
         self.backup_path = os.path.join("data", "nsconfig-bk.json")
         self.source_devconfig = os.path.join("data", "devconfig.json")
         self.target_nsconfig = os.path.join(self.stagent_root, "nsconfig.json")
-        self.target_devconfig = os.path.join(self.stagent_root, "devconfig.json")
+        self.target_devconfig = os.path.join(
+            self.stagent_root, "devconfig.json"
+        )
 
     def setup(self):
         enable_debug_privilege()
@@ -252,7 +254,9 @@ class StressTest:
         status = get_service_status(self.service_name)
         logger.info(f"Current status: {status}")
         if status == "RUNNING":
-            log_resource_usage("stAgentSvc.exe", current_timestamp, log_dir="log")
+            log_resource_usage(
+                "stAgentSvc.exe", current_timestamp, log_dir="log"
+            )
             stop_service(self.service_name)
             self.cur_svc_status = get_service_status(self.service_name)
             logger.info(f"Current status: {self.cur_svc_status}")
@@ -287,11 +291,13 @@ class StressTest:
             )
             
             args = " ".join(selected_urls)
-            cmd = os.path.join(self.tool_dir, f"open_urls.bat {args}")
+            cmd = os.path.join(self.tool_dir, f"open_msedge_tabs.bat {args}")
             run_batch(cmd)
 
             sleep_ex(STD_SEC)
-            log_resource_usage("stAgentSvc.exe", current_timestamp, log_dir="log")
+            log_resource_usage(
+                "stAgentSvc.exe", current_timestamp, log_dir="log"
+            )
 
             mem_usage = get_system_memory_usage()
             mem_pct = mem_usage * 100.0   
@@ -364,9 +370,6 @@ class StressTest:
                     logger.error("Crash dump found. Stopping test.")
                     break
 
-            except KeyboardInterrupt:
-                logger.info("Loop stopped by user. Exiting.")
-                return
             except Exception:
                 logger.exception("An error occurred:")
                 logger.info(f"Retrying in {STD_SEC} seconds")
@@ -381,8 +384,6 @@ if __name__ == "__main__":
         logger.info(f"Logging initialized: {current_timestamp}")
         runner.setup()
         runner.run()
-    except KeyboardInterrupt:
-        logger.info("Loop stopped by user. Exiting.")
     finally:
         runner.tear_down()
         sys.exit(0)
