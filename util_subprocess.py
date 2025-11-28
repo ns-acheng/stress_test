@@ -37,6 +37,16 @@ def run_powershell(script_path):
     except FileNotFoundError:
         logger.error("PowerShell.exe not found in PATH.")
 
+def run_curl(url: str):
+    try:
+        subprocess.Popen(
+            ["curl", "-v", url],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+    except Exception as e:
+        logger.error(f"Failed to run curl for {url}: {e}")
+
 def _get_nsdiag_path(is_64bit: bool) -> str:
     if is_64bit:
         return r"C:\Program Files\Netskope\STAgent\nsdiag.exe"

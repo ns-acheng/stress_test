@@ -13,7 +13,8 @@ from util_time import sleep_ex
 from util_subprocess import (
     run_batch, 
     run_powershell, 
-    nsdiag_update_config
+    nsdiag_update_config,
+    run_curl
 )
 from util_resources import (
     get_system_memory_usage, 
@@ -348,8 +349,20 @@ class StressTest:
         if batch_cnt >= batch_limit:
             logger.warning(f"Reached maximum batch limit ({batch_limit})")
 
+    def exec_curl_requests(self):
+        if not self.urls:
+            return
+        
+        count = min(len(self.urls), 10)
+        selected_urls = random.sample(self.urls, count)
+        logger.info(f"Running CURL on {count} random URLs...")
+        
+        for url in selected_urls:
+            run_curl(url)
+
     def check_crash_dumps(self):
         dump_paths = [
+            r"C:\dump\stAgentSvc.exe\*.dmp",
             r"C:\ProgramData\netskope\stagent\logs\*.dmp"
         ]
         if self.custom_dump_path:
@@ -383,6 +396,7 @@ class StressTest:
                     logger.info("Local config active, skip nsdiag update")
 
                 self.exec_browser_tabs()
+                self.exec_curl_requests()
 
                 if self.failclose_interval > 0:
                     if count % self.failclose_interval == 0:
@@ -409,7 +423,7 @@ class StressTest:
                 logger.info(f"Retrying in {STD_SEC} seconds")
                 sleep_ex(STD_SEC)
 
-        logger.info(f"--- Finished {count} iterations. ---")
+        logger.info(f"--- Finished {self.loop_times} iterations. ---")
 
 
 if __name__ == "__main__":
