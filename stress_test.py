@@ -26,7 +26,9 @@ SHORT_SEC = 15
 STD_SEC = 30
 LONG_SEC = 60
 
-# Init logging with subfolder support
+if not os.path.exists("log"):
+    os.makedirs("log")
+
 try:
     log_helper = LogSetup()
     logger = log_helper.setup_logging()
@@ -53,6 +55,7 @@ class StressTest:
         self.failclose_interval = 20
         self.max_mem_usage = 85
         self.max_tabs_open = 20
+        self.custom_dump_path = ""
         self.urls = []
 
         self.backup_path = os.path.join("data", "nsconfig-bk.json")
@@ -115,6 +118,9 @@ class StressTest:
             )
             self.max_tabs_open = config.get(
                 'max_tabs_open', self.max_tabs_open
+            )
+            self.custom_dump_path = config.get(
+                'custom_dump_path', self.custom_dump_path
             )
 
         except Exception as e:
@@ -250,6 +256,8 @@ class StressTest:
         logger.info(f"Stop/Start driver interval: {self.stop_drv_interval}")
         logger.info(f"Max Memory Threshold: {self.max_mem_usage}%")
         logger.info(f"Max Tabs Open: {self.max_tabs_open}")
+        if self.custom_dump_path:
+            logger.info(f"Custom Dump Path: {self.custom_dump_path}")
         logger.info(f"Log Folder: {current_log_dir}")
         logger.info("=" * 50)
 
@@ -345,9 +353,11 @@ class StressTest:
 
     def check_crash_dumps(self):
         dump_paths = [
-            r"C:\dump\stAgentSvc.exe\*.dmp",
             r"C:\ProgramData\netskope\stagent\logs\*.dmp"
         ]
+        if self.custom_dump_path:
+            dump_paths.append(self.custom_dump_path)
+
         found = False
         for path in dump_paths:
             files = glob.glob(path)

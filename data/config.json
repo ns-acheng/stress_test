@@ -4,5 +4,6 @@
   "stop_drv_interval": 0,
   "failclose_interval": 4,
   "max_mem_usage": 80,
-  "max_tabs_open": 30
+  "max_tabs_open": 30,
+  "custom_dump_path": "C:\\dump\\stAgentSvc.exe\\*.dmp"
 }
