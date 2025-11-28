@@ -26,13 +26,12 @@ SHORT_SEC = 15
 STD_SEC = 30
 LONG_SEC = 60
 
-if not os.path.exists("log"):
-    os.makedirs("log")
-
+# Init logging with subfolder support
 try:
     log_helper = LogSetup()
     logger = log_helper.setup_logging()
     current_timestamp = log_helper.get_timestamp()
+    current_log_dir = log_helper.get_log_folder()
 except Exception as e:
     print(f"Critical error during logging setup: {e}", file=sys.stderr)
     sys.exit(1)
@@ -138,10 +137,10 @@ class StressTest:
             logger.error(f"invalid 'stop_drv_interval'. Exiting.")
             sys.exit(1)
 
-        if not (50 <= self.max_mem_usage <= 95):
+        if not (50 <= self.max_mem_usage <= 99):
             logger.warning(
                 f"Invalid 'max_mem_usage' {self.max_mem_usage}. "
-                "Must be 50 ~ 95. Reset to 85."
+                "Must be 50 ~ 99. Reset to 85."
             )
             self.max_mem_usage = 85
 
@@ -214,8 +213,8 @@ class StressTest:
                 with open(self.target_nsconfig, 'r') as f:
                     ns_data = json.load(f)
                 
-                fc_section = ns_data.get("failClose", {})
-                curr_val = fc_section.get("fail_close", "false")
+                fc_sec = ns_data.get("failClose", {})
+                curr_val = fc_sec.get("fail_close", "false")
 
                 if curr_val == "true":
                     new_cfg = {
@@ -251,6 +250,7 @@ class StressTest:
         logger.info(f"Stop/Start driver interval: {self.stop_drv_interval}")
         logger.info(f"Max Memory Threshold: {self.max_mem_usage}%")
         logger.info(f"Max Tabs Open: {self.max_tabs_open}")
+        logger.info(f"Log Folder: {current_log_dir}")
         logger.info("=" * 50)
 
     def exec_start_service(self):
@@ -260,14 +260,16 @@ class StressTest:
             start_service(self.service_name)
             logger.info(f"Waiting for {STD_SEC} seconds")
             sleep_ex(STD_SEC)
-        log_resource_usage("stAgentSvc.exe", current_timestamp, log_dir="log")
+        log_resource_usage(
+            "stAgentSvc.exe", current_timestamp, log_dir=current_log_dir
+        )
 
     def exec_stop_service(self):
         status = get_service_status(self.service_name)
         logger.info(f"Current status: {status}")
         if status == "RUNNING":
             log_resource_usage(
-                "stAgentSvc.exe", current_timestamp, log_dir="log"
+                "stAgentSvc.exe", current_timestamp, log_dir=current_log_dir
             )
             stop_service(self.service_name)
             self.cur_svc_status = get_service_status(self.service_name)
@@ -321,7 +323,7 @@ class StressTest:
             total_tabs += count
             sleep_ex(STD_SEC)
             log_resource_usage(
-                "stAgentSvc.exe", current_timestamp, log_dir="log"
+                "stAgentSvc.exe", current_timestamp, log_dir=current_log_dir
             )
 
             mem_usage = get_system_memory_usage()
@@ -406,7 +408,7 @@ class StressTest:
 if __name__ == "__main__":
     runner = StressTest()
     try:
-        logger.info(f"Logging initialized: {current_timestamp}")
+        logger.info(f"Logging initialized: {current_log_dir}")
         runner.setup()
         runner.run()
     finally:

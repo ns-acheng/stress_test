@@ -29,7 +29,9 @@ def run_powershell(script_path):
 
     except subprocess.CalledProcessError as e:
         logger.error(f"PowerShell failed. Return Code: {e.returncode}")
-        err_msg = e.stderr.strip() if e.stderr else (e.stdout.strip() if e.stdout else "No output")
+        err_msg = e.stderr.strip() if e.stderr else (
+            e.stdout.strip() if e.stdout else "No output"
+        )
         logger.error(f"Error details: {err_msg}")
     
     except FileNotFoundError:
@@ -41,7 +43,7 @@ def _get_nsdiag_path(is_64bit: bool) -> str:
     else:
         return r"C:\Program Files (x86)\Netskope\STAgent\nsdiag.exe"
 
-def _run_nsdiag_generic(nsdiag_path: str, args: list, description: str) -> bool:
+def _run_nsdiag_generic(nsdiag_path: str, args: list, desc: str) -> bool:
     if not os.path.exists(nsdiag_path):
         logger.error(f"nsdiag.exe not found at: {nsdiag_path}")
         return False
@@ -54,25 +56,25 @@ def _run_nsdiag_generic(nsdiag_path: str, args: list, description: str) -> bool:
             capture_output=True,
             text=True
         )
-        logger.info(f"nsdiag {description} executed successfully.")
+        logger.info(f"nsdiag {desc} executed successfully.")
         return True
 
     except subprocess.CalledProcessError as e:
-        logger.error(f"nsdiag {description} failed. RC: {e.returncode}")
+        logger.error(f"nsdiag {desc} failed. RC: {e.returncode}")
         err = e.stderr.strip() if e.stderr else "Unknown error"
         logger.error(f"Details: {err}")
         return False
 
-def nsdiag_collect_log(timestamp: str, is_64bit: bool = True):
+def nsdiag_collect_log(timestamp: str, is_64bit: bool, output_dir: str):
     nsdiag_path = _get_nsdiag_path(is_64bit)
-    cwd = os.getcwd()
-    log_folder = os.path.join(cwd, "log")
     
-    if not os.path.exists(log_folder):
-        os.makedirs(log_folder)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
-    output_file = os.path.join(log_folder, f"{timestamp}_log_bundle.zip")
-    success = _run_nsdiag_generic(nsdiag_path, ["-o", output_file], "log collection")
+    output_file = os.path.join(output_dir, f"{timestamp}_log_bundle.zip")
+    success = _run_nsdiag_generic(
+        nsdiag_path, ["-o", output_file], "log collection"
+    )
     if success:
         logger.info(f"Log bundle created: {output_file}")
 

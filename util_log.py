@@ -6,13 +6,17 @@ from datetime import datetime
 class LogSetup:
     def __init__(self):
         self.timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+        self.log_folder = os.path.join("log", self.timestamp)
 
     def get_timestamp(self):
         return self.timestamp
+    
+    def get_log_folder(self):
+        return self.log_folder
 
     def setup_logging(self):
-        if not os.path.exists("log"):
-            os.makedirs("log")
+        if not os.path.exists(self.log_folder):
+            os.makedirs(self.log_folder)
             
         logger = logging.getLogger()
         logger.setLevel(logging.INFO)
@@ -20,8 +24,9 @@ class LogSetup:
         if logger.hasHandlers():
             logger.handlers.clear()
 
-        log_filename = f'{self.timestamp}_stress_test.log'
-        log_path = os.path.join("log", log_filename)
+        # Log file name simplified since folder is already timestamped
+        log_filename = 'stress_test.log'
+        log_path = os.path.join(self.log_folder, log_filename)
 
         formatter = logging.Formatter(
             '%(asctime)s - %(levelname)s - %(message)s',
