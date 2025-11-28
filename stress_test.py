@@ -232,14 +232,6 @@ class StressTest:
         batch_count = 0
         
         while batch_count < batch_limit:
-            mem_usage = get_system_memory_usage()
-            mem_percent = mem_usage * 100.0   
-            logger.info(f"Current System Memory: {mem_percent:.2f}% (Target: {self.max_mem_usage}%)")
-
-            if mem_percent >= self.max_mem_usage:
-                logger.info(f"Memory threshold reached ({mem_percent:.2f}% >= {self.max_mem_usage}%).")
-                break
-            
             count = min(len(self.urls), 10)
             selected_urls = random.sample(self.urls, count)
             logger.info(f"Opening batch {batch_count + 1} ({len(selected_urls)} URLs)...")
@@ -250,9 +242,17 @@ class StressTest:
 
             sleep_ex(STD_SEC)
             log_resource_usage("stAgentSvc.exe", current_timestamp, log_dir="log")
-            
+
+            mem_usage = get_system_memory_usage()
+            mem_percent = mem_usage * 100.0   
+            logger.info(f"Current System Memory: {mem_percent:.2f}% (Target: {self.max_mem_usage}%)")
+
+            if mem_percent >= self.max_mem_usage:
+                logger.info(f"Memory threshold reached ({mem_percent:.2f}% >= {self.max_mem_usage}%).")
+                break
+
             batch_count += 1
-            
+
         if batch_count >= batch_limit:
             logger.warning(f"Reached maximum batch limit ({batch_limit})")
 
@@ -269,7 +269,6 @@ class StressTest:
                 for f in files:
                     logger.error(f"File: {f}")
                 found = True
-        
         return found
 
     def run(self):
@@ -291,10 +290,8 @@ class StressTest:
                         self.exec_restart_driver()
 
                 sleep_ex(STD_SEC)
-                
                 ps_script = os.path.join(self.tool_dir, "close_msedge.ps1")
                 run_powershell(ps_script)
-                
                 sleep_ex(SHORT_SEC)
 
                 if self.check_crash_dumps():
