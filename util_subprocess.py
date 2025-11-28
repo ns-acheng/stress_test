@@ -1,9 +1,7 @@
 import subprocess
-import sys
 import os
 import logging
 
-# Get the existing logger so output goes to the same file as stress_test.py
 logger = logging.getLogger()
 
 def run_batch(batch_file: str):
@@ -49,8 +47,7 @@ def _run_nsdiag_generic(nsdiag_path: str, args: list, description: str) -> bool:
         return False
 
     command = [nsdiag_path] + args
-    try:
-        # logger.info(f"Running nsdiag {description}...")
+    try:        
         subprocess.run(
             command,
             check=True,
