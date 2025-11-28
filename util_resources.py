@@ -298,7 +298,7 @@ def log_resource_usage(
     
     log_line = (
         f"{now_str}, {cpu_percent:.0f}%, "
-        f"{mem_mb:.1f}MB, {mem_kb:.0f} KB, {handle_count}\n"
+        f"{mem_mb:.1f}MB, {mem_kb:.0f}KB, {handle_count}\n"
     )
     
     with open(full_path, "a") as f:
