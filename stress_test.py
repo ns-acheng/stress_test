@@ -7,7 +7,7 @@ import glob
 from util_service import start_service, stop_service, get_service_status
 from util_log import LogSetup
 from util_time import sleep_ex
-from util_subprocess import run_batch, run_powershell
+from util_subprocess import run_batch, run_powershell, nsdiag_update_config
 from util_resources import (
     get_system_memory_usage, 
     log_resource_usage, 
@@ -39,6 +39,7 @@ class StressTest:
         self.tool_dir = "tool"
         self.stagent_root = r"C:\ProgramData\netskope\stagent"
         self.is_64bit = False
+        self.is_local_cfg = False
 
         self.loop_times = 1000
         self.stop_svc_interval = 1
@@ -134,6 +135,7 @@ class StressTest:
                 logger.info(f"Removed {self.target_devconfig}")
         except Exception as e:
             logger.error(f"Error during config restoration: {e}")
+        self.is_local_cfg = False
 
     def exec_failclose_change(self):
         logger.info("Executing FailClose configuration change...")
@@ -148,6 +150,7 @@ class StressTest:
             if os.path.exists(self.target_devconfig):
                 shutil.copy(self.target_devconfig, self.stagent_root)
                 logger.info(f"Copied {self.target_devconfig} to {self.stagent_root}")
+                self.is_local_cfg = True
             else:
                 logger.warning(f"Source file {self.target_devconfig} not found.")
 
@@ -279,6 +282,9 @@ class StressTest:
                 logger.info(f"==== Iteration {loop_count} / {self.loop_times} ====")
 
                 self.exec_start_service()
+                if not self.is_local_cfg:
+                    nsdiag_update_config(self.is_64bit)
+
                 self.exec_browser_tabs()
 
                 if self.failclose_interval > 0 and loop_count % self.failclose_interval == 0:
