@@ -282,8 +282,7 @@ def get_process_cpu_usage(pid: int, interval: float = 0.5) -> float:
         k32.CloseHandle(process_handle)
 
 def log_resource_usage(
-    process_name: str, 
-    timestamp: str,
+    process_name: str,
     log_dir="log"
 ):
     enable_debug_privilege()

@@ -266,7 +266,7 @@ class StressTest:
             logger.info(f"Waiting for {STD_SEC} seconds")
             sleep_ex(STD_SEC)
         log_resource_usage(
-            "stAgentSvc.exe", current_timestamp, log_dir=current_log_dir
+            "stAgentSvc.exe", current_log_dir
         )
 
     def exec_stop_service(self):
@@ -274,7 +274,7 @@ class StressTest:
         logger.info(f"Current status: {status}")
         if status == "RUNNING":
             log_resource_usage(
-                "stAgentSvc.exe", current_timestamp, log_dir=current_log_dir
+                "stAgentSvc.exe", current_log_dir
             )
             stop_service(self.service_name)
             self.cur_svc_status = get_service_status(self.service_name)
@@ -328,7 +328,7 @@ class StressTest:
             total_tabs += count
             sleep_ex(STD_SEC)
             log_resource_usage(
-                "stAgentSvc.exe", current_timestamp, log_dir=current_log_dir
+                "stAgentSvc.exe", current_log_dir
             )
 
             mem_usage = get_system_memory_usage()
