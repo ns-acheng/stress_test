@@ -53,6 +53,7 @@ class StressTest:
         self.stop_drv_interval = 0
         self.failclose_interval = 20
         self.max_mem_usage = 85
+        self.max_tabs_open = 20
         self.urls = []
 
         self.backup_path = os.path.join("data", "nsconfig-bk.json")
@@ -113,6 +114,9 @@ class StressTest:
             self.max_mem_usage = config.get(
                 'max_mem_usage', self.max_mem_usage
             )
+            self.max_tabs_open = config.get(
+                'max_tabs_open', self.max_tabs_open
+            )
 
         except Exception as e:
             logger.error(f"Error loading config: {e}. Exiting.")
@@ -134,12 +138,19 @@ class StressTest:
             logger.error(f"invalid 'stop_drv_interval'. Exiting.")
             sys.exit(1)
 
-        if not (50 <= self.max_mem_usage <= 99):
+        if not (50 <= self.max_mem_usage <= 95):
             logger.warning(
                 f"Invalid 'max_mem_usage' {self.max_mem_usage}. "
-                "Must be 50 ~ 99. Reset to 85."
+                "Must be 50 ~ 95. Reset to 85."
             )
             self.max_mem_usage = 85
+
+        if not (1 <= self.max_tabs_open <= 300):
+            logger.warning(
+                f"Invalid 'max_tabs_open' {self.max_tabs_open}. "
+                "Must be 1 ~ 300. Reset to 20."
+            )
+            self.max_tabs_open = 20
 
     def load_urls(self):
         try:
@@ -203,8 +214,8 @@ class StressTest:
                 with open(self.target_nsconfig, 'r') as f:
                     ns_data = json.load(f)
                 
-                fc_sec = ns_data.get("failClose", {})
-                curr_val = fc_sec.get("fail_close", "false")
+                fc_section = ns_data.get("failClose", {})
+                curr_val = fc_section.get("fail_close", "false")
 
                 if curr_val == "true":
                     new_cfg = {
@@ -239,6 +250,7 @@ class StressTest:
         logger.info(f"Switch FailClose interval: {self.failclose_interval}")
         logger.info(f"Stop/Start driver interval: {self.stop_drv_interval}")
         logger.info(f"Max Memory Threshold: {self.max_mem_usage}%")
+        logger.info(f"Max Tabs Open: {self.max_tabs_open}")
         logger.info("=" * 50)
 
     def exec_start_service(self):
@@ -277,23 +289,36 @@ class StressTest:
             return
 
         logger.info(
-            f"Start tab opening loop. Target Memory: {self.max_mem_usage}%"
+            f"Start tab loop. Max Mem: {self.max_mem_usage}%, "
+            f"Max Tabs: {self.max_tabs_open}"
         )
         
-        batch_limit = 20 
+        batch_limit = 50 
         batch_cnt = 0
+        total_tabs = 0
         
         while batch_cnt < batch_limit:
+            if total_tabs >= self.max_tabs_open:
+                logger.info(f"Max tabs reached ({total_tabs}). Stop opening.")
+                break
+
+            remaining = self.max_tabs_open - total_tabs
             count = min(len(self.urls), 10)
+            count = min(count, remaining)
+
+            if count <= 0:
+                break
+
             selected_urls = random.sample(self.urls, count)
             logger.info(
-                f"Opening batch {batch_cnt + 1} ({len(selected_urls)} URLs)..."
+                f"Opening batch {batch_cnt + 1} ({count} URLs)..."
             )
             
             args = " ".join(selected_urls)
             cmd = os.path.join(self.tool_dir, f"open_msedge_tabs.bat {args}")
             run_batch(cmd)
-
+            
+            total_tabs += count
             sleep_ex(STD_SEC)
             log_resource_usage(
                 "stAgentSvc.exe", current_timestamp, log_dir="log"
