@@ -384,10 +384,10 @@ class StressTest:
 
         self.header_msg()
 
+        count = 0
         for count in range(1, self.loop_times + 1):
             try:
                 logger.info(f"==== Iteration {count} / {self.loop_times} ====")
-
                 self.exec_start_service()
                 
                 if not self.is_local_cfg:
@@ -423,7 +423,7 @@ class StressTest:
                 logger.info(f"Retrying in {STD_SEC} seconds")
                 sleep_ex(STD_SEC)
 
-        logger.info(f"--- Finished {self.loop_times} iterations. ---")
+        logger.info(f"--- Finished {count} iterations. ---")
 
 
 if __name__ == "__main__":
