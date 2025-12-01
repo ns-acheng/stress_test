@@ -21,6 +21,7 @@ from util_resources import (
     log_resource_usage, 
     enable_debug_privilege
 )
+from util_network import check_url_alive
 
 TINY_SEC = 5
 SHORT_SEC = 15
@@ -68,6 +69,10 @@ class StressTest:
         self.target_devconfig = os.path.join(
             self.stagent_root, "devconfig.json"
         )
+        
+        self.hosts_path = r"C:\Windows\System32\drivers\etc\hosts"
+        self.hosts_bk = os.path.join("data", "hosts-bk")
+        self.gateway_host = ""
 
     def setup(self):
         enable_debug_privilege()
@@ -82,6 +87,22 @@ class StressTest:
         else:
             self.is_64bit = False
             logger.info("64-bit Agent path not found, assuming 32-bit.")
+
+        if os.path.exists(self.target_nsconfig):
+            try:
+                with open(self.target_nsconfig, 'r') as f:
+                    data = json.load(f)
+                    self.gateway_host = data.get("nsgw", {}).get("host", "")
+                    logger.info(f"Gateway Host detected: {self.gateway_host}")
+            except Exception as e:
+                logger.error(f"Failed to parse Gateway Host: {e}")
+
+        if os.path.exists(self.hosts_path):
+            try:
+                shutil.copy(self.hosts_path, self.hosts_bk)
+                logger.info(f"Backed up hosts file to {self.hosts_bk}")
+            except Exception as e:
+                logger.error(f"Failed to backup hosts file: {e}")
 
     def tear_down(self):
         self.restore_client_config()
@@ -216,6 +237,14 @@ class StressTest:
             if os.path.exists(self.target_devconfig):
                 os.remove(self.target_devconfig)
                 logger.info(f"Removed {self.target_devconfig}")
+
+            if os.path.exists(self.hosts_bk):
+                if remove_only:
+                    os.remove(self.hosts_bk)
+                else:
+                    shutil.copy(self.hosts_bk, self.hosts_path)
+                    logger.info(f"Restored hosts file from {self.hosts_bk}")
+
         except Exception as e:
             logger.error(f"Error during config restoration: {e}")
         self.is_local_cfg = False
@@ -274,6 +303,39 @@ class StressTest:
                 logger.error(f"Target file {self.target_nsconfig} not found.")
         except Exception as e:
             logger.error(f"Error during FailClose config change: {e}")
+
+    def exec_failclose_check(self):
+        if not self.gateway_host:
+            logger.warning("Gateway host is unknown, skipping FailClose check.")
+            return
+
+        logger.info(f"Simulating FailClose by blocking {self.gateway_host}...")
+        try:
+            with open(self.hosts_path, 'a') as f:
+                f.write(f"\n10.1.1.1 {self.gateway_host}\n")
+        except Exception as e:
+            logger.error(f"Failed to modify hosts file: {e}")
+            return
+
+        if smart_sleep(SHORT_SEC, self.stop_event):
+            self.restore_client_config(remove_only=False)
+            return
+
+        test_urls = random.sample(self.urls, min(len(self.urls), 10))
+        logger.info(f"Checking {len(test_urls)} URLs for reachability...")
+
+        for url in test_urls:
+            if self.stop_event.is_set(): break
+            alive = check_url_alive(url)
+            status = "ALIVE" if alive else "DEAD (Blocked)"
+            logger.info(f"URL: {url} -> {status}")
+
+        try:
+            if os.path.exists(self.hosts_bk):
+                shutil.copy(self.hosts_bk, self.hosts_path)
+                logger.info("Restored hosts file after FailClose check.")
+        except Exception as e:
+            logger.error(f"Failed to restore hosts file: {e}")
 
     def header_msg(self):
         logger.info(f"--- Start. Total iterations: {self.loop_times} ---")
@@ -443,6 +505,9 @@ class StressTest:
 
                 self.exec_browser_tabs()
                 self.exec_curl_requests()
+                
+                self.is_false_close = True
+                self.exec_failclose_check()
 
                 if self.failclose_interval > 0:
                     if count % self.failclose_interval == 0:
