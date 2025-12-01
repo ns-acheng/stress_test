@@ -47,14 +47,18 @@ pip install -r requirement.txt
 
 `custom_dump_path`: Dump path for external tools like **Windows Debug Diagnostic Tool**
 
-`long_sleep_interval`: Iteration frequency to trigger a long sleep period (useful for soak testing). Set to 0 to disable.
+`long_sleep_interval`: Iteration frequency to trigger a long sleep period (useful for soak testing). Set to 0 to disable. In each iteration, it randomly sleep for `long_sleep_time_min` to `long_sleep_time_max`.
 
 `long_sleep_time_min`: Minimum duration for the long sleep in seconds (Lower bound: 300s).
 
 `long_sleep_time_max`: Maximum duration for the long sleep in seconds (Upper bound: 7200s).
 
 
+
 * Strategy 1: Memory & Handle Leak Detection
+The main idea is NOT to stop client service and keep it running but open/close the browser tabs.
+Then check the resource usage.
+ 
 ```json
 {
     "loop_times": 3000,
@@ -71,6 +75,10 @@ pip install -r requirement.txt
 ```
 
 * Strategy 2: Application Crash Stress (User Mode)
+The main idea is to stop the user mode service `stAgentSvc` in each iteration.
+As different feature flags are enabled, we can know more about the stability of certian features.
+
+
 ```json
 {
     "loop_times": 1000,
@@ -87,6 +95,9 @@ pip install -r requirement.txt
 ```
 
 * Strategy 3: Blue Screen Detection
+Try to stop the driver every few iterations and see of BSOD occurs.
+If it happens, please collect C:\Windows\memory.dmp
+
 Hint: DO NOT restart the driver in each loop. 
 
 ```json
@@ -107,6 +118,7 @@ Hint: DO NOT restart the driver in each loop.
 
 * Strategy 4: Soak Mode
 With very limited resource using for a long term with longer sleep time.
+So we give a big loop_times and longer `long_sleep_time`.
 
 ```json
 {
