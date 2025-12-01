@@ -55,7 +55,7 @@ pip install -r requirement.txt
 
 
 
-* Strategy 1: Memory & Handle Leak Detection
+**Strategy 1: Memory & Handle Leak Detection**
 * * The main idea is NOT to stop client service and keep it running but open/close the browser tabs.
 * * Then check the resource usage.
  
@@ -74,7 +74,8 @@ pip install -r requirement.txt
 }
 ```
 
-* Strategy 2: Application Crash Stress (User Mode)
+
+**Strategy 2: Application Crash Stress (User Mode)**
 * * The main idea is to stop the user mode service `stAgentSvc` in each iteration.
 * * As different feature flags are enabled, we can know more about the stability of certian features.
 
@@ -94,7 +95,7 @@ pip install -r requirement.txt
 }
 ```
 
-* Strategy 3: Blue Screen Detection
+**Strategy 3: Blue Screen Detection**
 * * Try to stop the driver every few iterations and see of BSOD occurs.
 * * If it happens, please collect C:\Windows\memory.dmp
 
@@ -116,7 +117,7 @@ pip install -r requirement.txt
 }
 ```
 
-* Strategy 4: Soak Mode
+**Strategy 4: Soak Mode**
 With very limited resource using for a long term with longer sleep time.
 So we give a big loop_times and longer `long_sleep_time`.
 
