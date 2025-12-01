@@ -35,11 +35,11 @@ pip install -r requirement.txt
 
 `loop_times`: Total number of test iterations.
 
-`stop_svc_interval`: Iteration frequency to stop/start the main service.
+`stop_svc_interval`: Iteration frequency to stop/start the main service. Set to 0 to disable.
 
-`stop_drv_interval`: Iteration frequency to restart the driver (nested within service stop).
+`stop_drv_interval`: Iteration frequency to restart the driver (nested within service stop). Set to 0 to disable.
 
-`failclose_interval`: Iteration frequency to toggle FailClose settings.
+`failclose_interval`: Iteration frequency to toggle FailClose settings. Set to 0 to disable.
 
 `max_mem_usage`: System memory threshold (50-99%). If exceeded, browser tabs stop opening.
 
