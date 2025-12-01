@@ -57,7 +57,7 @@ pip install -r requirement.txt
 * Strategy 1: Memory & Handle Leak Detection
 ```json
 {
-    "loop_times": 5000,
+    "loop_times": 3000,
     "stop_svc_interval": 0,
     "stop_drv_interval": 0,
     "failclose_interval": 0,
@@ -105,17 +105,35 @@ Hint: DO NOT restart the driver in each loop.
 }
 ```
 
+* Strategy 4: Soak Mode
+With very limited resource using for a long term with longer sleep time.
+
+```json
+{
+
+    "loop_times": 9000,
+    "stop_svc_interval": 0,
+    "stop_drv_interval": 0,
+    "failclose_interval": 100,
+    "max_mem_usage": 60,
+    "max_tabs_open": 10,
+    "custom_dump_path": "",
+    "long_sleep_interval": 1,
+    "long_sleep_time_min": 1000,
+    "long_sleep_time_max": 3600
+}
+```
 
 
 
 ## Feature roadmap
 
-
-1. Soak test for long term and low resource usage
-2. Block host to simulate FailClose
+1. Block host to simulate FailClose
+2. Reboot and task scheduler to restart the tool
 3. Steering mode changes
 4. Dynamic Steering changes
 5. Network (NIC) changes
+6. Perically stAgentSvc resource check
 
 
 
