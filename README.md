@@ -130,10 +130,11 @@ With very limited resource using for a long term with longer sleep time.
 
 1. Block host to simulate FailClose
 2. Reboot and task scheduler to restart the tool
-3. Steering mode changes
-4. Dynamic Steering changes
-5. Network (NIC) changes
-6. Perically stAgentSvc resource check
+3. Collect the log bundle if any error is found
+4. Steering mode changes
+5. Dynamic Steering changes
+6. Network (NIC) changes
+7. Perically stAgentSvc resource check
 
 
 
