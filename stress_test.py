@@ -9,7 +9,7 @@ import msvcrt
 import time
 from util_service import start_service, stop_service, get_service_status
 from util_log import LogSetup
-from util_time import sleep_ex
+from util_time import smart_sleep
 from util_subprocess import (
     run_batch, 
     run_powershell, 
@@ -26,6 +26,7 @@ TINY_SEC = 5
 SHORT_SEC = 15
 STD_SEC = 30
 LONG_SEC = 60
+BATCH_LIMIT = 30
 
 try:
     log_helper = LogSetup()
@@ -46,6 +47,8 @@ class StressTest:
         self.stagent_root = r"C:\ProgramData\netskope\stagent"
         self.is_64bit = False
         self.is_local_cfg = False
+        self.is_false_close = False
+        self.stop_event = threading.Event()
 
         self.loop_times = 1000
         self.stop_svc_interval = 1
@@ -84,15 +87,15 @@ class StressTest:
         self.restore_client_config()
 
     def input_monitor(self):
-        while True:
+        logger.info("Input monitor started. Press ESC or Ctrl+C to stop.")
+        while not self.stop_event.is_set():
             if msvcrt.kbhit():
                 try:
                     key = msvcrt.getch()
                     if key == b'\x1b' or key == b'\x03':
-                        logger.warning("Stop detected. Teardown initiated...")
-                        self.tear_down()
-                        logger.info("Tear Down complete. Exiting.")
-                        os._exit(0)
+                        logger.warning("Stop signal detected. Stopping...")
+                        self.stop_event.set()
+                        break
                 except Exception:
                     pass
             time.sleep(0.1)
@@ -251,6 +254,7 @@ class StressTest:
                         "captive_portal_timeout": "0"
                     }
                     logger.info("Switching FailClose to FALSE")
+                    self.is_false_close = False
                 else:
                     new_cfg = {
                         "fail_close": "true",
@@ -259,7 +263,8 @@ class StressTest:
                         "captive_portal_timeout": "0"
                     }
                     logger.info("Switching FailClose to TRUE")
-                
+                    self.is_false_close = True
+
                 ns_data["failClose"] = new_cfg
 
                 with open(self.target_nsconfig, 'w') as f:
@@ -295,7 +300,8 @@ class StressTest:
         if status != "RUNNING":
             start_service(self.service_name)
             logger.info(f"Waiting for {STD_SEC} seconds")
-            sleep_ex(STD_SEC)
+            if smart_sleep(STD_SEC, self.stop_event): 
+                return
         log_resource_usage(
             "stAgentSvc.exe", current_log_dir
         )
@@ -310,16 +316,19 @@ class StressTest:
             stop_service(self.service_name)
             self.cur_svc_status = get_service_status(self.service_name)
             logger.info(f"Current status: {self.cur_svc_status}")
-            sleep_ex(TINY_SEC)
+            if smart_sleep(TINY_SEC, self.stop_event): 
+                return
 
     def exec_restart_driver(self):
         logger.info(f"To STOP and START driver 'stadrv'")
         stop_service(self.drv_name)
         status = get_service_status(self.service_name)
         logger.info(f"Current status: {status}")
-        sleep_ex(SHORT_SEC)
+        if smart_sleep(SHORT_SEC, self.stop_event): 
+            return
         start_service(self.drv_name)
-        sleep_ex(TINY_SEC)
+        if smart_sleep(TINY_SEC, self.stop_event): 
+            return
     
     def exec_browser_tabs(self):
         if not self.urls:
@@ -331,11 +340,12 @@ class StressTest:
             f"Max Tabs: {self.max_tabs_open}"
         )
         
-        batch_limit = 50 
         batch_cnt = 0
         total_tabs = 0
-        
-        while batch_cnt < batch_limit:
+
+        while batch_cnt < BATCH_LIMIT:
+            if self.stop_event.is_set(): 
+                break
             if total_tabs >= self.max_tabs_open:
                 logger.info(f"Max tabs reached ({total_tabs}). Stop opening.")
                 break
@@ -357,7 +367,8 @@ class StressTest:
             run_batch(cmd)
             
             total_tabs += count
-            sleep_ex(STD_SEC)
+            if smart_sleep(STD_SEC, self.stop_event): 
+                break
             log_resource_usage(
                 "stAgentSvc.exe", current_log_dir
             )
@@ -376,19 +387,22 @@ class StressTest:
 
             batch_cnt += 1
 
-        if batch_cnt >= batch_limit:
-            logger.warning(f"Reached maximum batch limit ({batch_limit})")
+        if batch_cnt >= BATCH_LIMIT:
+            logger.warning(f"Reached maximum batch limit ({BATCH_LIMIT})")
 
     def exec_curl_requests(self):
         if not self.urls:
             return
-        
+
         count = min(len(self.urls), 10)
         selected_urls = random.sample(self.urls, count)
         logger.info(f"Running CURL on {count} random URLs...")
         
         for url in selected_urls:
+            if self.stop_event.is_set(): 
+                break
             run_curl(url)
+            logger.info(f"CURL with URL: {url}")
 
     def check_crash_dumps(self):
         dump_paths = [
@@ -416,6 +430,8 @@ class StressTest:
 
         count = 0
         for count in range(1, self.loop_times + 1):
+            if self.stop_event.is_set(): 
+                break
             try:
                 logger.info(f"==== Iteration {count} / {self.loop_times} ====")
                 self.exec_start_service()
@@ -439,7 +455,8 @@ class StressTest:
                             if count % self.stop_drv_interval == 0:
                                 self.exec_restart_driver()
 
-                sleep_ex(STD_SEC)
+                if smart_sleep(STD_SEC, self.stop_event): 
+                    break
                 
                 if self.long_sleep_interval > 0:
                     if count % self.long_sleep_interval == 0:
@@ -449,11 +466,13 @@ class StressTest:
                         logger.info(
                             f"Long Sleep triggered. Sleeping {sleep_dur}s..."
                         )
-                        sleep_ex(sleep_dur)
+                        if smart_sleep(sleep_dur, self.stop_event): 
+                            break
 
                 ps_script = os.path.join(self.tool_dir, "close_msedge.ps1")
                 run_powershell(ps_script)
-                sleep_ex(SHORT_SEC)
+                if smart_sleep(SHORT_SEC, self.stop_event): 
+                    break
 
                 if self.check_crash_dumps():
                     logger.error("Crash dump found. Stopping test.")
@@ -462,7 +481,8 @@ class StressTest:
             except Exception:
                 logger.exception("An error occurred:")
                 logger.info(f"Retrying in {STD_SEC} seconds")
-                sleep_ex(STD_SEC)
+                if smart_sleep(STD_SEC, self.stop_event): 
+                    break
 
         logger.info(f"--- Finished {count} iterations. ---")
 
