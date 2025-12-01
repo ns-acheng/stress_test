@@ -305,12 +305,16 @@ def log_resource_usage(
     full_path = os.path.join(log_dir, log_file)
     now_str = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
     
+    write_header = not os.path.exists(full_path)
+
     log_line = (
         f"{now_str}, {cpu_percent:.0f}%, "
         f"{mem_mb:.1f}MB, {mem_kb:.0f}KB, {handle_count}\n"
     )
     
     with open(full_path, "a") as f:
+        if write_header:
+            f.write("Timestamp, CPU, Memory(MB), Memory(KB), Handles\n")
         f.write(log_line)
         
     return True
