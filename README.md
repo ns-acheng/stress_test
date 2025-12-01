@@ -78,7 +78,7 @@ pip install -r requirement.txt
     "stop_drv_interval": 0,
     "failclose_interval": 50,
     "max_mem_usage": 80,
-    "max_tabs_open": 10,
+    "max_tabs_open": 30,
     "custom_dump_path": "",
     "long_sleep_interval": 0,
     "long_sleep_time_min": 300,
@@ -86,17 +86,18 @@ pip install -r requirement.txt
 }
 ```
 
-* Strategy 3: Memory & Handle Leak Detection
+* Strategy 3: Blue Screen Detection
 Hint: DO NOT restart the driver in each loop. 
 
 ```json
 {
-    "loop_times": 2000,
+
+    "loop_times": 1000,
     "stop_svc_interval": 1,
-    "stop_drv_interval": 10,
-    "failclose_interval": 100,
-    "max_mem_usage": 70,
-    "max_tabs_open": 15,
+    "stop_drv_interval": 1,
+    "failclose_interval": 50,
+    "max_mem_usage": 80,
+    "max_tabs_open": 30,
     "custom_dump_path": "",
     "long_sleep_interval": 0,
     "long_sleep_time_min": 300,
