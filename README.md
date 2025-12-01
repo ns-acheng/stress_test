@@ -47,16 +47,26 @@ pip install -r requirement.txt
 
 `custom_dump_path`: Dump path for external tools like **Windows Debug Diagnostic Tool**
 
+`long_sleep_interval`: Iteration frequency to trigger a long sleep period (useful for soak testing). Set to 0 to disable.
+
+`long_sleep_time_min`: Minimum duration for the long sleep in seconds (Lower bound: 300s).
+
+`long_sleep_time_max`: Maximum duration for the long sleep in seconds (Upper bound: 7200s).
+
+
 * Strategy 1: Memory & Handle Leak Detection
 ```json
 {
-    "loop_times": 1000,
+    "loop_times": 5000,
     "stop_svc_interval": 0,
     "stop_drv_interval": 0,
     "failclose_interval": 0,
     "max_mem_usage": 90,
     "max_tabs_open": 50,
-    "custom_dump_path": ""
+    "custom_dump_path": "",
+    "long_sleep_interval": 100,
+    "long_sleep_time_min": 300,
+    "long_sleep_time_max": 600
 }
 ```
 
@@ -69,7 +79,10 @@ pip install -r requirement.txt
     "failclose_interval": 50,
     "max_mem_usage": 80,
     "max_tabs_open": 10,
-    "custom_dump_path": ""
+    "custom_dump_path": "",
+    "long_sleep_interval": 0,
+    "long_sleep_time_min": 300,
+    "long_sleep_time_max": 300
 }
 ```
 
@@ -84,7 +97,10 @@ Hint: DO NOT restart the driver in each loop.
     "failclose_interval": 100,
     "max_mem_usage": 70,
     "max_tabs_open": 15,
-    "custom_dump_path": ""
+    "custom_dump_path": "",
+    "long_sleep_interval": 0,
+    "long_sleep_time_min": 300,
+    "long_sleep_time_max": 300
 }
 ```
 
