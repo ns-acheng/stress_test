@@ -91,15 +91,23 @@ Hint: DO NOT restart the driver in each loop.
 
 
 
+## Feature roadmap to do
 
-## Feature roadmap
+1. Soak test for long term and low resource usage
+2. Steering mode changes
+3. Dynamic Steering changes
+4. Network (NIC) changes
+
+
+
+## Feature roadmap done
 
 1. Config changes for FailClose [done]
-2. Steering mode changes
-3. Crash dump monitoring and collection [done]
-4. Estimate SYSTEM memory and CPU resource [done]
-5. Collect 1000 URL and pick them randomnly to use [done]
-6. Dynamic Steering changes
-7. Network (NIC) changes
-8. More network traffic type genarated by CURL and Python. [done]
-9. Dynamic creating browser tabs and web traffic based on the memory usage. [done]
+2. Crash dump monitoring and collection [done]
+3. Estimate SYSTEM memory and CPU resource [done]
+4. Collect 2000 URL and pick them randomnly to use [done]
+5. More network traffic type genarated by CURL and Python. [done]
+
+
+10. Dynamic creating browser tabs and web traffic based on the memory usage. [done]
+
