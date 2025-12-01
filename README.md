@@ -56,8 +56,8 @@ pip install -r requirement.txt
 
 
 * Strategy 1: Memory & Handle Leak Detection
-The main idea is NOT to stop client service and keep it running but open/close the browser tabs.
-Then check the resource usage.
+* * The main idea is NOT to stop client service and keep it running but open/close the browser tabs.
+* * Then check the resource usage.
  
 ```json
 {
@@ -75,8 +75,8 @@ Then check the resource usage.
 ```
 
 * Strategy 2: Application Crash Stress (User Mode)
-The main idea is to stop the user mode service `stAgentSvc` in each iteration.
-As different feature flags are enabled, we can know more about the stability of certian features.
+* * The main idea is to stop the user mode service `stAgentSvc` in each iteration.
+* * As different feature flags are enabled, we can know more about the stability of certian features.
 
 
 ```json
@@ -95,10 +95,10 @@ As different feature flags are enabled, we can know more about the stability of 
 ```
 
 * Strategy 3: Blue Screen Detection
-Try to stop the driver every few iterations and see of BSOD occurs.
-If it happens, please collect C:\Windows\memory.dmp
+* * Try to stop the driver every few iterations and see of BSOD occurs.
+* * If it happens, please collect C:\Windows\memory.dmp
 
-Hint: DO NOT restart the driver in each loop. 
+* * Hint: DO NOT restart the driver in each loop. 
 
 ```json
 {
