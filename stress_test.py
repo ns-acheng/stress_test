@@ -54,6 +54,9 @@ class StressTest:
         self.max_mem_usage = 85
         self.max_tabs_open = 20
         self.custom_dump_path = ""
+        self.long_sleep_interval = 0
+        self.long_sleep_time_min = 300
+        self.long_sleep_time_max = 300
         self.urls = []
 
         self.backup_path = os.path.join("data", "nsconfig-bk.json")
@@ -119,6 +122,15 @@ class StressTest:
             self.custom_dump_path = config.get(
                 'custom_dump_path', self.custom_dump_path
             )
+            self.long_sleep_interval = config.get(
+                'long_sleep_interval', self.long_sleep_interval
+            )
+            self.long_sleep_time_min = config.get(
+                'long_sleep_time_min', self.long_sleep_time_min
+            )
+            self.long_sleep_time_max = config.get(
+                'long_sleep_time_max', self.long_sleep_time_max
+            )
 
         except Exception as e:
             logger.error(f"Error loading config: {e}. Exiting.")
@@ -153,6 +165,18 @@ class StressTest:
                 "Must be 1 ~ 300. Reset to 20."
             )
             self.max_tabs_open = 20
+
+        if self.long_sleep_time_max > 7200:
+            logger.warning("long_sleep_time_max > 7200, capping at 7200.")
+            self.long_sleep_time_max = 7200
+            
+        if self.long_sleep_time_min < 300:
+            logger.warning("long_sleep_time_min < 300, capping at 300.")
+            self.long_sleep_time_min = 300
+
+        if self.long_sleep_time_max < self.long_sleep_time_min:
+            logger.warning("long_sleep_time_max < min, adjusting to min.")
+            self.long_sleep_time_max = self.long_sleep_time_min
 
     def load_urls(self):
         try:
@@ -253,6 +277,12 @@ class StressTest:
         logger.info(f"Stop/Start driver interval: {self.stop_drv_interval}")
         logger.info(f"Max Memory Threshold: {self.max_mem_usage}%")
         logger.info(f"Max Tabs Open: {self.max_tabs_open}")
+        if self.long_sleep_interval > 0:
+            logger.info(f"Long Sleep Interval: {self.long_sleep_interval}")
+            logger.info(
+                f"Long Sleep Time: {self.long_sleep_time_min} - "
+                f"{self.long_sleep_time_max} sec"
+            )
         if self.custom_dump_path:
             logger.info(f"Custom Dump Path: {self.custom_dump_path}")
         logger.info(f"Log Folder: {current_log_dir}")
@@ -410,6 +440,17 @@ class StressTest:
                                 self.exec_restart_driver()
 
                 sleep_ex(STD_SEC)
+                
+                if self.long_sleep_interval > 0:
+                    if count % self.long_sleep_interval == 0:
+                        sleep_dur = random.randint(
+                            self.long_sleep_time_min, self.long_sleep_time_max
+                        )
+                        logger.info(
+                            f"Long Sleep triggered. Sleeping {sleep_dur}s..."
+                        )
+                        sleep_ex(sleep_dur)
+
                 ps_script = os.path.join(self.tool_dir, "close_msedge.ps1")
                 run_powershell(ps_script)
                 sleep_ex(SHORT_SEC)
