@@ -118,8 +118,8 @@ pip install -r requirement.txt
 ```
 
 **Strategy 4: Soak Mode**
-With very limited resource using for a long term with longer sleep time.
-So we give a big loop_times and longer `long_sleep_time`.
+* * With very limited resource using for a long term with longer sleep time.
+* * So we give a big loop_times and longer `long_sleep_time`.
 
 ```json
 {
