@@ -77,6 +77,7 @@ class StressTest:
     def setup(self):
         enable_debug_privilege()
         self.load_tool_config()
+            
         self.load_urls()
         self.restore_client_config(remove_only=True)
         
@@ -103,6 +104,7 @@ class StressTest:
                 logger.info(f"Backed up hosts file to {self.hosts_bk}")
             except Exception as e:
                 logger.error(f"Failed to backup hosts file: {e}")
+
 
     def tear_down(self):
         self.restore_client_config()
@@ -137,6 +139,10 @@ class StressTest:
             self.failclose_interval = config.get(
                 'failclose_interval', self.failclose_interval
             )
+
+            if self.failclose_interval > 0:
+                self.exec_failclose_change()
+
             self.max_mem_usage = config.get(
                 'max_mem_usage', self.max_mem_usage
             )
@@ -506,8 +512,8 @@ class StressTest:
                 self.exec_browser_tabs()
                 self.exec_curl_requests()
                 
-                self.is_false_close = True
-                self.exec_failclose_check()
+                if self.is_false_close:
+                    self.exec_failclose_check()
 
                 if self.failclose_interval > 0:
                     if count % self.failclose_interval == 0:
