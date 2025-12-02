@@ -451,7 +451,7 @@ class StressTest:
                         )
                         sleep_ex(sleep_dur)
 
-                ps_script = os.path.join(self.tool_dir, "close_msedge.ps1")
+                ps_script = os.path.join(self.tool_dir, "close_browsers.ps1")
                 run_powershell(ps_script)
                 sleep_ex(SHORT_SEC)
 
