@@ -140,9 +140,6 @@ class StressTest:
                 'failclose_interval', self.failclose_interval
             )
 
-            if self.failclose_interval > 0:
-                self.exec_failclose_change()
-
             self.max_mem_usage = config.get(
                 'max_mem_usage', self.max_mem_usage
             )
@@ -515,16 +512,18 @@ class StressTest:
                 if self.is_false_close:
                     self.exec_failclose_check()
 
-                if self.failclose_interval > 0:
-                    if count % self.failclose_interval == 0:
-                        self.exec_failclose_change()
-
                 if self.stop_svc_interval > 0:
                     if count % self.stop_svc_interval == 0:
                         self.exec_stop_service()
                         if self.stop_drv_interval > 0:
                             if count % self.stop_drv_interval == 0:
                                 self.exec_restart_driver()
+                        
+                        # do the failclose change after service stop
+                        if self.failclose_interval > 0:
+                            if count % self.failclose_interval == 0:
+                                self.exec_failclose_change()
+
 
                 if smart_sleep(STD_SEC, self.stop_event): 
                     break
