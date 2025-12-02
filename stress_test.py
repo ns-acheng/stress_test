@@ -506,11 +506,11 @@ class StressTest:
                 else:
                     logger.info("Local config active, skip nsdiag update")
 
-                self.exec_browser_tabs()
-                self.exec_curl_requests()
-                
                 if self.is_false_close:
                     self.exec_failclose_check()
+                else:
+                    self.exec_browser_tabs()
+                    self.exec_curl_requests()
 
                 if self.stop_svc_interval > 0:
                     if count % self.stop_svc_interval == 0:
@@ -524,10 +524,9 @@ class StressTest:
                             if count % self.failclose_interval == 0:
                                 self.exec_failclose_change()
 
-
                 if smart_sleep(STD_SEC, self.stop_event): 
                     break
-                
+
                 if self.long_sleep_interval > 0:
                     if count % self.long_sleep_interval == 0:
                         sleep_dur = random.randint(
