@@ -3,9 +3,7 @@ import json
 import os
 import shutil
 import random
-import glob
 import threading
-import time
 from util_service import start_service, stop_service, get_service_status
 from util_log import LogSetup
 from util_time import smart_sleep
@@ -22,6 +20,7 @@ from util_resources import (
 )
 from util_network import check_url_alive
 from util_input import start_input_monitor
+from util_crash import check_crash_dumps
 
 TINY_SEC = 5
 SHORT_SEC = 15
@@ -458,24 +457,6 @@ class StressTest:
             run_curl(url)
             logger.info(f"CURL with URL: {url}")
 
-    def check_crash_dumps(self):
-        dump_paths = [
-            r"C:\dump\stAgentSvc.exe\*.dmp",
-            r"C:\ProgramData\netskope\stagent\logs\*.dmp"
-        ]
-        if self.custom_dump_path:
-            dump_paths.append(self.custom_dump_path)
-
-        found = False
-        for path in dump_paths:
-            files = glob.glob(path)
-            if files:
-                logger.error(f"CRASH DUMP DETECTED at: {path}")
-                for f in files:
-                    logger.error(f"File: {f}")
-                found = True
-        return found
-
     def run(self):
         start_input_monitor(self.stop_event)
 
@@ -537,7 +518,7 @@ class StressTest:
                 if smart_sleep(SHORT_SEC, self.stop_event): 
                     break
 
-                if self.check_crash_dumps():
+                if check_crash_dumps(self.custom_dump_path):
                     logger.error("Crash dump found. Stopping test.")
                     break
 
