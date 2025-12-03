@@ -1,8 +1,8 @@
 <#
 .EXAMPLE
-    .\manage-nic.ps1 -Action Disable
+    .\manage_nic.ps1 -Action Disable
 .EXAMPLE
-    .\manage-nic.ps1 -Action Enable
+    .\manage_nic.ps1 -Action Enable
 #>
 
 param (
