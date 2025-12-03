@@ -141,22 +141,22 @@ pip install -r requirement.txt
 
 ## Feature roadmap
 
-1. Block host to simulate FailClose
-2. Reboot and task scheduler to restart the tool
-3. Collect the log bundle if any error is found
-4. Steering mode changes
-5. Dynamic Steering changes
-6. Network (NIC) changes
-7. Perically stAgentSvc resource check
+1. Reboot and task scheduler to restart the tool
+2. Collect the log bundle if any error is found
+3. Steering mode changes
+4. Dynamic Steering changes
+5. Perically stAgentSvc resource check
+
 
 
 
 ## Features done
 
-1. Config changes for FailClose [done]
-2. Crash dump monitoring and collection [done]
-3. Estimate SYSTEM memory and CPU resource [done]
-4. Collect 2000 URL and pick them randomnly to use [done]
-5. More network traffic type genarated by CURL and Python. [done]
-6. Dynamic creating browser tabs and web traffic based on the memory usage. [done]
-
+1. Config changes for FailClose
+2. Crash dump monitoring and collection
+3. Estimate SYSTEM memory and CPU resource
+4. Collect 2000 URL and pick them randomnly to use
+5. More network traffic type genarated by CURL and Python.
+6. Dynamic creating browser tabs and web traffic based on the memory usage.
+7. Block host to simulate FailClose
+8. Network (NIC) changes
