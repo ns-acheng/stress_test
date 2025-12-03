@@ -1,7 +1,6 @@
 import sys
 import json
 import os
-import shutil
 import random
 import threading
 from util_service import start_service, stop_service, get_service_status
@@ -21,6 +20,7 @@ from util_resources import (
 from util_network import check_url_alive
 from util_input import start_input_monitor
 from util_crash import check_crash_dumps
+from util_config import AgentConfigManager
 
 TINY_SEC = 5
 SHORT_SEC = 15
@@ -44,10 +44,8 @@ class StressTest:
         self.config_file = r"data\config.json"
         self.url_file = r"data\url.txt"
         self.tool_dir = "tool"
-        self.stagent_root = r"C:\ProgramData\netskope\stagent"
-        self.is_64bit = False
-        self.is_local_cfg = False
-        self.is_false_close = False
+        
+        self.cfg_mgr = AgentConfigManager()
         self.stop_event = threading.Event()
 
         self.loop_times = 1000
@@ -61,43 +59,19 @@ class StressTest:
         self.long_sleep_time_min = 300
         self.long_sleep_time_max = 300
         self.urls = []
-
-        self.backup_path = os.path.join("data", "nsconfig-bk.json")
-        self.source_devconfig = os.path.join("data", "devconfig.json")
-        self.target_nsconfig = os.path.join(self.stagent_root, "nsconfig.json")
-        self.target_devconfig = os.path.join(
-            self.stagent_root, "devconfig.json"
-        )
         
-        self.hosts_path = r"C:\Windows\System32\drivers\etc\hosts"
-        self.hosts_bk = os.path.join("data", "hosts-bk")
         self.manage_nic_script = os.path.join(self.tool_dir, "manage_nic.ps1")
 
     def setup(self):
         enable_debug_privilege()
         self.load_tool_config()
-            
         self.load_urls()
-        self.restore_client_config(remove_only=True)
         
-        check_path = r"C:\Program Files\Netskope\STAgent\stAgentSvc.exe"
-        if os.path.exists(check_path):
-            self.is_64bit = True
-            logger.info(f"Detected 64-bit Agent: {check_path}")
-        else:
-            self.is_64bit = False
-            logger.info("64-bit Agent path not found, assuming 32-bit.")
-
-        if os.path.exists(self.hosts_path):
-            try:
-                shutil.copy(self.hosts_path, self.hosts_bk)
-                logger.info(f"Backed up hosts file to {self.hosts_bk}")
-            except Exception as e:
-                logger.error(f"Failed to backup hosts file: {e}")
-
+        self.cfg_mgr.setup_environment()
+        self.cfg_mgr.restore_config(remove_only=True)
 
     def tear_down(self):
-        self.restore_client_config()
+        self.cfg_mgr.restore_config()
 
         if os.path.exists(self.manage_nic_script):
             logger.info("Tear down: Ensuring NICs are enabled...")
@@ -198,93 +172,6 @@ class StressTest:
             
         except Exception as e:
             logger.error(f"Error loading URLs: {e}")
-
-    def restore_client_config(self, remove_only=False):
-        try:
-            if os.path.exists(self.backup_path):
-                if remove_only:
-                    os.remove(self.backup_path)
-                    logger.info(f"Removed backup {self.backup_path}")
-                else:
-                    shutil.move(self.backup_path, self.target_nsconfig)
-                    logger.info(
-                        f"Restored {self.backup_path} to {self.target_nsconfig}"
-                    )
-            else:
-                if not remove_only:
-                    logger.warning(
-                        f"Backup {self.backup_path} not found. No restore."
-                    )
-
-            if os.path.exists(self.target_devconfig):
-                os.remove(self.target_devconfig)
-                logger.info(f"Removed {self.target_devconfig}")
-
-            if os.path.exists(self.hosts_bk):
-                if remove_only:
-                    os.remove(self.hosts_bk)
-                else:
-                    shutil.copy(self.hosts_bk, self.hosts_path)
-                    logger.info(f"Restored hosts file from {self.hosts_bk}")
-
-        except Exception as e:
-            logger.error(f"Error during config restoration: {e}")
-        self.is_local_cfg = False
-
-    def exec_failclose_change(self):
-        logger.info("Executing FailClose configuration change...")
-        try:
-            if not os.path.exists(self.backup_path):
-                if os.path.exists(self.target_nsconfig):
-                    shutil.copy(self.target_nsconfig, self.backup_path)
-                    logger.info(f"Backed up nsconfig to {self.backup_path}")
-                else:
-                    logger.warning(f"File {self.target_nsconfig} not found.")
-
-            if os.path.exists(self.source_devconfig):
-                shutil.copy(self.source_devconfig, self.target_devconfig)
-                logger.info(
-                    f"Copied {self.source_devconfig} to {self.target_devconfig}"
-                )
-                self.is_local_cfg = True
-            else:
-                logger.warning(f"Source {self.source_devconfig} not found.")
-
-            if os.path.exists(self.target_nsconfig):
-                with open(self.target_nsconfig, 'r') as f:
-                    ns_data = json.load(f)
-                
-                fc_sec = ns_data.get("failClose", {})
-                curr_val = fc_sec.get("fail_close", "false")
-
-                if curr_val == "true":
-                    new_cfg = {
-                        "fail_close": "false",
-                        "exclude_npa": "false",
-                        "notification": "false",
-                        "captive_portal_timeout": "0"
-                    }
-                    logger.info("Switching FailClose to FALSE")
-                    self.is_false_close = False
-                else:
-                    new_cfg = {
-                        "fail_close": "true",
-                        "exclude_npa": "false",
-                        "notification": "false",
-                        "captive_portal_timeout": "0"
-                    }
-                    logger.info("Switching FailClose to TRUE")
-                    self.is_false_close = True
-
-                ns_data["failClose"] = new_cfg
-
-                with open(self.target_nsconfig, 'w') as f:
-                    json.dump(ns_data, f, indent=4)
-                logger.info(f"{self.target_nsconfig} updated successfully.")
-            else:
-                logger.error(f"Target file {self.target_nsconfig} not found.")
-        except Exception as e:
-            logger.error(f"Error during FailClose config change: {e}")
 
     def exec_failclose_check(self):
         if not os.path.exists(self.manage_nic_script):
@@ -472,14 +359,14 @@ class StressTest:
                 self.exec_start_service()
                 if self.stop_event.is_set(): break
 
-                if not self.is_local_cfg:
-                    nsdiag_update_config(self.is_64bit)
+                if not self.cfg_mgr.is_local_cfg:
+                    nsdiag_update_config(self.cfg_mgr.is_64bit)
                 else:
                     logger.info("Local config active, skip nsdiag update")
 
                 if self.stop_event.is_set(): break
 
-                if self.is_false_close:
+                if self.cfg_mgr.is_false_close:
                     self.exec_failclose_check()
                 else:
                     self.exec_browser_tabs()
@@ -499,7 +386,7 @@ class StressTest:
 
                         if self.failclose_interval > 0:
                             if count % self.failclose_interval == 0:
-                                self.exec_failclose_change()
+                                self.cfg_mgr.toggle_failclose()
                                 if self.stop_event.is_set(): break
 
                 if self.long_sleep_interval > 0:
