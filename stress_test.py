@@ -21,6 +21,7 @@ from util_network import check_url_alive
 from util_input import start_input_monitor
 from util_crash import check_crash_dumps
 from util_config import AgentConfigManager
+from util_tool_config import ToolConfig
 
 TINY_SEC = 5
 SHORT_SEC = 15
@@ -41,30 +42,19 @@ class StressTest:
     def __init__(self):
         self.service_name = "stagentsvc"
         self.drv_name = "stadrv"
-        self.config_file = r"data\config.json"
         self.url_file = r"data\url.txt"
         self.tool_dir = "tool"
         
         self.cfg_mgr = AgentConfigManager()
+        self.config = ToolConfig(r"data\config.json")
         self.stop_event = threading.Event()
-
-        self.loop_times = 1000
-        self.stop_svc_interval = 1
-        self.stop_drv_interval = 0
-        self.failclose_interval = 20
-        self.max_mem_usage = 85
-        self.max_tabs_open = 20
-        self.custom_dump_path = ""
-        self.long_sleep_interval = 0
-        self.long_sleep_time_min = 300
-        self.long_sleep_time_max = 300
-        self.urls = []
         
+        self.urls = []
         self.manage_nic_script = os.path.join(self.tool_dir, "manage_nic.ps1")
 
     def setup(self):
         enable_debug_privilege()
-        self.load_tool_config()
+        self.config.load()
         self.load_urls()
         
         self.cfg_mgr.setup_environment()
@@ -76,87 +66,6 @@ class StressTest:
         if os.path.exists(self.manage_nic_script):
             logger.info("Tear down: Ensuring NICs are enabled...")
             run_powershell(self.manage_nic_script, ["-Action", "Enable"])
-
-    def load_tool_config(self):
-        try:
-            with open(self.config_file, 'r') as f:
-                config = json.load(f)
-            logger.info(f"Loaded configuration from {self.config_file}")
-            
-            self.loop_times = config.get('loop_times', self.loop_times)
-            self.stop_svc_interval = config.get(
-                'stop_svc_interval', self.stop_svc_interval
-            )
-            self.stop_drv_interval = config.get(
-                'stop_drv_interval', self.stop_drv_interval
-            )
-            self.failclose_interval = config.get(
-                'failclose_interval', self.failclose_interval
-            )
-            self.max_mem_usage = config.get(
-                'max_mem_usage', self.max_mem_usage
-            )
-            self.max_tabs_open = config.get(
-                'max_tabs_open', self.max_tabs_open
-            )
-            self.custom_dump_path = config.get(
-                'custom_dump_path', self.custom_dump_path
-            )
-            self.long_sleep_interval = config.get(
-                'long_sleep_interval', self.long_sleep_interval
-            )
-            self.long_sleep_time_min = config.get(
-                'long_sleep_time_min', self.long_sleep_time_min
-            )
-            self.long_sleep_time_max = config.get(
-                'long_sleep_time_max', self.long_sleep_time_max
-            )
-
-        except Exception as e:
-            logger.error(f"Error loading config: {e}. Exiting.")
-            sys.exit(1)
-
-        if not isinstance(self.loop_times, int) or self.loop_times <= 0:
-            logger.error(f"invalid 'loop_times'. Exiting.")
-            sys.exit(1)
-            
-        if self.stop_svc_interval < 0:
-            logger.error(f"invalid 'stop_svc_interval'. Exiting.")
-            sys.exit(1)
-            
-        if self.failclose_interval < 0:
-            logger.error(f"invalid 'failclose_interval'. Exiting.")
-            sys.exit(1)
-
-        if self.stop_drv_interval < 0:
-            logger.error(f"invalid 'stop_drv_interval'. Exiting.")
-            sys.exit(1)
-
-        if not (50 <= self.max_mem_usage <= 99):
-            logger.warning(
-                f"Invalid 'max_mem_usage' {self.max_mem_usage}. "
-                "Must be 50 ~ 99. Reset to 85."
-            )
-            self.max_mem_usage = 85
-
-        if not (1 <= self.max_tabs_open <= 300):
-            logger.warning(
-                f"Invalid 'max_tabs_open' {self.max_tabs_open}. "
-                "Must be 1 ~ 300. Reset to 20."
-            )
-            self.max_tabs_open = 20
-
-        if self.long_sleep_time_max > 7200:
-            logger.warning("long_sleep_time_max > 7200, capping at 7200.")
-            self.long_sleep_time_max = 7200
-            
-        if self.long_sleep_time_min < 300:
-            logger.warning("long_sleep_time_min < 300, capping at 300.")
-            self.long_sleep_time_min = 300
-
-        if self.long_sleep_time_max < self.long_sleep_time_min:
-            logger.warning("long_sleep_time_max < min, adjusting to min.")
-            self.long_sleep_time_max = self.long_sleep_time_min
 
     def load_urls(self):
         try:
@@ -201,20 +110,20 @@ class StressTest:
         smart_sleep(SHORT_SEC, self.stop_event)
 
     def header_msg(self):
-        logger.info(f"--- Start. Total iterations: {self.loop_times} ---")
-        logger.info(f"Stop service interval: {self.stop_svc_interval}")
-        logger.info(f"Switch FailClose interval: {self.failclose_interval}")
-        logger.info(f"Stop/Start driver interval: {self.stop_drv_interval}")
-        logger.info(f"Max Memory Threshold: {self.max_mem_usage}%")
-        logger.info(f"Max Tabs Open: {self.max_tabs_open}")
-        if self.long_sleep_interval > 0:
-            logger.info(f"Long Sleep Interval: {self.long_sleep_interval}")
+        logger.info(f"--- Start. Total iterations: {self.config.loop_times} ---")
+        logger.info(f"Stop service interval: {self.config.stop_svc_interval}")
+        logger.info(f"Switch FailClose interval: {self.config.failclose_interval}")
+        logger.info(f"Stop/Start driver interval: {self.config.stop_drv_interval}")
+        logger.info(f"Max Memory Threshold: {self.config.max_mem_usage}%")
+        logger.info(f"Max Tabs Open: {self.config.max_tabs_open}")
+        if self.config.long_sleep_interval > 0:
+            logger.info(f"Long Sleep Interval: {self.config.long_sleep_interval}")
             logger.info(
-                f"Long Sleep Time: {self.long_sleep_time_min} - "
-                f"{self.long_sleep_time_max} sec"
+                f"Long Sleep Time: {self.config.long_sleep_time_min} - "
+                f"{self.config.long_sleep_time_max} sec"
             )
-        if self.custom_dump_path:
-            logger.info(f"Custom Dump Path: {self.custom_dump_path}")
+        if self.config.custom_dump_path:
+            logger.info(f"Custom Dump Path: {self.config.custom_dump_path}")
         logger.info(f"Log Folder: {current_log_dir}")
         logger.info("--> Press ESC or Ctrl+C to stop the test immediately. <--")
         logger.info("=" * 50)
@@ -276,8 +185,8 @@ class StressTest:
             return
 
         logger.info(
-            f"Start tab loop. Max Mem: {self.max_mem_usage}%, "
-            f"Max Tabs: {self.max_tabs_open}"
+            f"Start tab loop. Max Mem: {self.config.max_mem_usage}%, "
+            f"Max Tabs: {self.config.max_tabs_open}"
         )
         
         batch_cnt = 0
@@ -286,11 +195,11 @@ class StressTest:
         while batch_cnt < BATCH_LIMIT:
             if self.stop_event.is_set(): 
                 break
-            if total_tabs >= self.max_tabs_open:
+            if total_tabs >= self.config.max_tabs_open:
                 logger.info(f"Max tabs reached ({total_tabs}). Stop opening.")
                 break
 
-            remaining = self.max_tabs_open - total_tabs
+            remaining = self.config.max_tabs_open - total_tabs
             count = min(len(self.urls), 10)
             count = min(count, remaining)
 
@@ -316,12 +225,12 @@ class StressTest:
             mem_usage = get_system_memory_usage()
             mem_pct = mem_usage * 100.0   
             logger.info(
-                f"System Memory: {mem_pct:.2f}% (Target: {self.max_mem_usage}%)"
+                f"System Memory: {mem_pct:.2f}% (Target: {self.config.max_mem_usage}%)"
             )
 
-            if mem_pct >= self.max_mem_usage:
+            if mem_pct >= self.config.max_mem_usage:
                 logger.info(
-                    f"Threshold reached ({mem_pct:.2f}% >= {self.max_mem_usage}%)."
+                    f"Threshold reached ({mem_pct:.2f}% >= {self.config.max_mem_usage}%)."
                 )
                 break
 
@@ -350,11 +259,11 @@ class StressTest:
         self.header_msg()
 
         count = 0
-        for count in range(1, self.loop_times + 1):
+        for count in range(1, self.config.loop_times + 1):
             if self.stop_event.is_set(): 
                 break
             try:
-                logger.info(f"==== Iteration {count} / {self.loop_times} ====")
+                logger.info(f"==== Iteration {count} / {self.config.loop_times} ====")
                 
                 self.exec_start_service()
                 if self.stop_event.is_set(): break
@@ -374,25 +283,25 @@ class StressTest:
 
                 if self.stop_event.is_set(): break
 
-                if self.stop_svc_interval > 0:
-                    if count % self.stop_svc_interval == 0:
+                if self.config.stop_svc_interval > 0:
+                    if count % self.config.stop_svc_interval == 0:
                         self.exec_stop_service()
                         if self.stop_event.is_set(): break
 
-                        if self.stop_drv_interval > 0:
-                            if count % self.stop_drv_interval == 0:
+                        if self.config.stop_drv_interval > 0:
+                            if count % self.config.stop_drv_interval == 0:
                                 self.exec_restart_driver()
                                 if self.stop_event.is_set(): break
 
-                        if self.failclose_interval > 0:
-                            if count % self.failclose_interval == 0:
+                        if self.config.failclose_interval > 0:
+                            if count % self.config.failclose_interval == 0:
                                 self.cfg_mgr.toggle_failclose()
                                 if self.stop_event.is_set(): break
 
-                if self.long_sleep_interval > 0:
-                    if count % self.long_sleep_interval == 0:
+                if self.config.long_sleep_interval > 0:
+                    if count % self.config.long_sleep_interval == 0:
                         sleep_dur = random.randint(
-                            self.long_sleep_time_min, self.long_sleep_time_max
+                            self.config.long_sleep_time_min, self.config.long_sleep_time_max
                         )
                         logger.info(
                             f"Long Sleep triggered. Sleeping {sleep_dur}s..."
@@ -405,7 +314,7 @@ class StressTest:
                 if smart_sleep(SHORT_SEC, self.stop_event): 
                     break
 
-                if check_crash_dumps(self.custom_dump_path):
+                if check_crash_dumps(self.config.custom_dump_path):
                     logger.error("Crash dump found. Stopping test.")
                     break
 
