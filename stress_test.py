@@ -350,6 +350,11 @@ class StressTest:
 
     def exec_start_service(self):
         status = get_service_status(self.service_name)
+        if status == "NOT_FOUND":
+            logger.error(f"Service {self.service_name} NOT FOUND. Stopping...")
+            self.stop_event.set()
+            return
+            
         logger.info(f"Current status: {status}")
         if status != "RUNNING":
             start_service(self.service_name)
@@ -362,6 +367,11 @@ class StressTest:
 
     def exec_stop_service(self):
         status = get_service_status(self.service_name)
+        if status == "NOT_FOUND":
+            logger.error(f"Service {self.service_name} NOT FOUND. Stopping...")
+            self.stop_event.set()
+            return
+            
         logger.info(f"Current status: {status}")
         if status == "RUNNING":
             log_resource_usage(
@@ -374,6 +384,11 @@ class StressTest:
                 return
 
     def exec_restart_driver(self):
+        if get_service_status(self.drv_name) == "NOT_FOUND":
+            logger.error(f"Driver {self.drv_name} NOT FOUND. Stopping...")
+            self.stop_event.set()
+            return
+
         logger.info(f"To STOP and START driver 'stadrv'")
         stop_service(self.drv_name)
         status = get_service_status(self.service_name)
