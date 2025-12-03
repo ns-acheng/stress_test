@@ -10,15 +10,18 @@ def run_batch(batch_file: str):
     except Exception as e:
         logger.error(f"Failed to run batch file {batch_file}: {e}")
 
-def run_powershell(script_path):
+def run_powershell(script_path, args=None):
     command = [
         "powershell.exe",
         "-ExecutionPolicy", "Bypass",
         "-File", script_path
     ]
     
+    if args:
+        command.extend(args)
+    
     try:
-        logger.info(f"Running PowerShell: {script_path}")
+        logger.info(f"Running PowerShell: {script_path} {args if args else ''}")
         subprocess.run(
             command, 
             check=True, 

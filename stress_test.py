@@ -9,7 +9,7 @@ import msvcrt
 import time
 from util_service import start_service, stop_service, get_service_status
 from util_log import LogSetup
-from util_time import smart_sleep
+from util_time import sleep_ex, smart_sleep
 from util_subprocess import (
     run_batch, 
     run_powershell, 
@@ -72,7 +72,7 @@ class StressTest:
         
         self.hosts_path = r"C:\Windows\System32\drivers\etc\hosts"
         self.hosts_bk = os.path.join("data", "hosts-bk")
-        self.gateway_host = ""
+        self.manage_nic_script = os.path.join(self.tool_dir, "manage_nic.ps1")
 
     def setup(self):
         enable_debug_privilege()
@@ -89,15 +89,6 @@ class StressTest:
             self.is_64bit = False
             logger.info("64-bit Agent path not found, assuming 32-bit.")
 
-        if os.path.exists(self.target_nsconfig):
-            try:
-                with open(self.target_nsconfig, 'r') as f:
-                    data = json.load(f)
-                    self.gateway_host = data.get("nsgw", {}).get("host", "")
-                    logger.info(f"Gateway Host detected: {self.gateway_host}")
-            except Exception as e:
-                logger.error(f"Failed to parse Gateway Host: {e}")
-
         if os.path.exists(self.hosts_path):
             try:
                 shutil.copy(self.hosts_path, self.hosts_bk)
@@ -108,6 +99,10 @@ class StressTest:
 
     def tear_down(self):
         self.restore_client_config()
+
+        if os.path.exists(self.manage_nic_script):
+            logger.info("Tear down: Ensuring NICs are enabled...")
+            run_powershell(self.manage_nic_script, ["-Action", "Enable"])
 
     def input_monitor(self):
         logger.info("Input monitor started. Press ESC or Ctrl+C to stop.")
@@ -139,7 +134,6 @@ class StressTest:
             self.failclose_interval = config.get(
                 'failclose_interval', self.failclose_interval
             )
-
             self.max_mem_usage = config.get(
                 'max_mem_usage', self.max_mem_usage
             )
@@ -308,20 +302,14 @@ class StressTest:
             logger.error(f"Error during FailClose config change: {e}")
 
     def exec_failclose_check(self):
-        if not self.gateway_host:
-            logger.warning("Gateway host is unknown, skipping FailClose check.")
+        if not os.path.exists(self.manage_nic_script):
+            logger.error(f"NIC Manager script not found: {self.manage_nic_script}")
             return
 
-        logger.info(f"Simulating FailClose by blocking {self.gateway_host}...")
-        try:
-            with open(self.hosts_path, 'a') as f:
-                f.write(f"\n10.1.1.1 {self.gateway_host}\n")
-        except Exception as e:
-            logger.error(f"Failed to modify hosts file: {e}")
-            return
+        logger.info("Simulating FailClose by Disabling NICs...")
+        run_powershell(self.manage_nic_script, ["-Action", "Disable"])
 
         if smart_sleep(SHORT_SEC, self.stop_event):
-            self.restore_client_config(remove_only=False)
             return
 
         test_urls = random.sample(self.urls, min(len(self.urls), 10))
@@ -332,13 +320,14 @@ class StressTest:
             alive = check_url_alive(url)
             status = "ALIVE" if alive else "DEAD (Blocked)"
             logger.info(f"URL: {url} -> {status}")
+            if smart_sleep(1, self.stop_event):
+                break
 
-        try:
-            if os.path.exists(self.hosts_bk):
-                shutil.copy(self.hosts_bk, self.hosts_path)
-                logger.info("Restored hosts file after FailClose check.")
-        except Exception as e:
-            logger.error(f"Failed to restore hosts file: {e}")
+        logger.info("FailClose check done. Re-Enabling NICs...")
+        run_powershell(self.manage_nic_script, ["-Action", "Enable"])
+        
+        # Give NICs time to come back up
+        smart_sleep(SHORT_SEC, self.stop_event)
 
     def header_msg(self):
         logger.info(f"--- Start. Total iterations: {self.loop_times} ---")
@@ -523,9 +512,6 @@ class StressTest:
                         if self.failclose_interval > 0:
                             if count % self.failclose_interval == 0:
                                 self.exec_failclose_change()
-
-                if smart_sleep(STD_SEC, self.stop_event): 
-                    break
 
                 if self.long_sleep_interval > 0:
                     if count % self.long_sleep_interval == 0:
