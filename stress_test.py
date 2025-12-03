@@ -5,7 +5,6 @@ import shutil
 import random
 import glob
 import threading
-import msvcrt
 import time
 from util_service import start_service, stop_service, get_service_status
 from util_log import LogSetup
@@ -22,6 +21,7 @@ from util_resources import (
     enable_debug_privilege
 )
 from util_network import check_url_alive
+from util_input import start_input_monitor
 
 TINY_SEC = 5
 SHORT_SEC = 15
@@ -103,20 +103,6 @@ class StressTest:
         if os.path.exists(self.manage_nic_script):
             logger.info("Tear down: Ensuring NICs are enabled...")
             run_powershell(self.manage_nic_script, ["-Action", "Enable"])
-
-    def input_monitor(self):
-        logger.info("Input monitor started. Press ESC or Ctrl+C to stop.")
-        while not self.stop_event.is_set():
-            if msvcrt.kbhit():
-                try:
-                    key = msvcrt.getch()
-                    if key == b'\x1b' or key == b'\x03':
-                        logger.warning("Stop signal detected. Stopping...")
-                        self.stop_event.set()
-                        break
-                except Exception:
-                    pass
-            time.sleep(0.1)
 
     def load_tool_config(self):
         try:
@@ -326,7 +312,6 @@ class StressTest:
         logger.info("FailClose check done. Re-Enabling NICs...")
         run_powershell(self.manage_nic_script, ["-Action", "Enable"])
         
-        # Give NICs time to come back up
         smart_sleep(SHORT_SEC, self.stop_event)
 
     def header_msg(self):
@@ -492,8 +477,7 @@ class StressTest:
         return found
 
     def run(self):
-        th = threading.Thread(target=self.input_monitor, daemon=True)
-        th.start()
+        start_input_monitor(self.stop_event)
 
         self.header_msg()
 
