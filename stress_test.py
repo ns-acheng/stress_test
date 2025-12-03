@@ -9,7 +9,7 @@ import msvcrt
 import time
 from util_service import start_service, stop_service, get_service_status
 from util_log import LogSetup
-from util_time import sleep_ex, smart_sleep
+from util_time import smart_sleep
 from util_subprocess import (
     run_batch, 
     run_powershell, 
