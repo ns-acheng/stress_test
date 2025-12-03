@@ -1,8 +1,7 @@
 import requests
-from requests.exceptions import RequestException
 import sys
 
-browser_headers = {
+headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'
     }
 
@@ -21,7 +20,7 @@ def read_urls_from_file(filename):
 
 def check_url_alive(url):
     try:
-        response = requests.head(url, timeout=5, allow_redirects=True, headers=browser_headers)
+        response = requests.head(url, timeout=5, allow_redirects=True, headers=headers)
         if response.status_code < 400:
             return True
         elif response.status_code == 403:
@@ -35,19 +34,18 @@ def check_urls_and_write_status(urls):
         print("No URLs were provided or read from the file. Exiting.")
         return
 
-    output_filename = r'data\url_alive.txt' 
+    out_file = r'data\url_alive.txt' 
     total_urls = len(urls)
     flush_interval = 50
     alive_count = 0
-    print(f"Output will be written to '{output_filename}' and flushed every {flush_interval} checks.")
-
-    with open(output_filename, 'w') as f:
+    print(f"Output will be written to '{out_file}' and flushed every {flush_interval} checks.")
+    with open(out_file, 'w') as f:
         for index, url in enumerate(urls):
             is_alive = False
             status_code_detail = "N/A"
 
             try:
-                response = requests.head(url, timeout=5, allow_redirects=True, headers=browser_headers)
+                response = requests.head(url, timeout=5, allow_redirects=True, headers=headers)
                 if response.status_code < 400:
                     is_alive = True
                 elif response.status_code == 403:
@@ -67,9 +65,9 @@ def check_urls_and_write_status(urls):
                 
                 if (index + 1) % flush_interval == 0:
                     f.flush()
-                    print(f"--- File '{output_filename}' flushed at check #{index + 1}. ---")
+                    print(f"--- File '{out_file}' flushed at check #{index + 1}. ---")
 
-    print(f"\nAll checks complete. Wrote {alive_count} ALIVE URLs to '{output_filename}'.")
+    print(f"\nAll checks complete. Wrote {alive_count} ALIVE URLs to '{out_file}'.")
 
 
 if __name__ == "__main__":

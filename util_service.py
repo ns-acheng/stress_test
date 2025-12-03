@@ -3,7 +3,6 @@ import win32service
 import pywintypes
 import time
 import logging
-from util_time import sleep_ex
 from enum import Enum
 
 logger = logging.getLogger()
@@ -11,7 +10,6 @@ logger = logging.getLogger()
 class _Action(Enum):
     START = "start"
     STOP = "stop"
-
 
 STATUS_MAP = {
     win32service.SERVICE_STOPPED: "STOPPED",
@@ -42,9 +40,7 @@ def start_service(service_name: str, machine: str = None, timeout: int = 30) -> 
 def stop_service(service_name: str, machine: str = None, timeout: int = 30) -> bool:
     return _control_service(service_name, _Action.STOP, machine, timeout)
 
-
 def _control_service(service_name: str, action: _Action, machine: str = None, timeout: int = 30) -> bool:
-    
     if action == _Action.START:
         action_str = "Starting"
         service_func = win32serviceutil.StartService
@@ -87,7 +83,7 @@ def _control_service(service_name: str, action: _Action, machine: str = None, ti
                 logger.error(f"Error: Service '{service_name}' entered an unexpected state: {current_status}")
                 return False
                 
-            sleep_ex(0.5)
+            time.sleep(0.5)
 
         logger.error(f"Error: Timeout. Service '{service_name}' did not {action.value} within {timeout}s.")
         return False
@@ -101,4 +97,3 @@ def _control_service(service_name: str, action: _Action, machine: str = None, ti
         else:
             logger.exception(f"Error {action_str.lower()} '{service_name}':")
         return False
-

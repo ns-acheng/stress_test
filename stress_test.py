@@ -1,15 +1,11 @@
 import sys
 import json
 import os
-import shutil
 import random
-import glob
 import threading
-import msvcrt
-import time
 from util_service import start_service, stop_service, get_service_status
 from util_log import LogSetup
-from util_time import sleep_ex
+from util_time import smart_sleep
 from util_subprocess import (
     run_batch, 
     run_powershell, 
@@ -21,11 +17,17 @@ from util_resources import (
     log_resource_usage, 
     enable_debug_privilege
 )
+from util_network import check_url_alive
+from util_input import start_input_monitor
+from util_crash import check_crash_dumps
+from util_config import AgentConfigManager
+from util_tool_config import ToolConfig
 
 TINY_SEC = 5
 SHORT_SEC = 15
 STD_SEC = 30
 LONG_SEC = 60
+BATCH_LIMIT = 30
 
 try:
     log_helper = LogSetup()
@@ -40,143 +42,30 @@ class StressTest:
     def __init__(self):
         self.service_name = "stagentsvc"
         self.drv_name = "stadrv"
-        self.config_file = r"data\config.json"
         self.url_file = r"data\url.txt"
         self.tool_dir = "tool"
-        self.stagent_root = r"C:\ProgramData\netskope\stagent"
-        self.is_64bit = False
-        self.is_local_cfg = False
-
-        self.loop_times = 1000
-        self.stop_svc_interval = 1
-        self.stop_drv_interval = 0
-        self.failclose_interval = 20
-        self.max_mem_usage = 85
-        self.max_tabs_open = 20
-        self.custom_dump_path = ""
-        self.long_sleep_interval = 0
-        self.long_sleep_time_min = 300
-        self.long_sleep_time_max = 300
+        
+        self.cfg_mgr = AgentConfigManager()
+        self.config = ToolConfig(r"data\config.json")
+        self.stop_event = threading.Event()
+        
         self.urls = []
-
-        self.backup_path = os.path.join("data", "nsconfig-bk.json")
-        self.source_devconfig = os.path.join("data", "devconfig.json")
-        self.target_nsconfig = os.path.join(self.stagent_root, "nsconfig.json")
-        self.target_devconfig = os.path.join(
-            self.stagent_root, "devconfig.json"
-        )
+        self.manage_nic_script = os.path.join(self.tool_dir, "manage_nic.ps1")
 
     def setup(self):
         enable_debug_privilege()
-        self.load_tool_config()
+        self.config.load()
         self.load_urls()
-        self.restore_client_config(remove_only=True)
         
-        check_path = r"C:\Program Files\Netskope\STAgent\stAgentSvc.exe"
-        if os.path.exists(check_path):
-            self.is_64bit = True
-            logger.info(f"Detected 64-bit Agent: {check_path}")
-        else:
-            self.is_64bit = False
-            logger.info("64-bit Agent path not found, assuming 32-bit.")
+        self.cfg_mgr.setup_environment()
+        self.cfg_mgr.restore_config(remove_only=True)
 
     def tear_down(self):
-        self.restore_client_config()
+        self.cfg_mgr.restore_config()
 
-    def input_monitor(self):
-        while True:
-            if msvcrt.kbhit():
-                try:
-                    key = msvcrt.getch()
-                    if key == b'\x1b' or key == b'\x03':
-                        logger.warning("Stop detected. Teardown initiated...")
-                        self.tear_down()
-                        logger.info("Tear Down complete. Exiting.")
-                        os._exit(0)
-                except Exception:
-                    pass
-            time.sleep(0.1)
-
-    def load_tool_config(self):
-        try:
-            with open(self.config_file, 'r') as f:
-                config = json.load(f)
-            logger.info(f"Loaded configuration from {self.config_file}")
-            
-            self.loop_times = config.get('loop_times', self.loop_times)
-            self.stop_svc_interval = config.get(
-                'stop_svc_interval', self.stop_svc_interval
-            )
-            self.stop_drv_interval = config.get(
-                'stop_drv_interval', self.stop_drv_interval
-            )
-            self.failclose_interval = config.get(
-                'failclose_interval', self.failclose_interval
-            )
-            self.max_mem_usage = config.get(
-                'max_mem_usage', self.max_mem_usage
-            )
-            self.max_tabs_open = config.get(
-                'max_tabs_open', self.max_tabs_open
-            )
-            self.custom_dump_path = config.get(
-                'custom_dump_path', self.custom_dump_path
-            )
-            self.long_sleep_interval = config.get(
-                'long_sleep_interval', self.long_sleep_interval
-            )
-            self.long_sleep_time_min = config.get(
-                'long_sleep_time_min', self.long_sleep_time_min
-            )
-            self.long_sleep_time_max = config.get(
-                'long_sleep_time_max', self.long_sleep_time_max
-            )
-
-        except Exception as e:
-            logger.error(f"Error loading config: {e}. Exiting.")
-            sys.exit(1)
-
-        if not isinstance(self.loop_times, int) or self.loop_times <= 0:
-            logger.error(f"invalid 'loop_times'. Exiting.")
-            sys.exit(1)
-            
-        if self.stop_svc_interval < 0:
-            logger.error(f"invalid 'stop_svc_interval'. Exiting.")
-            sys.exit(1)
-            
-        if self.failclose_interval < 0:
-            logger.error(f"invalid 'failclose_interval'. Exiting.")
-            sys.exit(1)
-
-        if self.stop_drv_interval < 0:
-            logger.error(f"invalid 'stop_drv_interval'. Exiting.")
-            sys.exit(1)
-
-        if not (50 <= self.max_mem_usage <= 99):
-            logger.warning(
-                f"Invalid 'max_mem_usage' {self.max_mem_usage}. "
-                "Must be 50 ~ 99. Reset to 85."
-            )
-            self.max_mem_usage = 85
-
-        if not (1 <= self.max_tabs_open <= 300):
-            logger.warning(
-                f"Invalid 'max_tabs_open' {self.max_tabs_open}. "
-                "Must be 1 ~ 300. Reset to 20."
-            )
-            self.max_tabs_open = 20
-
-        if self.long_sleep_time_max > 7200:
-            logger.warning("long_sleep_time_max > 7200, capping at 7200.")
-            self.long_sleep_time_max = 7200
-            
-        if self.long_sleep_time_min < 300:
-            logger.warning("long_sleep_time_min < 300, capping at 300.")
-            self.long_sleep_time_min = 300
-
-        if self.long_sleep_time_max < self.long_sleep_time_min:
-            logger.warning("long_sleep_time_max < min, adjusting to min.")
-            self.long_sleep_time_max = self.long_sleep_time_min
+        if os.path.exists(self.manage_nic_script):
+            logger.info("Tear down: Ensuring NICs are enabled...")
+            run_powershell(self.manage_nic_script, ["-Action", "Enable"])
 
     def load_urls(self):
         try:
@@ -193,115 +82,76 @@ class StressTest:
         except Exception as e:
             logger.error(f"Error loading URLs: {e}")
 
-    def restore_client_config(self, remove_only=False):
-        try:
-            if os.path.exists(self.backup_path):
-                if remove_only:
-                    os.remove(self.backup_path)
-                    logger.info(f"Removed backup {self.backup_path}")
-                else:
-                    shutil.move(self.backup_path, self.target_nsconfig)
-                    logger.info(
-                        f"Restored {self.backup_path} to {self.target_nsconfig}"
-                    )
-            else:
-                if not remove_only:
-                    logger.warning(
-                        f"Backup {self.backup_path} not found. No restore."
-                    )
+    def exec_failclose_check(self):
+        if not os.path.exists(self.manage_nic_script):
+            logger.error(f"NIC Manager script not found: {self.manage_nic_script}")
+            return
 
-            if os.path.exists(self.target_devconfig):
-                os.remove(self.target_devconfig)
-                logger.info(f"Removed {self.target_devconfig}")
-        except Exception as e:
-            logger.error(f"Error during config restoration: {e}")
-        self.is_local_cfg = False
+        logger.info("Simulating FailClose by Disabling NICs...")
+        run_powershell(self.manage_nic_script, ["-Action", "Disable"])
 
-    def exec_failclose_change(self):
-        logger.info("Executing FailClose configuration change...")
-        try:
-            if not os.path.exists(self.backup_path):
-                if os.path.exists(self.target_nsconfig):
-                    shutil.copy(self.target_nsconfig, self.backup_path)
-                    logger.info(f"Backed up nsconfig to {self.backup_path}")
-                else:
-                    logger.warning(f"File {self.target_nsconfig} not found.")
+        if smart_sleep(SHORT_SEC, self.stop_event):
+            return
 
-            if os.path.exists(self.source_devconfig):
-                shutil.copy(self.source_devconfig, self.target_devconfig)
-                logger.info(
-                    f"Copied {self.source_devconfig} to {self.target_devconfig}"
-                )
-                self.is_local_cfg = True
-            else:
-                logger.warning(f"Source {self.source_devconfig} not found.")
+        test_urls = random.sample(self.urls, min(len(self.urls), 10))
+        logger.info(f"Checking {len(test_urls)} URLs for reachability...")
 
-            if os.path.exists(self.target_nsconfig):
-                with open(self.target_nsconfig, 'r') as f:
-                    ns_data = json.load(f)
-                
-                fc_sec = ns_data.get("failClose", {})
-                curr_val = fc_sec.get("fail_close", "false")
+        for url in test_urls:
+            if self.stop_event.is_set(): break
+            alive = check_url_alive(url)
+            status = "ALIVE" if alive else "DEAD (Blocked)"
+            logger.info(f"URL: {url} -> {status}")
+            if smart_sleep(1, self.stop_event):
+                break
 
-                if curr_val == "true":
-                    new_cfg = {
-                        "fail_close": "false",
-                        "exclude_npa": "false",
-                        "notification": "false",
-                        "captive_portal_timeout": "0"
-                    }
-                    logger.info("Switching FailClose to FALSE")
-                else:
-                    new_cfg = {
-                        "fail_close": "true",
-                        "exclude_npa": "false",
-                        "notification": "false",
-                        "captive_portal_timeout": "0"
-                    }
-                    logger.info("Switching FailClose to TRUE")
-                
-                ns_data["failClose"] = new_cfg
-
-                with open(self.target_nsconfig, 'w') as f:
-                    json.dump(ns_data, f, indent=4)
-                logger.info(f"{self.target_nsconfig} updated successfully.")
-            else:
-                logger.error(f"Target file {self.target_nsconfig} not found.")
-        except Exception as e:
-            logger.error(f"Error during FailClose config change: {e}")
+        logger.info("FailClose check done. Re-Enabling NICs...")
+        run_powershell(self.manage_nic_script, ["-Action", "Enable"])
+        
+        smart_sleep(SHORT_SEC, self.stop_event)
 
     def header_msg(self):
-        logger.info(f"--- Start. Total iterations: {self.loop_times} ---")
-        logger.info(f"Stop service interval: {self.stop_svc_interval}")
-        logger.info(f"Switch FailClose interval: {self.failclose_interval}")
-        logger.info(f"Stop/Start driver interval: {self.stop_drv_interval}")
-        logger.info(f"Max Memory Threshold: {self.max_mem_usage}%")
-        logger.info(f"Max Tabs Open: {self.max_tabs_open}")
-        if self.long_sleep_interval > 0:
-            logger.info(f"Long Sleep Interval: {self.long_sleep_interval}")
+        logger.info(f"--- Start. Total iterations: {self.config.loop_times} ---")
+        logger.info(f"Stop service interval: {self.config.stop_svc_interval}")
+        logger.info(f"Switch FailClose interval: {self.config.failclose_interval}")
+        logger.info(f"Stop/Start driver interval: {self.config.stop_drv_interval}")
+        logger.info(f"Max Memory Threshold: {self.config.max_mem_usage}%")
+        logger.info(f"Max Tabs Open: {self.config.max_tabs_open}")
+        if self.config.long_sleep_interval > 0:
+            logger.info(f"Long Sleep Interval: {self.config.long_sleep_interval}")
             logger.info(
-                f"Long Sleep Time: {self.long_sleep_time_min} - "
-                f"{self.long_sleep_time_max} sec"
+                f"Long Sleep Time: {self.config.long_sleep_time_min} - "
+                f"{self.config.long_sleep_time_max} sec"
             )
-        if self.custom_dump_path:
-            logger.info(f"Custom Dump Path: {self.custom_dump_path}")
+        if self.config.custom_dump_path:
+            logger.info(f"Custom Dump Path: {self.config.custom_dump_path}")
         logger.info(f"Log Folder: {current_log_dir}")
         logger.info("--> Press ESC or Ctrl+C to stop the test immediately. <--")
         logger.info("=" * 50)
 
     def exec_start_service(self):
         status = get_service_status(self.service_name)
+        if status == "NOT_FOUND":
+            logger.error(f"Service {self.service_name} NOT FOUND. Stopping...")
+            self.stop_event.set()
+            return
+
         logger.info(f"Current status: {status}")
         if status != "RUNNING":
             start_service(self.service_name)
             logger.info(f"Waiting for {STD_SEC} seconds")
-            sleep_ex(STD_SEC)
+            if smart_sleep(STD_SEC, self.stop_event): 
+                return
         log_resource_usage(
             "stAgentSvc.exe", current_log_dir
         )
 
     def exec_stop_service(self):
         status = get_service_status(self.service_name)
+        if status == "NOT_FOUND":
+            logger.error(f"Service {self.service_name} NOT FOUND. Stopping...")
+            self.stop_event.set()
+            return
+
         logger.info(f"Current status: {status}")
         if status == "RUNNING":
             log_resource_usage(
@@ -310,16 +160,24 @@ class StressTest:
             stop_service(self.service_name)
             self.cur_svc_status = get_service_status(self.service_name)
             logger.info(f"Current status: {self.cur_svc_status}")
-            sleep_ex(TINY_SEC)
+            if smart_sleep(TINY_SEC, self.stop_event): 
+                return
 
     def exec_restart_driver(self):
+        if get_service_status(self.drv_name) == "NOT_FOUND":
+            logger.error(f"Driver {self.drv_name} NOT FOUND. Stopping...")
+            self.stop_event.set()
+            return
+            
         logger.info(f"To STOP and START driver 'stadrv'")
         stop_service(self.drv_name)
         status = get_service_status(self.service_name)
         logger.info(f"Current status: {status}")
-        sleep_ex(SHORT_SEC)
+        if smart_sleep(SHORT_SEC, self.stop_event): 
+            return
         start_service(self.drv_name)
-        sleep_ex(TINY_SEC)
+        if smart_sleep(TINY_SEC, self.stop_event): 
+            return
     
     def exec_browser_tabs(self):
         if not self.urls:
@@ -327,20 +185,21 @@ class StressTest:
             return
 
         logger.info(
-            f"Start tab loop. Max Mem: {self.max_mem_usage}%, "
-            f"Max Tabs: {self.max_tabs_open}"
+            f"Start tab loop. Max Mem: {self.config.max_mem_usage}%, "
+            f"Max Tabs: {self.config.max_tabs_open}"
         )
         
-        batch_limit = 50 
         batch_cnt = 0
         total_tabs = 0
-        
-        while batch_cnt < batch_limit:
-            if total_tabs >= self.max_tabs_open:
+
+        while batch_cnt < BATCH_LIMIT:
+            if self.stop_event.is_set(): 
+                break
+            if total_tabs >= self.config.max_tabs_open:
                 logger.info(f"Max tabs reached ({total_tabs}). Stop opening.")
                 break
 
-            remaining = self.max_tabs_open - total_tabs
+            remaining = self.config.max_tabs_open - total_tabs
             count = min(len(self.urls), 10)
             count = min(count, remaining)
 
@@ -357,7 +216,8 @@ class StressTest:
             run_batch(cmd)
             
             total_tabs += count
-            sleep_ex(STD_SEC)
+            if smart_sleep(STD_SEC, self.stop_event): 
+                break
             log_resource_usage(
                 "stAgentSvc.exe", current_log_dir
             )
@@ -365,104 +225,104 @@ class StressTest:
             mem_usage = get_system_memory_usage()
             mem_pct = mem_usage * 100.0   
             logger.info(
-                f"System Memory: {mem_pct:.2f}% (Target: {self.max_mem_usage}%)"
+                f"System Memory: {mem_pct:.2f}% (Target: {self.config.max_mem_usage}%)"
             )
 
-            if mem_pct >= self.max_mem_usage:
+            if mem_pct >= self.config.max_mem_usage:
                 logger.info(
-                    f"Threshold reached ({mem_pct:.2f}% >= {self.max_mem_usage}%)."
+                    f"Threshold reached ({mem_pct:.2f}% >= {self.config.max_mem_usage}%)."
                 )
                 break
 
             batch_cnt += 1
 
-        if batch_cnt >= batch_limit:
-            logger.warning(f"Reached maximum batch limit ({batch_limit})")
+        if batch_cnt >= BATCH_LIMIT:
+            logger.warning(f"Reached maximum batch limit ({BATCH_LIMIT})")
 
     def exec_curl_requests(self):
         if not self.urls:
             return
-        
+
         count = min(len(self.urls), 10)
         selected_urls = random.sample(self.urls, count)
         logger.info(f"Running CURL on {count} random URLs...")
         
         for url in selected_urls:
+            if self.stop_event.is_set(): 
+                break
             run_curl(url)
-
-    def check_crash_dumps(self):
-        dump_paths = [
-            r"C:\dump\stAgentSvc.exe\*.dmp",
-            r"C:\ProgramData\netskope\stagent\logs\*.dmp"
-        ]
-        if self.custom_dump_path:
-            dump_paths.append(self.custom_dump_path)
-
-        found = False
-        for path in dump_paths:
-            files = glob.glob(path)
-            if files:
-                logger.error(f"CRASH DUMP DETECTED at: {path}")
-                for f in files:
-                    logger.error(f"File: {f}")
-                found = True
-        return found
+            logger.info(f"CURL with URL: {url}")
 
     def run(self):
-        th = threading.Thread(target=self.input_monitor, daemon=True)
-        th.start()
+        start_input_monitor(self.stop_event)
 
         self.header_msg()
 
         count = 0
-        for count in range(1, self.loop_times + 1):
+        for count in range(1, self.config.loop_times + 1):
+            if self.stop_event.is_set(): 
+                break
             try:
-                logger.info(f"==== Iteration {count} / {self.loop_times} ====")
-                self.exec_start_service()
+                logger.info(f"==== Iteration {count} / {self.config.loop_times} ====")
                 
-                if not self.is_local_cfg:
-                    nsdiag_update_config(self.is_64bit)
+                self.exec_start_service()
+                if self.stop_event.is_set(): break
+
+                if not self.cfg_mgr.is_local_cfg:
+                    nsdiag_update_config(self.cfg_mgr.is_64bit)
                 else:
                     logger.info("Local config active, skip nsdiag update")
 
-                self.exec_browser_tabs()
-                self.exec_curl_requests()
+                if self.stop_event.is_set(): break
 
-                if self.failclose_interval > 0:
-                    if count % self.failclose_interval == 0:
-                        self.exec_failclose_change()
+                if self.cfg_mgr.is_false_close:
+                    self.exec_failclose_check()
+                else:
+                    self.exec_browser_tabs()
+                    self.exec_curl_requests()
 
-                if self.stop_svc_interval > 0:
-                    if count % self.stop_svc_interval == 0:
+                if self.stop_event.is_set(): break
+
+                if self.config.stop_svc_interval > 0:
+                    if count % self.config.stop_svc_interval == 0:
                         self.exec_stop_service()
-                        if self.stop_drv_interval > 0:
-                            if count % self.stop_drv_interval == 0:
-                                self.exec_restart_driver()
+                        if self.stop_event.is_set(): break
 
-                sleep_ex(STD_SEC)
-                
-                if self.long_sleep_interval > 0:
-                    if count % self.long_sleep_interval == 0:
+                        if self.config.stop_drv_interval > 0:
+                            if count % self.config.stop_drv_interval == 0:
+                                self.exec_restart_driver()
+                                if self.stop_event.is_set(): break
+
+                        if self.config.failclose_interval > 0:
+                            if count % self.config.failclose_interval == 0:
+                                self.cfg_mgr.toggle_failclose()
+                                if self.stop_event.is_set(): break
+
+                if self.config.long_sleep_interval > 0:
+                    if count % self.config.long_sleep_interval == 0:
                         sleep_dur = random.randint(
-                            self.long_sleep_time_min, self.long_sleep_time_max
+                            self.config.long_sleep_time_min, self.config.long_sleep_time_max
                         )
                         logger.info(
                             f"Long Sleep triggered. Sleeping {sleep_dur}s..."
                         )
-                        sleep_ex(sleep_dur)
+                        if smart_sleep(sleep_dur, self.stop_event): 
+                            break
 
                 ps_script = os.path.join(self.tool_dir, "close_browsers.ps1")
                 run_powershell(ps_script)
-                sleep_ex(SHORT_SEC)
+                if smart_sleep(SHORT_SEC, self.stop_event): 
+                    break
 
-                if self.check_crash_dumps():
+                if check_crash_dumps(self.config.custom_dump_path):
                     logger.error("Crash dump found. Stopping test.")
                     break
 
             except Exception:
                 logger.exception("An error occurred:")
                 logger.info(f"Retrying in {STD_SEC} seconds")
-                sleep_ex(STD_SEC)
+                if smart_sleep(STD_SEC, self.stop_event): 
+                    break
 
         logger.info(f"--- Finished {count} iterations. ---")
 
