@@ -354,7 +354,7 @@ class StressTest:
             logger.error(f"Service {self.service_name} NOT FOUND. Stopping...")
             self.stop_event.set()
             return
-            
+
         logger.info(f"Current status: {status}")
         if status != "RUNNING":
             start_service(self.service_name)
@@ -371,7 +371,7 @@ class StressTest:
             logger.error(f"Service {self.service_name} NOT FOUND. Stopping...")
             self.stop_event.set()
             return
-            
+
         logger.info(f"Current status: {status}")
         if status == "RUNNING":
             log_resource_usage(
@@ -388,7 +388,7 @@ class StressTest:
             logger.error(f"Driver {self.drv_name} NOT FOUND. Stopping...")
             self.stop_event.set()
             return
-
+            
         logger.info(f"To STOP and START driver 'stadrv'")
         stop_service(self.drv_name)
         status = get_service_status(self.service_name)
@@ -503,12 +503,16 @@ class StressTest:
                 break
             try:
                 logger.info(f"==== Iteration {count} / {self.loop_times} ====")
-                self.exec_start_service()
                 
+                self.exec_start_service()
+                if self.stop_event.is_set(): break
+
                 if not self.is_local_cfg:
                     nsdiag_update_config(self.is_64bit)
                 else:
                     logger.info("Local config active, skip nsdiag update")
+
+                if self.stop_event.is_set(): break
 
                 if self.is_false_close:
                     self.exec_failclose_check()
@@ -516,17 +520,22 @@ class StressTest:
                     self.exec_browser_tabs()
                     self.exec_curl_requests()
 
+                if self.stop_event.is_set(): break
+
                 if self.stop_svc_interval > 0:
                     if count % self.stop_svc_interval == 0:
                         self.exec_stop_service()
+                        if self.stop_event.is_set(): break
+
                         if self.stop_drv_interval > 0:
                             if count % self.stop_drv_interval == 0:
                                 self.exec_restart_driver()
-                        
-                        # do the failclose change after service stop
+                                if self.stop_event.is_set(): break
+
                         if self.failclose_interval > 0:
                             if count % self.failclose_interval == 0:
                                 self.exec_failclose_change()
+                                if self.stop_event.is_set(): break
 
                 if self.long_sleep_interval > 0:
                     if count % self.long_sleep_interval == 0:
