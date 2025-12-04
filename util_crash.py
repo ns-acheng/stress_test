@@ -1,5 +1,6 @@
 import glob
 import logging
+import os
 
 logger = logging.getLogger()
 
@@ -14,9 +15,21 @@ def check_crash_dumps(custom_dump_path: str = "") -> bool:
     found = False
     for path in dump_paths:
         files = glob.glob(path)
-        if files:
-            logger.error(f"CRASH DUMP DETECTED at: {path}")
-            for f in files:
-                logger.error(f"File: {f}")
-            found = True
+        for f in files:
+            try:
+                size = os.path.getsize(f)
+                if size == 0:
+                    logger.warning(f"Ignored 0-byte dump file: {f}")
+                    try:
+                        os.remove(f)
+                        logger.info(f"Deleted 0-byte dump file: {f}")
+                    except OSError as os_err:
+                        logger.error(f"Failed to delete 0-byte dump {f}: {os_err}")
+                    continue
+                
+                logger.error(f"CRASH DUMP DETECTED: {f} (Size: {size} bytes)")
+                found = True
+            except Exception as e:
+                logger.error(f"Error checking file {f}: {e}")
+                
     return found
