@@ -1,5 +1,4 @@
 import sys
-import json
 import os
 import random
 import threading
@@ -51,6 +50,7 @@ class StressTest:
         
         self.urls = []
         self.manage_nic_script = os.path.join(self.tool_dir, "manage_nic.ps1")
+        self.total_zero_dumps = 0
 
     def setup(self):
         enable_debug_privilege()
@@ -314,7 +314,13 @@ class StressTest:
                 if smart_sleep(SHORT_SEC, self.stop_event): 
                     break
 
-                if check_crash_dumps(self.config.custom_dump_path):
+                crash_found, zero_count = check_crash_dumps(self.config.custom_dump_path)
+                self.total_zero_dumps += zero_count
+                
+                if zero_count > 0:
+                    logger.info(f"Cleaned {zero_count} 0-byte dump files this check.")
+
+                if crash_found:
                     logger.error("Crash dump found. Stopping test.")
                     break
 
@@ -325,6 +331,7 @@ class StressTest:
                     break
 
         logger.info(f"--- Finished {count} iterations. ---")
+        logger.info(f"Total 0-byte dumps deleted: {self.total_zero_dumps}")
 
 
 if __name__ == "__main__":
