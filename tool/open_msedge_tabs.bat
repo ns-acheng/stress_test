@@ -6,7 +6,6 @@ if "%~1"=="" (
     echo Usage: %~nx0 url1 url2 ... url10
     goto :end
 )
-start "" msedge --new-window about:blank
 
 set /a count=0
 
