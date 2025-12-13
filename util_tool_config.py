@@ -22,6 +22,11 @@ class ToolConfig:
         self.traffic_dns_enabled = False
         self.traffic_udp_enabled = False
         self.traffic_concurrent_conns = 0
+        
+        # New simplified single target
+        self.traffic_ip = "127.0.0.1"
+        
+        # Derived values (internal use)
         self.traffic_udp_target = "127.0.0.1"
         self.traffic_ab_url = "http://127.0.0.1/"
         
@@ -68,8 +73,13 @@ class ToolConfig:
             self.traffic_dns_enabled = bool(tg.get('dns_flood_enabled', 0))
             self.traffic_udp_enabled = bool(tg.get('udp_flood_enabled', 0))
             self.traffic_concurrent_conns = tg.get('concurrent_connections', 0)
-            self.traffic_udp_target = tg.get('target_udp_ip', "127.0.0.1")
-            self.traffic_ab_url = tg.get('target_ab_url', "http://127.0.0.1/")
+            
+            # Load the single target IP
+            self.traffic_ip = tg.get('target_ip', "127.0.0.1")
+            
+            # Construct derived targets
+            self.traffic_udp_target = self.traffic_ip
+            self.traffic_ab_url = f"http://{self.traffic_ip}/"
             
             self.traffic_dns_count = tg.get('dns_query_count', 500)
             self.traffic_udp_duration = tg.get('udp_duration_seconds', 10)

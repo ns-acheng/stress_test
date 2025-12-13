@@ -71,6 +71,24 @@ pip install -r requirement.txt
 
 `long_sleep_time_max`: Maximum duration for the long sleep in seconds (Upper bound: 7200s).
 
+### Traffic Generation Settings (traffic_gen)
+`dns_flood_enabled`: (0/1) If 1, generates random subdomain queries to bypass local DNS cache.
+
+`udp_flood_enabled`: (0/1) If 1, sends UDP packets to target_ip on port target_udp_port. (Note: Automatically toggles between IPv6 and IPv4 on alternate iterations.)
+
+`concurrent_connections`: (int) Target number of concurrent connections for Apache Bench. Set to 0 to disable.
+
+`target_ip`: (str) Unified Target IP for both UDP flood and Apache Bench (HTTP).
+
+UDP will target: <target_ip>:<target_udp_port>
+
+AB will target: http://<target_ip>/
+
+`target_udp_port`: (int) Target UDP port (default: 8080).
+
+`dns_query_count`: (int) Number of random DNS queries to generate per iteration (default: 500).
+
+`udp_duration_seconds`: (int/float) Duration in seconds to sustain the UDP flood per iteration (default: 10).
 
 
 **Strategy 1: Memory & Handle Leak Detection**
@@ -86,14 +104,6 @@ pip install -r requirement.txt
     "max_mem_usage": 90,
     "max_tabs_open": 50,
     "custom_dump_path": "",
-    "long_sleep_interval": 100,
-    "long_sleep_time_min": 300,
-    "long_sleep_time_max": 600,
-    "traffic_gen": {
-        "dns_flood_enabled": 0,
-        "udp_flood_enabled": 0,
-        "concurrent_connections": 0
-    }
 }
 ```
 
@@ -115,11 +125,6 @@ pip install -r requirement.txt
     "long_sleep_interval": 0,
     "long_sleep_time_min": 300,
     "long_sleep_time_max": 300,
-    "traffic_gen": {
-        "dns_flood_enabled": 0,
-        "udp_flood_enabled": 0,
-        "concurrent_connections": 0
-    }
 }
 ```
 
@@ -168,24 +173,29 @@ pip install -r requirement.txt
 
 **Strategy 5: High Concurrency / Traffic Stress**
 * * Uses internal Python generators for DNS/UDP and ab.exe for TCP connections.
+* * If you do not use a real HTTP server, keep `concurrent_connections` lower then 500.
 
 ```json
 {
-    "loop_times": 500,
-    "stop_svc_interval": 0,
-    "stop_drv_interval": 0,
-    "failclose_interval": 0,
-    "max_mem_usage": 80,
-    "max_tabs_open": 10,
-    "traffic_gen": {
-        "dns_flood_enabled": 1,
-        "udp_flood_enabled": 1,
-        "concurrent_connections": 5000,
-        "target_udp_ip": "192.168.1.50",
-        "target_ab_url": "http://192.168.1.50/",
-        "dns_query_count": 5000,
-        "udp_duration_seconds": 60
-    }
+  "loop_times": 1000,
+  "stop_svc_interval": 5,
+  "stop_drv_interval": 0,
+  "failclose_interval": 15,
+  "max_mem_usage": 60,
+  "max_tabs_open": 20,
+  "custom_dump_path": "C:\\dump\\stAgentSvc.exe\\*.dmp",
+  "long_sleep_interval": 100,
+  "long_sleep_time_min": 300,
+  "long_sleep_time_max": 600,
+  "traffic_gen": {
+    "dns_flood_enabled": 1,
+    "udp_flood_enabled": 1,
+    "concurrent_connections": 256,
+    "target_ip": "192.168.1.2",
+    "target_udp_port": 8080,
+    "dns_query_count": 500,
+    "udp_duration_seconds": 20
+  }
 }
 ```
 
@@ -210,3 +220,5 @@ pip install -r requirement.txt
 6. Dynamic creating browser tabs and web traffic based on the memory usage.
 7. Block host to simulate FailClose
 8. Network (NIC) changes
+9. Massive DNS/UDP traffic generation
+10. High concurrency connection testing (via Apache Bench)
