@@ -277,15 +277,20 @@ class StressTest:
                 if self.stop_event.is_set(): break
 
                 if self.config.traffic_dns_enabled:
-                    util_traffic.generate_dns_flood(self.urls, 200)
+                    util_traffic.generate_dns_flood(
+                        self.urls, 
+                        self.config.traffic_dns_count
+                    )
                 
                 if self.config.traffic_udp_enabled:
+                    use_ipv6 = (count % 2 != 0)
+                    
                     util_traffic.generate_udp_flood(
                         self.config.traffic_udp_target, 
                         8080, 
-                        10.0, 
+                        float(self.config.traffic_udp_duration), 
                         self.stop_event, 
-                        self.config.traffic_ipv6_enabled
+                        use_ipv6
                     )
                 
                 if self.config.traffic_concurrent_conns > 0:

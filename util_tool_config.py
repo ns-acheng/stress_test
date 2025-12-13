@@ -8,7 +8,6 @@ logger = logging.getLogger()
 class ToolConfig:
     def __init__(self, config_file: str):
         self.config_file = config_file
-        # Default values
         self.loop_times = 1000
         self.stop_svc_interval = 1
         self.stop_drv_interval = 0
@@ -20,13 +19,14 @@ class ToolConfig:
         self.long_sleep_time_min = 300
         self.long_sleep_time_max = 300
         
-        # Traffic Generation Defaults
         self.traffic_dns_enabled = False
         self.traffic_udp_enabled = False
-        self.traffic_ipv6_enabled = False
         self.traffic_concurrent_conns = 0
         self.traffic_udp_target = "127.0.0.1"
         self.traffic_ab_url = "http://127.0.0.1/"
+        
+        self.traffic_dns_count = 500
+        self.traffic_udp_duration = 10
 
     def load(self):
         try:
@@ -63,15 +63,15 @@ class ToolConfig:
                 'long_sleep_time_max', self.long_sleep_time_max
             )
             
-            # Load traffic_gen section
             tg = config.get('traffic_gen', {})
-            # Explicitly cast to bool to handle 1/0 or true/false
             self.traffic_dns_enabled = bool(tg.get('dns_flood_enabled', 0))
             self.traffic_udp_enabled = bool(tg.get('udp_flood_enabled', 0))
-            self.traffic_ipv6_enabled = bool(tg.get('ipv6_enabled', 0))
             self.traffic_concurrent_conns = tg.get('concurrent_connections', 0)
             self.traffic_udp_target = tg.get('target_udp_ip', "127.0.0.1")
             self.traffic_ab_url = tg.get('target_ab_url', "http://127.0.0.1/")
+            
+            self.traffic_dns_count = tg.get('dns_query_count', 500)
+            self.traffic_udp_duration = tg.get('udp_duration_seconds', 10)
 
         except Exception as e:
             logger.error(f"Error loading config: {e}. Exiting.")

@@ -12,9 +12,10 @@
   "traffic_gen": {
     "dns_flood_enabled": 0,
     "udp_flood_enabled": 0,
-    "ipv6_enabled": 0,
     "concurrent_connections": 0,
     "target_udp_ip": "127.0.0.1",
-    "target_ab_url": "http://127.0.0.1/"
+    "target_ab_url": "http://127.0.0.1/",
+    "dns_query_count": 500,
+    "udp_duration_seconds": 10
   }
 }

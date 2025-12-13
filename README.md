@@ -55,6 +55,20 @@ pip install -r requirement.txt
 
 `long_sleep_time_max`: Maximum duration for the long sleep in seconds (Upper bound: 7200s).
 
+### Traffic Generation Settings (traffic_gen)
+`dns_flood_enabled`: (0/1) If 1, generates random subdomain queries to bypass local DNS cache.
+
+`udp_flood_enabled`: (0/1) If 1, sends UDP packets to target_udp_ip on port 8080. (Note: Automatically toggles between IPv6 and IPv4 on alternate iterations.)
+
+`concurrent_connections`: (int) Target number of concurrent connections for Apache Bench. Set to 0 to disable.
+
+`target_udp_ip`: (str) Target IP address for UDP flood.
+
+`target_ab_url`: (str) Target URL for Apache Bench (e.g., "http://127.0.0.1/").
+
+`dns_query_count`: (int) Number of random DNS queries to generate per iteration (default: 500).
+
+`udp_duration_seconds`: (int/float) Duration in seconds to sustain the UDP flood per iteration (default: 10).
 
 
 **Strategy 1: Memory & Handle Leak Detection**
