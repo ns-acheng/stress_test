@@ -307,7 +307,8 @@ class StressTest:
                         self.config.traffic_ab_url,
                         10000, 
                         self.config.traffic_concurrent_conns,
-                        self.tool_dir
+                        self.tool_dir,
+                        self.stop_event
                     )
 
                 if self.stop_event.is_set(): break
