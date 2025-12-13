@@ -8,15 +8,20 @@ This tool is designed to perform stress testing, resource monitoring, and stabil
 * **Python:** Python 3.6 or higher.
 * **Permissions:** **Administrator privileges** are strictly required to control Windows services and access system debug privileges.
 * **Flooding target (Optional):**
-    *  use the powersheel command to open 8080 port
+    *  use the powersheel command to open the 80 and 8080 port
       
-        ``` powershell
+       ``` powershell
+       New-NetFirewallRule -DisplayName "Allow HTTP Stress Test" -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow
        New-NetFirewallRule -DisplayName "Allow UDP 8080 Stress Test" -Direction Inbound -Protocol UDP -LocalPort 8080 -Action Allow
-         ```
+       ```
+  
+    *  run HTTP server in 80 port
+       ``` cmd
+       python -m http.server 80
+       ```
   
     *  download `nc64.exe` from https://github.com/int0x33/nc.exe
     *  run `nc64.exe`
-      
        ```cmd
        nc64.exe -u -l -p 8080 -v
        ```
@@ -66,20 +71,6 @@ pip install -r requirement.txt
 
 `long_sleep_time_max`: Maximum duration for the long sleep in seconds (Upper bound: 7200s).
 
-### Traffic Generation Settings (traffic_gen)
-`dns_flood_enabled`: (0/1) If 1, generates random subdomain queries to bypass local DNS cache.
-
-`udp_flood_enabled`: (0/1) If 1, sends UDP packets to target_udp_ip on port 8080. (Note: Automatically toggles between IPv6 and IPv4 on alternate iterations.)
-
-`concurrent_connections`: (int) Target number of concurrent connections for Apache Bench. Set to 0 to disable.
-
-`target_udp_ip`: (str) Target IP address for UDP flood.
-
-`target_ab_url`: (str) Target URL for Apache Bench (e.g., "http://127.0.0.1/").
-
-`dns_query_count`: (int) Number of random DNS queries to generate per iteration (default: 500).
-
-`udp_duration_seconds`: (int/float) Duration in seconds to sustain the UDP flood per iteration (default: 10).
 
 
 **Strategy 1: Memory & Handle Leak Detection**
@@ -97,7 +88,12 @@ pip install -r requirement.txt
     "custom_dump_path": "",
     "long_sleep_interval": 100,
     "long_sleep_time_min": 300,
-    "long_sleep_time_max": 600
+    "long_sleep_time_max": 600,
+    "traffic_gen": {
+        "dns_flood_enabled": 0,
+        "udp_flood_enabled": 0,
+        "concurrent_connections": 0
+    }
 }
 ```
 
@@ -118,7 +114,12 @@ pip install -r requirement.txt
     "custom_dump_path": "",
     "long_sleep_interval": 0,
     "long_sleep_time_min": 300,
-    "long_sleep_time_max": 300
+    "long_sleep_time_max": 300,
+    "traffic_gen": {
+        "dns_flood_enabled": 0,
+        "udp_flood_enabled": 0,
+        "concurrent_connections": 0
+    }
 }
 ```
 
@@ -165,6 +166,28 @@ pip install -r requirement.txt
 ```
 
 
+**Strategy 5: High Concurrency / Traffic Stress**
+* * Uses internal Python generators for DNS/UDP and ab.exe for TCP connections.
+
+```json
+{
+    "loop_times": 500,
+    "stop_svc_interval": 0,
+    "stop_drv_interval": 0,
+    "failclose_interval": 0,
+    "max_mem_usage": 80,
+    "max_tabs_open": 10,
+    "traffic_gen": {
+        "dns_flood_enabled": 1,
+        "udp_flood_enabled": 1,
+        "concurrent_connections": 5000,
+        "target_udp_ip": "192.168.1.50",
+        "target_ab_url": "http://192.168.1.50/",
+        "dns_query_count": 5000,
+        "udp_duration_seconds": 60
+    }
+}
+```
 
 ## Feature roadmap
 
