@@ -1,12 +1,22 @@
 {
   "loop_times": 1000,
-  "stop_svc_interval": 1,
+  "stop_svc_interval": 5,
   "stop_drv_interval": 0,
-  "failclose_interval": 3,
+  "failclose_interval": 15,
   "max_mem_usage": 60,
   "max_tabs_open": 20,
   "custom_dump_path": "C:\\dump\\stAgentSvc.exe\\*.dmp",
   "long_sleep_interval": 100,
   "long_sleep_time_min": 300,
-  "long_sleep_time_max": 600
+  "long_sleep_time_max": 600,
+  "traffic_gen": {
+    "dns_flood_enabled": 1,
+    "udp_flood_enabled": 1,
+    "concurrent_connections": 256,
+    "target_ip": "192.168.1.2",
+    "target_ipv6": "",
+    "target_udp_port": 8080,
+    "dns_query_count": 500,
+    "udp_duration_seconds": 20
+  }
 }
