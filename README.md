@@ -7,8 +7,19 @@ This tool is designed to perform stress testing, resource monitoring, and stabil
 * **Operating System:** Windows 10, Windows 11, or Windows Server (64-bit recommended).
 * **Python:** Python 3.6 or higher.
 * **Permissions:** **Administrator privileges** are strictly required to control Windows services and access system debug privileges.
-* **External Tools (Optional):**
-    * **Apache Bench (`ab.exe`):** Required for high-concurrency connection testing. Download the Apache binaries for Windows (e.g., from Apache Lounge), extract the contents, and place `ab.exe` inside the `tool/ab/` directory.
+* **Flooding target (Optional):**
+    *  use the powersheel command to open 8080 port
+      
+        ``` powershell
+       New-NetFirewallRule -DisplayName "Allow UDP 8080 Stress Test" -Direction Inbound -Protocol UDP -LocalPort 8080 -Action Allow
+         ```
+  
+    *  download `nc64.exe` from https://github.com/int0x33/nc.exe
+    *  run `nc64.exe`
+      
+       ```cmd
+       nc64.exe -u -l -p 8080 -v
+       ```
 
 ## Installation
 
