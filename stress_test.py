@@ -287,7 +287,7 @@ class StressTest:
                     
                     util_traffic.generate_udp_flood(
                         self.config.traffic_udp_target, 
-                        8080, 
+                        self.config.traffic_udp_port, 
                         float(self.config.traffic_udp_duration), 
                         self.stop_event, 
                         use_ipv6

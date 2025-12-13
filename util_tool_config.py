@@ -27,6 +27,7 @@ class ToolConfig:
         
         self.traffic_dns_count = 500
         self.traffic_udp_duration = 10
+        self.traffic_udp_port = 8080
 
     def load(self):
         try:
@@ -72,6 +73,7 @@ class ToolConfig:
             
             self.traffic_dns_count = tg.get('dns_query_count', 500)
             self.traffic_udp_duration = tg.get('udp_duration_seconds', 10)
+            self.traffic_udp_port = tg.get('target_udp_port', 8080)
 
         except Exception as e:
             logger.error(f"Error loading config: {e}. Exiting.")
