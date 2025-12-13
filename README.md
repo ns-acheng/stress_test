@@ -192,6 +192,7 @@ AB will target: http://<target_ip>/
     "udp_flood_enabled": 1,
     "concurrent_connections": 256,
     "target_ip": "192.168.1.2",
+    "target_ipv6": "fe80::1",
     "target_udp_port": 8080,
     "dns_query_count": 500,
     "udp_duration_seconds": 20

@@ -283,10 +283,19 @@ class StressTest:
                     )
                 
                 if self.config.traffic_udp_enabled:
-                    use_ipv6 = (count % 2 != 0)
-                    
+                    current_target = self.config.traffic_udp_target
+                    use_ipv6 = False
+
+                    if self.config.traffic_ipv6:
+                        if count % 2 != 0:
+                            current_target = self.config.traffic_udp_target
+                            use_ipv6 = False
+                        else:
+                            current_target = self.config.traffic_ipv6
+                            use_ipv6 = True
+
                     util_traffic.generate_udp_flood(
-                        self.config.traffic_udp_target, 
+                        current_target, 
                         self.config.traffic_udp_port, 
                         float(self.config.traffic_udp_duration), 
                         self.stop_event, 
