@@ -9,10 +9,17 @@ This tool is designed to perform stress testing, resource monitoring, and stabil
 * **Permissions:** **Administrator privileges** are strictly required to control Windows services and access system debug privileges.
 * **Flooding target (Optional):**
     *  use the powersheel command to open 8080 port
-        ```New-NetFirewallRule -DisplayName "Allow UDP 8080 Stress Test" -Direction Inbound -Protocol UDP -LocalPort 8080 -Action Allow```
+      
+        ``` powershell
+       New-NetFirewallRule -DisplayName "Allow UDP 8080 Stress Test" -Direction Inbound -Protocol UDP -LocalPort 8080 -Action Allow
+         ```
+  
     *  download `nc64.exe` from https://github.com/int0x33/nc.exe
-    *  run `nc64.exe` as
-       ``` nc64.exe -u -l -p 8080 -v ```
+    *  run `nc64.exe`
+      
+       ```cmd
+       nc64.exe -u -l -p 8080 -v
+       ```
 
 ## Installation
 
