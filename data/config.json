@@ -8,5 +8,13 @@
   "custom_dump_path": "C:\\dump\\stAgentSvc.exe\\*.dmp",
   "long_sleep_interval": 100,
   "long_sleep_time_min": 300,
-  "long_sleep_time_max": 600
+  "long_sleep_time_max": 600,
+  "traffic_gen": {
+    "dns_flood_enabled": 0,
+    "udp_flood_enabled": 0,
+    "ipv6_enabled": 0,
+    "concurrent_connections": 0,
+    "target_udp_ip": "127.0.0.1",
+    "target_ab_url": "http://127.0.0.1/"
+  }
 }

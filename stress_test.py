@@ -21,6 +21,7 @@ from util_input import start_input_monitor
 from util_crash import check_crash_dumps
 from util_config import AgentConfigManager
 from util_tool_config import ToolConfig
+import util_traffic 
 
 TINY_SEC = 5
 SHORT_SEC = 15
@@ -272,6 +273,28 @@ class StressTest:
                     nsdiag_update_config(self.cfg_mgr.is_64bit)
                 else:
                     logger.info("Local config active, skip nsdiag update")
+
+                if self.stop_event.is_set(): break
+
+                if self.config.traffic_dns_enabled:
+                    util_traffic.generate_dns_flood(self.urls, 200)
+                
+                if self.config.traffic_udp_enabled:
+                    util_traffic.generate_udp_flood(
+                        self.config.traffic_udp_target, 
+                        8080, 
+                        10.0, 
+                        self.stop_event, 
+                        self.config.traffic_ipv6_enabled
+                    )
+                
+                if self.config.traffic_concurrent_conns > 0:
+                    util_traffic.run_high_concurrency_test(
+                        self.config.traffic_ab_url,
+                        10000, 
+                        self.config.traffic_concurrent_conns,
+                        self.tool_dir
+                    )
 
                 if self.stop_event.is_set(): break
 
