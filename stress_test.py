@@ -18,7 +18,7 @@ from util_resources import (
 )
 from util_network import check_url_alive
 from util_input import start_input_monitor
-from util_crash import check_crash_dumps
+from util_crash import check_crash_dumps, crash_handle
 from util_config import AgentConfigManager
 from util_tool_config import ToolConfig
 import util_traffic 
@@ -373,6 +373,11 @@ class StressTest:
 
                 if crash_found:
                     logger.error("Crash dump found. Stopping test.")
+                    crash_handle(
+                        self.cfg_mgr.is_64bit, 
+                        current_log_dir, 
+                        self.config.custom_dump_path
+                    )
                     break
 
             except Exception:
