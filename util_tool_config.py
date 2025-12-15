@@ -21,17 +21,16 @@ class ToolConfig:
         
         self.traffic_dns_enabled = False
         self.traffic_udp_enabled = False
-        self.traffic_concurrent_conns = 0
+        self.ab_concurrent_conn = 0
+        self.ab_urls = ["https://google.com"]
         
-        self.traffic_ip = "127.0.0.1"
-        self.traffic_ipv6 = ""
-        
-        self.traffic_udp_target = "127.0.0.1"
-        self.traffic_ab_url = "http://127.0.0.1/"
+        self.udp_target_ip = "127.0.0.1"
+        self.udp_target_ipv6 = ""
+        self.udp_target_port = 8080
+
         
         self.traffic_dns_count = 500
         self.traffic_udp_duration = 10
-        self.traffic_udp_port = 8080
 
     def load(self):
         try:
@@ -71,17 +70,19 @@ class ToolConfig:
             tg = config.get('traffic_gen', {})
             self.traffic_dns_enabled = bool(tg.get('dns_flood_enabled', 0))
             self.traffic_udp_enabled = bool(tg.get('udp_flood_enabled', 0))
-            self.traffic_concurrent_conns = tg.get('concurrent_connections', 0)
             
-            self.traffic_ip = tg.get('target_ip', "127.0.0.1")
-            self.traffic_ipv6 = tg.get('target_ipv6', "")
+            self.ab_concurrent_conn = tg.get('ab_concurrent_conn', 0)
             
-            self.traffic_udp_target = self.traffic_ip
-            self.traffic_ab_url = f"http://{self.traffic_ip}/"
+            self.udp_target_ip = tg.get('udp_target_ip', "127.0.0.1")
+            self.udp_target_ipv6 = tg.get('udp_target_ipv6', "")
+            self.udp_target_port = tg.get('udp_target_port', 8080)
+            
+            self.ab_urls = tg.get('ab_urls', ["https://google.com"])
+            if not isinstance(self.ab_urls, list):
+                self.ab_urls = [self.ab_urls] if self.ab_urls else ["https://google.com"]
             
             self.traffic_dns_count = tg.get('dns_query_count', 500)
             self.traffic_udp_duration = tg.get('udp_duration_seconds', 10)
-            self.traffic_udp_port = tg.get('target_udp_port', 8080)
 
         except Exception as e:
             logger.error(f"Error loading config: {e}. Exiting.")

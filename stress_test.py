@@ -296,30 +296,33 @@ class StressTest:
                     )
                 
                 if self.config.traffic_udp_enabled:
-                    current_target = self.config.traffic_udp_target
+                    current_target = self.config.udp_target_ip
                     use_ipv6 = False
 
-                    if self.config.traffic_ipv6:
-                        if count % 2 != 0:
-                            current_target = self.config.traffic_udp_target
-                            use_ipv6 = False
-                        else:
-                            current_target = self.config.traffic_ipv6
+                    if self.config.udp_target_ipv6:
+                        if count % 2 == 0:
+                            current_target = self.config.udp_target_ipv6
                             use_ipv6 = True
+                        else:
+                            current_target = self.config.udp_target_ip
+                            use_ipv6 = False
 
                     util_traffic.generate_udp_flood(
                         current_target, 
-                        self.config.traffic_udp_port, 
+                        self.config.udp_target_port, 
                         float(self.config.traffic_udp_duration), 
                         self.stop_event, 
                         use_ipv6
                     )
                 
-                if self.config.traffic_concurrent_conns > 0:
+                if self.config.ab_concurrent_conn > 0 and self.config.ab_urls:
+                    idx = count % len(self.config.ab_urls)
+                    current_ab_url = self.config.ab_urls[idx]
+                    
                     util_traffic.run_high_concurrency_test(
-                        self.config.traffic_ab_url,
+                        current_ab_url,
                         10000, 
-                        self.config.traffic_concurrent_conns,
+                        self.config.ab_concurrent_conn,
                         self.tool_dir,
                         self.stop_event
                     )
