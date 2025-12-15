@@ -64,7 +64,8 @@ def run_high_concurrency_test(
     target_url: str, 
     requests: int, 
     concurrency: int, 
-    tool_dir: str = "tool"
+    tool_dir: str,
+    stop_event: threading.Event
 ):
     ab_path = os.path.join(tool_dir, "ab", "ab.exe")
     if not os.path.exists(ab_path):
@@ -80,20 +81,29 @@ def run_high_concurrency_test(
     ]
     
     logger.info(f"Run AB: {requests} reqs, {concurrency} conn -> {target_url}")
+    
     try:
-        result = subprocess.run(
+        proc = subprocess.Popen(
             cmd, 
-            capture_output=True, 
-            text=True, 
-            timeout=120
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.PIPE, 
+            text=True
         )
-        if result.returncode != 0:
-            err = result.stderr.strip()[:200]
-            logger.error(f"AB failed (RC {result.returncode}): {err}")
+        
+        while proc.poll() is None:
+            if stop_event.is_set():
+                logger.warning("Stop signal received. Killing AB...")
+                proc.kill()
+                return
+            time.sleep(0.5)
+            
+        stdout, stderr = proc.communicate()
+        
+        if proc.returncode != 0:
+            err = stderr.strip()[:200]
+            logger.error(f"AB failed (RC {proc.returncode}): {err}")
         else:
             logger.info("AB finished successfully.")
             
-    except subprocess.TimeoutExpired:
-        logger.error("AB timed out.")
     except Exception as e:
         logger.error(f"Failed to run AB: {e}")

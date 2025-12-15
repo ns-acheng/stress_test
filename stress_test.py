@@ -18,7 +18,7 @@ from util_resources import (
 )
 from util_network import check_url_alive
 from util_input import start_input_monitor
-from util_crash import check_crash_dumps
+from util_crash import check_crash_dumps, crash_handle
 from util_config import AgentConfigManager
 from util_tool_config import ToolConfig
 import util_traffic 
@@ -123,6 +123,9 @@ class StressTest:
                 f"Long Sleep Time: {self.config.long_sleep_time_min} - "
                 f"{self.config.long_sleep_time_max} sec"
             )
+        else:
+            logger.info("Long Sleep Interval is 0. Random sleep 30-120s enabled.")
+
         if self.config.custom_dump_path:
             logger.info(f"Custom Dump Path: {self.config.custom_dump_path}")
         logger.info(f"Log Folder: {current_log_dir}")
@@ -277,6 +280,16 @@ class StressTest:
                 if self.stop_event.is_set(): break
 
                 if self.config.traffic_dns_enabled:
+                    total_dns = self.config.traffic_dns_count
+                    logger.info(f"Starting DNS Flood: {total_dns} queries planned.")
+                    
+                    if self.urls:
+                        sample_k = min(len(self.urls), 10)
+                        samples = random.sample(self.urls, sample_k)
+                        logger.info(f"Sample targets ({sample_k} of {len(self.urls)} loaded):")
+                        for s in samples:
+                            logger.info(f"  {s}")
+                    
                     util_traffic.generate_dns_flood(
                         self.urls, 
                         self.config.traffic_dns_count
@@ -307,7 +320,8 @@ class StressTest:
                         self.config.traffic_ab_url,
                         10000, 
                         self.config.traffic_concurrent_conns,
-                        self.tool_dir
+                        self.tool_dir,
+                        self.stop_event
                     )
 
                 if self.stop_event.is_set(): break
@@ -335,10 +349,20 @@ class StressTest:
                                 self.cfg_mgr.toggle_failclose()
                                 if self.stop_event.is_set(): break
 
+                if self.config.long_sleep_interval == 0:
+                    sleep_dur = random.randint(30, 120)
+                    logger.info(
+                        f"Random Sleep triggered (long_sleep_interval=0). "
+                        f"Sleeping {sleep_dur}s..."
+                    )
+                    if smart_sleep(sleep_dur, self.stop_event):
+                        break
+
                 if self.config.long_sleep_interval > 0:
                     if count % self.config.long_sleep_interval == 0:
                         sleep_dur = random.randint(
-                            self.config.long_sleep_time_min, self.config.long_sleep_time_max
+                            self.config.long_sleep_time_min, 
+                            self.config.long_sleep_time_max
                         )
                         logger.info(
                             f"Long Sleep triggered. Sleeping {sleep_dur}s..."
@@ -359,6 +383,11 @@ class StressTest:
 
                 if crash_found:
                     logger.error("Crash dump found. Stopping test.")
+                    crash_handle(
+                        self.cfg_mgr.is_64bit, 
+                        current_log_dir, 
+                        self.config.custom_dump_path
+                    )
                     break
 
             except Exception:
