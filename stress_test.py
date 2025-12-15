@@ -123,6 +123,9 @@ class StressTest:
                 f"Long Sleep Time: {self.config.long_sleep_time_min} - "
                 f"{self.config.long_sleep_time_max} sec"
             )
+        else:
+            logger.info("Long Sleep Interval is 0. Random sleep 30-120s enabled.")
+
         if self.config.custom_dump_path:
             logger.info(f"Custom Dump Path: {self.config.custom_dump_path}")
         logger.info(f"Log Folder: {current_log_dir}")
@@ -336,10 +339,20 @@ class StressTest:
                                 self.cfg_mgr.toggle_failclose()
                                 if self.stop_event.is_set(): break
 
+                if self.config.long_sleep_interval == 0:
+                    sleep_dur = random.randint(30, 120)
+                    logger.info(
+                        f"Random Sleep triggered (long_sleep_interval=0). "
+                        f"Sleeping {sleep_dur}s..."
+                    )
+                    if smart_sleep(sleep_dur, self.stop_event):
+                        break
+
                 if self.config.long_sleep_interval > 0:
                     if count % self.config.long_sleep_interval == 0:
                         sleep_dur = random.randint(
-                            self.config.long_sleep_time_min, self.config.long_sleep_time_max
+                            self.config.long_sleep_time_min, 
+                            self.config.long_sleep_time_max
                         )
                         logger.info(
                             f"Long Sleep triggered. Sleeping {sleep_dur}s..."
