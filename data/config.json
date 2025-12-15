@@ -19,9 +19,7 @@
     "udp_duration_seconds": 20,
     "ab_concurrent_conn": 256,
     "ab_urls": [
-      "http://google.com/",
-      "http://bing.com/",
-      "http://yahoo.com/"
+      "http://192.168.15.17/"
     ]
   }
 }
