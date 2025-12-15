@@ -280,6 +280,16 @@ class StressTest:
                 if self.stop_event.is_set(): break
 
                 if self.config.traffic_dns_enabled:
+                    total_dns = self.config.traffic_dns_count
+                    logger.info(f"Starting DNS Flood: {total_dns} queries planned.")
+                    
+                    if self.urls:
+                        sample_k = min(len(self.urls), 10)
+                        samples = random.sample(self.urls, sample_k)
+                        logger.info(f"Sample targets ({sample_k} of {len(self.urls)} loaded):")
+                        for s in samples:
+                            logger.info(f"  {s}")
+                    
                     util_traffic.generate_dns_flood(
                         self.urls, 
                         self.config.traffic_dns_count
