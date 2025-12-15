@@ -8,20 +8,20 @@ This tool is designed to perform stress testing, resource monitoring, and stabil
 * **Python:** Python 3.6 or higher.
 * **Permissions:** **Administrator privileges** are strictly required to control Windows services and access system debug privileges.
 * **Flooding target (Optional):**
-    *  use the powersheel command to open the 80 and 8080 port
+    * use the powersheel command to open the 80 and 8080 port
       
        ``` powershell
        New-NetFirewallRule -DisplayName "Allow HTTP Stress Test" -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow
        New-NetFirewallRule -DisplayName "Allow UDP 8080 Stress Test" -Direction Inbound -Protocol UDP -LocalPort 8080 -Action Allow
        ```
   
-    *  run HTTP server in 80 port
+    * run HTTP server in 80 port
        ``` cmd
        python -m http.server 80
        ```
   
-    *  download `nc64.exe` from https://github.com/int0x33/nc.exe
-    *  run `nc64.exe`
+    * download `nc64.exe` from https://github.com/int0x33/nc.exe
+    * run `nc64.exe`
        ```cmd
        nc64.exe -u -l -p 8080 -v
        ```
