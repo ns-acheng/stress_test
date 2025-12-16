@@ -15,20 +15,18 @@ class ToolConfig:
         self.max_mem_usage = 85
         self.max_tabs_open = 20
         self.custom_dump_path = ""
-        self.long_sleep_interval = 0
-        self.long_sleep_time_min = 300
-        self.long_sleep_time_max = 300
-        
+        self.long_idle_interval = 0
+        self.long_idle_time_min = 300
+        self.long_idle_time_max = 300
+        self.system_sleep_interval = 0
+        self.system_sleep_seconds = 60
         self.traffic_dns_enabled = False
         self.traffic_udp_enabled = False
         self.ab_concurrent_conn = 0
         self.ab_urls = ["https://google.com"]
-        
         self.udp_target_ip = "127.0.0.1"
         self.udp_target_ipv6 = ""
         self.udp_target_port = 8080
-
-        
         self.traffic_dns_count = 500
         self.traffic_udp_duration = 10
 
@@ -57,14 +55,20 @@ class ToolConfig:
             self.custom_dump_path = config.get(
                 'custom_dump_path', self.custom_dump_path
             )
-            self.long_sleep_interval = config.get(
-                'long_sleep_interval', self.long_sleep_interval
+            self.long_idle_interval = config.get(
+                'long_idle_interval', self.long_idle_interval
             )
-            self.long_sleep_time_min = config.get(
-                'long_sleep_time_min', self.long_sleep_time_min
+            self.long_idle_time_min = config.get(
+                'long_idle_time_min', self.long_idle_time_min
             )
-            self.long_sleep_time_max = config.get(
-                'long_sleep_time_max', self.long_sleep_time_max
+            self.long_idle_time_max = config.get(
+                'long_idle_time_max', self.long_idle_time_max
+            )
+            self.system_sleep_interval = config.get(
+                'system_sleep_interval', self.system_sleep_interval
+            )
+            self.system_sleep_seconds = config.get(
+                'system_sleep_seconds', self.system_sleep_seconds
             )
             
             tg = config.get('traffic_gen', {})
@@ -72,14 +76,16 @@ class ToolConfig:
             self.traffic_udp_enabled = bool(tg.get('udp_flood_enabled', 0))
             
             self.ab_concurrent_conn = tg.get('ab_concurrent_conn', 0)
-            
             self.udp_target_ip = tg.get('udp_target_ip', "127.0.0.1")
             self.udp_target_ipv6 = tg.get('udp_target_ipv6', "")
             self.udp_target_port = tg.get('udp_target_port', 8080)
             
             self.ab_urls = tg.get('ab_urls', ["https://google.com"])
             if not isinstance(self.ab_urls, list):
-                self.ab_urls = [self.ab_urls] if self.ab_urls else ["https://google.com"]
+                if self.ab_urls:
+                    self.ab_urls = [self.ab_urls]
+                else:
+                    self.ab_urls = ["https://google.com"]
             
             self.traffic_dns_count = tg.get('dns_query_count', 500)
             self.traffic_udp_duration = tg.get('udp_duration_seconds', 10)
@@ -121,14 +127,25 @@ class ToolConfig:
             )
             self.max_tabs_open = 20
 
-        if self.long_sleep_time_max > 7200:
-            logger.warning("long_sleep_time_max > 7200, capping at 7200.")
-            self.long_sleep_time_max = 7200
+        if self.long_idle_time_max > 7200:
+            logger.warning("long_idle_time_max > 7200, capping at 7200.")
+            self.long_idle_time_max = 7200
             
-        if self.long_sleep_time_min < 300:
-            logger.warning("long_sleep_time_min < 300, capping at 300.")
-            self.long_sleep_time_min = 300
+        if self.long_idle_time_min < 300:
+            logger.warning("long_idle_time_min < 300, capping at 300.")
+            self.long_idle_time_min = 300
 
-        if self.long_sleep_time_max < self.long_sleep_time_min:
-            logger.warning("long_sleep_time_max < min, adjusting to min.")
-            self.long_sleep_time_max = self.long_sleep_time_min
+        if self.long_idle_time_max < self.long_idle_time_min:
+            logger.warning("long_idle_time_max < min, adjusting to min.")
+            self.long_idle_time_max = self.long_idle_time_min
+
+        if self.system_sleep_interval < 0:
+            logger.error("invalid 'system_sleep_interval'. Exiting.")
+            sys.exit(1)
+
+        if not (60 <= self.system_sleep_seconds <= 600):
+             logger.warning(
+                f"Invalid 'system_sleep_seconds' {self.system_sleep_seconds}. "
+                "Must be 60 ~ 600. Resetting to 60."
+            )
+             self.system_sleep_seconds = 60
