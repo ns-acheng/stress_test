@@ -2,7 +2,12 @@ import sys
 import os
 import random
 import threading
-from util_service import start_service, stop_service, get_service_status
+from util_service import (
+    start_service, 
+    stop_service, 
+    get_service_status, 
+    handle_non_stop
+)
 from util_log import LogSetup
 from util_time import smart_sleep
 from util_subprocess import (
@@ -161,7 +166,18 @@ class StressTest:
             log_resource_usage(
                 "stAgentSvc.exe", current_log_dir
             )
-            stop_service(self.service_name)
+
+            stopped = stop_service(self.service_name)
+            if not stopped:
+                logger.error(f"Service {self.service_name} failed to stop normally.")
+                handle_non_stop(
+                    self.service_name, 
+                    self.cfg_mgr.is_64bit, 
+                    current_log_dir
+                )
+                self.stop_event.set()
+                return
+
             self.cur_svc_status = get_service_status(self.service_name)
             logger.info(f"Current status: {self.cur_svc_status}")
             if smart_sleep(TINY_SEC, self.stop_event): 

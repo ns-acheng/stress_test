@@ -1,99 +1,82 @@
-import win32serviceutil
-import win32service
-import pywintypes
 import time
 import logging
-from enum import Enum
+import psutil
+import subprocess
+from util_crash import generate_live_dump
+from util_subprocess import nsdiag_collect_log
 
 logger = logging.getLogger()
 
-class _Action(Enum):
-    START = "start"
-    STOP = "stop"
-
-STATUS_MAP = {
-    win32service.SERVICE_STOPPED: "STOPPED",
-    win32service.SERVICE_START_PENDING: "START_PENDING",
-    win32service.SERVICE_STOP_PENDING: "STOP_PENDING",
-    win32service.SERVICE_RUNNING: "RUNNING",
-    win32service.SERVICE_CONTINUE_PENDING: "CONTINUE_PENDING",
-    win32service.SERVICE_PAUSE_PENDING: "PAUSE_PENDING",
-    win32service.SERVICE_PAUSED: "PAUSED",
-}
-
-def get_service_status(service_name: str, machine: str = None) -> str:
+def get_service_status(service_name):
     try:
-        status_tuple = win32serviceutil.QueryServiceStatus(service_name, machine)
-        status_code = status_tuple[1]
-        return STATUS_MAP.get(status_code, f"UNKNOWN ({status_code})")
-    
-    except pywintypes.error as e:
-        if e.winerror == 1060:
-            return "NOT_FOUND"
-        elif e.winerror == 5:
-            logger.error(f"Error: Access Denied. Try running this script as an Administrator.")
-        raise e
+        status = subprocess.check_output(
+            ["sc", "query", service_name], 
+            text=True
+        )
+        if "RUNNING" in status:
+            return "RUNNING"
+        elif "STOPPED" in status:
+            return "STOPPED"
+        elif "STOP_PENDING" in status:
+            return "STOP_PENDING"
+        elif "START_PENDING" in status:
+            return "START_PENDING"
+        return "UNKNOWN"
+    except subprocess.CalledProcessError:
+        return "NOT_FOUND"
 
-def start_service(service_name: str, machine: str = None, timeout: int = 30) -> bool:
-    return _control_service(service_name, _Action.START, machine, timeout)
-
-def stop_service(service_name: str, machine: str = None, timeout: int = 30) -> bool:
-    return _control_service(service_name, _Action.STOP, machine, timeout)
-
-def _control_service(service_name: str, action: _Action, machine: str = None, timeout: int = 30) -> bool:
-    if action == _Action.START:
-        action_str = "Starting"
-        service_func = win32serviceutil.StartService
-        target_status = STATUS_MAP[win32service.SERVICE_RUNNING]
-        pending_status = STATUS_MAP[win32service.SERVICE_START_PENDING]
-        already_done_error_code = 1056
-    elif action == _Action.STOP:
-        action_str = "Stopping"
-        service_func = win32serviceutil.StopService
-        target_status = STATUS_MAP[win32service.SERVICE_STOPPED]
-        pending_status = STATUS_MAP[win32service.SERVICE_STOP_PENDING]
-        already_done_error_code = 1062
-    else:
-        logger.error(f"Error: Invalid internal action '{action}' specified.")
+def start_service(service_name):
+    try:
+        logger.info(f"Starting service '{service_name}'...")
+        subprocess.run(["sc", "start", service_name], check=True)
+        return True
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Failed to start {service_name}: {e}")
         return False
 
+def stop_service(service_name, timeout=30):
     try:
-        current_status = get_service_status(service_name, machine)
+        logger.info(f"Stopping service '{service_name}'...")
+        subprocess.run(["sc", "stop", service_name], check=False)
         
-        if current_status == target_status:
-            logger.info(f"Service '{service_name}' is already {target_status.lower()}.")
-            return True
-        
-        if current_status == "NOT_FOUND":
-            logger.error(f"Error: Service '{service_name}' does not exist.")
-            return False
-
-        logger.info(f"{action_str} service '{service_name}'...")
-        service_func(service_name, machine)
-
-        start_time = time.time()
-        while time.time() - start_time < timeout:
-            current_status = get_service_status(service_name, machine)
-            
-            if current_status == target_status:
-                logger.info(f"Service '{service_name}' {action.value}ed successfully.")
+        for _ in range(timeout):
+            status = get_service_status(service_name)
+            if status == "STOPPED":
+                logger.info(f"Service '{service_name}' stopped successfully.")
                 return True
+            time.sleep(1)
             
-            if current_status != pending_status:
-                logger.error(f"Error: Service '{service_name}' entered an unexpected state: {current_status}")
-                return False
-                
-            time.sleep(0.5)
-
-        logger.error(f"Error: Timeout. Service '{service_name}' did not {action.value} within {timeout}s.")
+        logger.error(f"Error: Timeout. Service '{service_name}' did not stop within {timeout}s.")
+        return False
+        
+    except Exception as e:
+        logger.error(f"Exception stopping {service_name}: {e}")
         return False
 
-    except pywintypes.error as e:
-        if e.winerror == already_done_error_code:
-            logger.info(f"Service '{service_name}' is already {target_status.lower()}.")
-            return True
-        elif e.winerror == 5:
-            logger.error(f"Error {action_str.lower()} '{service_name}': Access Denied. Run as Administrator.")
-        else:
-            logger.exception(f"Error {action_str.lower()} '{service_name}':")
-        return False
+def _get_pid_by_name(process_name):
+    for proc in psutil.process_iter(['pid', 'name']):
+        if proc.info['name'] and proc.info['name'].lower() == process_name.lower():
+            return proc.info['pid']
+    return None
+
+def handle_non_stop(service_name, is_64bit, log_dir):
+    logger.warning(f"Handling non-stop for '{service_name}'. Waiting extra 60s...")
+    for i in range(60):
+        status = get_service_status(service_name)
+        if status == "STOPPED":
+            logger.info(f"Service '{service_name}' finally stopped after {i+1}s extra wait.")
+            return
+        time.sleep(1)
+    
+    logger.error(f"Service '{service_name}' IS STILL RUNNING/HANGING after extra wait.")
+
+    proc_name = "stAgentSvc.exe" if "stagent" in service_name.lower() else f"{service_name}.exe"
+
+    pid = _get_pid_by_name(proc_name)
+    if pid:
+        generate_live_dump(pid, log_dir)
+    else:
+        logger.error(f"Could not find PID for {proc_name} to dump.")
+
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    nsdiag_collect_log(timestamp, is_64bit, log_dir)
