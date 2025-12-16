@@ -372,10 +372,10 @@ class StressTest:
                                 self.exec_restart_driver()
                                 if self.stop_event.is_set(): break
 
-                        if self.config.failclose_interval > 0:
-                            if count % self.config.failclose_interval == 0:
-                                self.cfg_mgr.toggle_failclose()
-                                if self.stop_event.is_set(): break
+                if self.config.failclose_interval > 0:
+                    if count % self.config.failclose_interval == 0:
+                        self.cfg_mgr.toggle_failclose()
+                        if self.stop_event.is_set(): break
 
                 if self.config.long_idle_interval == 0:
                     sleep_dur = random.randint(30, 120)
