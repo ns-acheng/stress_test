@@ -2,7 +2,12 @@ import sys
 import os
 import random
 import threading
-from util_service import start_service, stop_service, get_service_status
+from util_service import (
+    start_service, 
+    stop_service, 
+    get_service_status, 
+    handle_non_stop
+)
 from util_log import LogSetup
 from util_time import smart_sleep
 from util_subprocess import (
@@ -161,7 +166,18 @@ class StressTest:
             log_resource_usage(
                 "stAgentSvc.exe", current_log_dir
             )
-            stop_service(self.service_name)
+
+            stopped = stop_service(self.service_name)
+            if not stopped:
+                logger.error(f"Service {self.service_name} failed to stop normally.")
+                handle_non_stop(
+                    self.service_name, 
+                    self.cfg_mgr.is_64bit, 
+                    current_log_dir
+                )
+                self.stop_event.set()
+                return
+
             self.cur_svc_status = get_service_status(self.service_name)
             logger.info(f"Current status: {self.cur_svc_status}")
             if smart_sleep(TINY_SEC, self.stop_event): 
@@ -296,30 +312,33 @@ class StressTest:
                     )
                 
                 if self.config.traffic_udp_enabled:
-                    current_target = self.config.traffic_udp_target
+                    current_target = self.config.udp_target_ip
                     use_ipv6 = False
 
-                    if self.config.traffic_ipv6:
-                        if count % 2 != 0:
-                            current_target = self.config.traffic_udp_target
-                            use_ipv6 = False
-                        else:
-                            current_target = self.config.traffic_ipv6
+                    if self.config.udp_target_ipv6:
+                        if count % 2 == 0:
+                            current_target = self.config.udp_target_ipv6
                             use_ipv6 = True
+                        else:
+                            current_target = self.config.udp_target_ip
+                            use_ipv6 = False
 
                     util_traffic.generate_udp_flood(
                         current_target, 
-                        self.config.traffic_udp_port, 
+                        self.config.udp_target_port, 
                         float(self.config.traffic_udp_duration), 
                         self.stop_event, 
                         use_ipv6
                     )
                 
-                if self.config.traffic_concurrent_conns > 0:
+                if self.config.ab_concurrent_conn > 0 and self.config.ab_urls:
+                    idx = count % len(self.config.ab_urls)
+                    current_ab_url = self.config.ab_urls[idx]
+                    
                     util_traffic.run_high_concurrency_test(
-                        self.config.traffic_ab_url,
+                        current_ab_url,
                         10000, 
-                        self.config.traffic_concurrent_conns,
+                        self.config.ab_concurrent_conn,
                         self.tool_dir,
                         self.stop_event
                     )

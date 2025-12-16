@@ -11,12 +11,15 @@
   "long_sleep_time_max": 600,
   "traffic_gen": {
     "dns_flood_enabled": 1,
-    "udp_flood_enabled": 1,
-    "concurrent_connections": 256,
-    "target_ip": "192.168.1.2",
-    "target_ipv6": "",
-    "target_udp_port": 8080,
     "dns_query_count": 500,
-    "udp_duration_seconds": 20
+    "udp_flood_enabled": 1,
+    "udp_target_ip": "192.168.1.2",
+    "udp_target_ipv6": "",
+    "udp_target_port": 8080,
+    "udp_duration_seconds": 20,
+    "ab_concurrent_conn": 256,
+    "ab_urls": [
+      "http://192.168.15.17/"
+    ]
   }
 }

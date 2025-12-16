@@ -3,18 +3,22 @@ import logging
 import os
 import shutil
 import datetime
+import subprocess
 from util_subprocess import nsdiag_collect_log
 
 logger = logging.getLogger()
-dump_paths = [
+
+def _get_dump_paths(custom_dump_path: str = "") -> list[str]:
+    paths = [
         r"C:\dump\stAgentSvc.exe\*.dmp",
         r"C:\ProgramData\netskope\stagent\logs\*.dmp"
     ]
-
-def check_crash_dumps(custom_dump_path: str = "") -> tuple[bool, int]:    
     if custom_dump_path:
-        dump_paths.append(custom_dump_path)
+        paths.append(custom_dump_path)
+    return paths
 
+def check_crash_dumps(custom_dump_path: str = "") -> tuple[bool, int]:
+    dump_paths = _get_dump_paths(custom_dump_path)
     found = False
     zero_count = 0
 
@@ -46,9 +50,8 @@ def crash_handle(is_64bit: bool, log_dir: str, custom_dump_path: str = ""):
         logger.info("Handling crash: Collecting logs and dumps...")
         
         nsdiag_collect_log(timestamp, is_64bit, log_dir)
-
-        if custom_dump_path:
-            dump_paths.append(custom_dump_path)
+        
+        dump_paths = _get_dump_paths(custom_dump_path)
             
         for path in dump_paths:
             files = glob.glob(path)
@@ -62,3 +65,32 @@ def crash_handle(is_64bit: bool, log_dir: str, custom_dump_path: str = ""):
 
     except Exception as e:
         logger.error(f"Error during crash handling: {e}")
+
+def generate_live_dump(pid: int, output_dir: str):
+    try:
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+            
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        dump_file = os.path.join(output_dir, f"LiveDump_{pid}_{timestamp}.dmp")
+        
+        # rundll32 comsvcs.dll, MiniDump <PID> <DumpFile> full
+        cmd = [
+            "rundll32.exe", 
+            "comsvcs.dll", 
+            "MiniDump", 
+            str(pid), 
+            dump_file, 
+            "full"
+        ]
+        
+        logger.info(f"Generating live dump for PID {pid} -> {dump_file}")
+        subprocess.run(cmd, check=True)
+        
+        if os.path.exists(dump_file) and os.path.getsize(dump_file) > 0:
+            logger.info("Live dump generated successfully.")
+        else:
+            logger.error("Live dump file not found or empty.")
+            
+    except Exception as e:
+        logger.error(f"Failed to generate live dump: {e}")
