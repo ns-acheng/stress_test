@@ -19,6 +19,7 @@
     "udp_target_ipv6": "",
     "udp_target_port": 8080,
     "udp_duration_seconds": 20,
+    "ab_total_conn": 10000,
     "ab_concurrent_conn": 256,
     "ab_urls": [
       "http://192.168.15.17/"

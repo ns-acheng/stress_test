@@ -22,6 +22,7 @@ class ToolConfig:
         self.system_sleep_seconds = 60
         self.traffic_dns_enabled = False
         self.traffic_udp_enabled = False
+        self.ab_total_conn = 10000
         self.ab_concurrent_conn = 0
         self.ab_urls = ["https://google.com"]
         self.udp_target_ip = "127.0.0.1"
@@ -75,6 +76,7 @@ class ToolConfig:
             self.traffic_dns_enabled = bool(tg.get('dns_flood_enabled', 0))
             self.traffic_udp_enabled = bool(tg.get('udp_flood_enabled', 0))
             
+            self.ab_total_conn = tg.get('ab_total_conn', 10000)
             self.ab_concurrent_conn = tg.get('ab_concurrent_conn', 0)
             self.udp_target_ip = tg.get('udp_target_ip', "127.0.0.1")
             self.udp_target_ipv6 = tg.get('udp_target_ipv6', "")
@@ -149,3 +151,7 @@ class ToolConfig:
                 "Must be 60 ~ 600. Resetting to 60."
             )
              self.system_sleep_seconds = 60
+             
+        if self.ab_total_conn < 0:
+             logger.warning("ab_total_conn < 0, disabling (0).")
+             self.ab_total_conn = 0

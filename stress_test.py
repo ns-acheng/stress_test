@@ -340,13 +340,17 @@ class StressTest:
                         use_ipv6
                     )
                 
-                if self.config.ab_concurrent_conn > 0 and self.config.ab_urls:
+                if (
+                    self.config.ab_total_conn > 0 and 
+                    self.config.ab_concurrent_conn > 0 and 
+                    self.config.ab_urls
+                ):
                     idx = count % len(self.config.ab_urls)
                     current_ab_url = self.config.ab_urls[idx]
                     
                     util_traffic.run_high_concurrency_test(
                         current_ab_url,
-                        10000, 
+                        self.config.ab_total_conn, 
                         self.config.ab_concurrent_conn,
                         self.tool_dir,
                         self.stop_event
