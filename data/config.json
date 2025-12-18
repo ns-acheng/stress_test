@@ -23,6 +23,9 @@
     "ab_concurrent_conn": 256,
     "ab_urls": [
       "http://192.168.15.17/"
-    ]
+    ],
+    "curl_flood_enabled": 1,
+    "curl_flood_count": 1000,
+    "curl_flood_concurrency": 50
   }
 }

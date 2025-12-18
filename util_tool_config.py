@@ -30,6 +30,9 @@ class ToolConfig:
         self.udp_target_port = 8080
         self.traffic_dns_count = 500
         self.traffic_udp_duration = 10
+        self.curl_flood_enabled = False
+        self.curl_flood_count = 10000
+        self.curl_flood_concurrency = 50
 
     def load(self):
         try:
@@ -91,6 +94,10 @@ class ToolConfig:
             
             self.traffic_dns_count = tg.get('dns_query_count', 500)
             self.traffic_udp_duration = tg.get('udp_duration_seconds', 10)
+            
+            self.curl_flood_enabled = bool(tg.get('curl_flood_enabled', 0))
+            self.curl_flood_count = tg.get('curl_flood_count', 10000)
+            self.curl_flood_concurrency = tg.get('curl_flood_concurrency', 50)
 
         except Exception as e:
             logger.error(f"Error loading config: {e}. Exiting.")
@@ -155,3 +162,9 @@ class ToolConfig:
         if self.ab_total_conn < 0:
              logger.warning("ab_total_conn < 0, disabling (0).")
              self.ab_total_conn = 0
+
+        if self.curl_flood_count < 0:
+            self.curl_flood_count = 0
+            
+        if self.curl_flood_concurrency < 1:
+            self.curl_flood_concurrency = 1

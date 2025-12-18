@@ -271,6 +271,14 @@ class StressTest:
                         self.stop_event
                     )
 
+                if self.config.curl_flood_enabled:
+                    util_traffic.generate_curl_flood(
+                        self.urls,
+                        self.config.curl_flood_count,
+                        self.config.curl_flood_concurrency,
+                        self.stop_event
+                    )
+
                 if self.stop_event.is_set(): break
 
                 if self.cfg_mgr.is_false_close:
