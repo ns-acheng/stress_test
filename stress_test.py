@@ -11,18 +11,14 @@ from util_service import (
 from util_log import LogSetup
 from util_time import smart_sleep
 from util_subprocess import (
-    run_batch, 
     run_powershell, 
     nsdiag_update_config,
-    run_curl,
     enable_wake_timers
 )
 from util_resources import (
-    get_system_memory_usage, 
     log_resource_usage, 
     enable_debug_privilege
 )
-from util_network import check_url_alive
 from util_input import start_input_monitor
 from util_crash import check_crash_dumps, crash_handle
 from util_config import AgentConfigManager
@@ -34,7 +30,6 @@ TINY_SEC = 5
 SHORT_SEC = 15
 STD_SEC = 30
 LONG_SEC = 60
-BATCH_LIMIT = 30
 
 try:
     log_helper = LogSetup()
@@ -95,9 +90,7 @@ class StressTest:
 
     def exec_failclose_check(self):
         if not os.path.exists(self.manage_nic_script):
-            logger.error(
-                f"NIC Manager script not found: {self.manage_nic_script}"
-            )
+            logger.error(f"NIC Manager not found: {self.manage_nic_script}")
             return
 
         logger.info("Simulating FailClose by Disabling NICs...")
@@ -111,7 +104,7 @@ class StressTest:
 
         for url in test_urls:
             if self.stop_event.is_set(): break
-            alive = check_url_alive(url)
+            alive = util_traffic.check_url_alive(url)
             status = "ALIVE" if alive else "DEAD (Blocked)"
             logger.info(f"URL: {url} -> {status}")
             if smart_sleep(1, self.stop_event):
@@ -119,29 +112,22 @@ class StressTest:
 
         logger.info("FailClose check done. Re-Enabling NICs...")
         run_powershell(self.manage_nic_script, ["-Action", "Enable"])
-        
         smart_sleep(SHORT_SEC, self.stop_event)
 
     def header_msg(self):
         logger.info(f"--- Start. Total iter: {self.config.loop_times} ---")
-        logger.info(f"Stop service int: {self.config.stop_svc_interval}")
+        logger.info(f"Stop svc int: {self.config.stop_svc_interval}")
         logger.info(f"Switch FailClose int: {self.config.failclose_interval}")
         logger.info(f"Stop/Start drv int: {self.config.stop_drv_interval}")
-        logger.info(f"Max Memory Threshold: {self.config.max_mem_usage}%")
-        logger.info(f"Max Tabs Open: {self.config.max_tabs_open}")
+        logger.info(f"Max Mem: {self.config.max_mem_usage}%")
+        logger.info(f"Max Tabs: {self.config.max_tabs_open}")
         
         if self.config.system_sleep_interval > 0:
-            logger.info(
-                f"Sys Sleep Int: {self.config.system_sleep_interval}"
-            )
-            logger.info(
-                f"Sys Sleep Dur: {self.config.system_sleep_seconds}s"
-            )
+            logger.info(f"Sys Sleep Int: {self.config.system_sleep_interval}")
+            logger.info(f"Sys Sleep Dur: {self.config.system_sleep_seconds}s")
 
         if self.config.long_idle_interval > 0:
-            logger.info(
-                f"Long Idle Int: {self.config.long_idle_interval}"
-            )
+            logger.info(f"Long Idle Int: {self.config.long_idle_interval}")
             logger.info(
                 f"Long Idle Time: {self.config.long_idle_time_min} - "
                 f"{self.config.long_idle_time_max} sec"
@@ -214,83 +200,26 @@ class StressTest:
             return
     
     def exec_browser_tabs(self):
-        if not self.urls:
-            logger.warning("No URLs loaded to open.")
-            return
-
-        logger.info(
-            f"Start tab loop. Max Mem: {self.config.max_mem_usage}%, "
-            f"Max Tabs: {self.config.max_tabs_open}"
+        util_traffic.open_browser_tabs(
+            self.urls,
+            self.tool_dir,
+            self.config.max_tabs_open,
+            self.config.max_mem_usage,
+            self.stop_event,
+            current_log_dir,
+            STD_SEC
         )
-        
-        batch_cnt = 0
-        total_tabs = 0
-
-        while batch_cnt < BATCH_LIMIT:
-            if self.stop_event.is_set(): 
-                break
-            if total_tabs >= self.config.max_tabs_open:
-                logger.info(f"Max tabs ({total_tabs}). Stop opening.")
-                break
-
-            remaining = self.config.max_tabs_open - total_tabs
-            count = min(len(self.urls), 10)
-            count = min(count, remaining)
-
-            if count <= 0:
-                break
-
-            selected_urls = random.sample(self.urls, count)
-            logger.info(f"Opening batch {batch_cnt + 1} ({count} URLs)...")
-            
-            args = " ".join(selected_urls)
-            cmd = os.path.join(self.tool_dir, f"open_msedge_tabs.bat {args}")
-            run_batch(cmd)
-            
-            total_tabs += count
-            if smart_sleep(STD_SEC, self.stop_event): 
-                break
-            log_resource_usage("stAgentSvc.exe", current_log_dir)
-
-            mem_usage = get_system_memory_usage()
-            mem_pct = mem_usage * 100.0   
-            logger.info(
-                f"System Mem: {mem_pct:.2f}% "
-                f"(Target: {self.config.max_mem_usage}%)"
-            )
-
-            if mem_pct >= self.config.max_mem_usage:
-                logger.info(f"Threshold reached ({mem_pct:.2f}%).")
-                break
-
-            batch_cnt += 1
-
-        if batch_cnt >= BATCH_LIMIT:
-            logger.warning(f"Reached max batch limit ({BATCH_LIMIT})")
 
     def exec_curl_requests(self):
-        if not self.urls:
-            return
-
-        count = min(len(self.urls), 10)
-        selected_urls = random.sample(self.urls, count)
-        logger.info(f"Running CURL on {count} random URLs...")
-        
-        for url in selected_urls:
-            if self.stop_event.is_set(): 
-                break
-            run_curl(url)
-            logger.info(f"CURL with URL: {url}")
+        util_traffic.curl_requests(self.urls, self.stop_event)
 
     def run(self):
         start_input_monitor(self.stop_event)
-
         self.header_msg()
 
         count = 0
         for count in range(1, self.config.loop_times + 1):
-            if self.stop_event.is_set(): 
-                break
+            if self.stop_event.is_set(): break
             try:
                 logger.info(f"== Iter {count} / {self.config.loop_times} ==")
                 
@@ -305,32 +234,19 @@ class StressTest:
                 if self.stop_event.is_set(): break
 
                 if self.config.traffic_dns_enabled:
-                    total_dns = self.config.traffic_dns_count
-                    logger.info(f"Start DNS Flood: {total_dns} queries.")
-                    
-                    if self.urls:
-                        sample_k = min(len(self.urls), 10)
-                        samples = random.sample(self.urls, sample_k)
-                        logger.info(f"Sample targets:")
-                        for s in samples:
-                            logger.info(f"  {s}")
-                    
                     util_traffic.generate_dns_flood(
-                        self.urls, 
-                        self.config.traffic_dns_count
+                        self.urls, self.config.traffic_dns_count
                     )
                 
                 if self.config.traffic_udp_enabled:
                     current_target = self.config.udp_target_ip
                     use_ipv6 = False
-
                     if self.config.udp_target_ipv6:
                         if count % 2 == 0:
                             current_target = self.config.udp_target_ipv6
                             use_ipv6 = True
                         else:
                             current_target = self.config.udp_target_ip
-                            use_ipv6 = False
 
                     util_traffic.generate_udp_flood(
                         current_target, 
@@ -347,7 +263,6 @@ class StressTest:
                 ):
                     idx = count % len(self.config.ab_urls)
                     current_ab_url = self.config.ab_urls[idx]
-                    
                     util_traffic.run_high_concurrency_test(
                         current_ab_url,
                         self.config.ab_total_conn, 
@@ -383,18 +298,12 @@ class StressTest:
 
                 if self.config.long_idle_interval == 0:
                     sleep_dur = random.randint(30, 120)
-                    logger.info(
-                        f"Random Sleep (idle=0). Sleeping {sleep_dur}s..."
-                    )
-                    if smart_sleep(sleep_dur, self.stop_event):
-                        break
+                    logger.info(f"Random Sleep (idle=0). {sleep_dur}s...")
+                    if smart_sleep(sleep_dur, self.stop_event): break
 
                 if self.config.system_sleep_interval > 0:
                     if count % self.config.system_sleep_interval == 0:
-                        logger.info(
-                            f"Sys Sleep. Susp for "
-                            f"{self.config.system_sleep_seconds}s..."
-                        )
+                        logger.info(f"Sys Sleep. {self.config.system_sleep_seconds}s...")
                         enter_s0_and_wake(self.config.system_sleep_seconds)
                         if self.stop_event.is_set(): break
 
@@ -404,16 +313,12 @@ class StressTest:
                             self.config.long_idle_time_min, 
                             self.config.long_idle_time_max
                         )
-                        logger.info(
-                            f"Long Idle triggered. Sleeping {sleep_dur}s..."
-                        )
-                        if smart_sleep(sleep_dur, self.stop_event): 
-                            break
+                        logger.info(f"Long Idle triggered. {sleep_dur}s...")
+                        if smart_sleep(sleep_dur, self.stop_event): break
 
                 ps_script = os.path.join(self.tool_dir, "close_browsers.ps1")
                 run_powershell(ps_script)
-                if smart_sleep(SHORT_SEC, self.stop_event): 
-                    break
+                if smart_sleep(SHORT_SEC, self.stop_event): break
 
                 crash_found, zero_count = check_crash_dumps(
                     self.config.custom_dump_path
@@ -435,12 +340,10 @@ class StressTest:
             except Exception:
                 logger.exception("An error occurred:")
                 logger.info(f"Retrying in {STD_SEC} seconds")
-                if smart_sleep(STD_SEC, self.stop_event): 
-                    break
+                if smart_sleep(STD_SEC, self.stop_event): break
 
         logger.info(f"--- Finished {count} iterations. ---")
         logger.info(f"Total 0-byte dumps deleted: {self.total_zero_dumps}")
-
 
 if __name__ == "__main__":
     runner = StressTest()
