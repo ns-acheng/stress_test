@@ -240,7 +240,9 @@ def curl_requests(urls, stop_event=None):
         run_curl(url)
         logger.info(f"CURL with URL: {url}")
 
-def _curl_flood_worker(url):
+def _curl_flood_worker(url, seq):
+    if seq % 10 == 0:
+        logger.info(f"Req #{seq}: {url}")
     try:
         cmd = ["curl", "-s", "-o", "NUL", url]
         subprocess.run(
@@ -258,11 +260,11 @@ def generate_curl_flood(urls, count, concurrency, stop_event=None):
     
     with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as exe:
         futures = []
-        for _ in range(count):
+        for i in range(1, count + 1):
             if _is_stopped(stop_event):
                 break
             url = random.choice(urls)
-            futures.append(exe.submit(_curl_flood_worker, url))
+            futures.append(exe.submit(_curl_flood_worker, url, i))
         
         for f in concurrent.futures.as_completed(futures):
             if _is_stopped(stop_event):
