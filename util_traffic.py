@@ -20,6 +20,11 @@ headers = {
                   '(KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'
 }
 
+def _is_stopped(stop_event):
+    if stop_event is None:
+        return False
+    return stop_event.is_set()
+
 def read_urls_from_file(filename):
     urls = []
     try:
@@ -102,7 +107,7 @@ def generate_udp_flood(
     target: str, 
     port: int, 
     duration: float, 
-    stop_event: threading.Event, 
+    stop_event: threading.Event = None, 
     ipv6: bool = False
 ):
     msg = f"UDP flood -> {target}:{port} for {duration}s (IPv6={ipv6})"
@@ -116,7 +121,7 @@ def generate_udp_flood(
         end_time = time.time() + duration
         
         while time.time() < end_time:
-            if stop_event.is_set():
+            if _is_stopped(stop_event):
                 break
             try:
                 sock.sendto(payload, (target, port))
@@ -132,7 +137,7 @@ def run_high_concurrency_test(
     requests: int, 
     concurrency: int, 
     tool_dir: str,
-    stop_event: threading.Event
+    stop_event: threading.Event = None
 ):
     ab_path = os.path.join(tool_dir, "ab", "ab.exe")
     if not os.path.exists(ab_path):
@@ -151,7 +156,7 @@ def run_high_concurrency_test(
         )
         
         while proc.poll() is None:
-            if stop_event.is_set():
+            if _is_stopped(stop_event):
                 logger.warning("Stop signal received. Killing AB...")
                 proc.kill()
                 return
@@ -184,7 +189,7 @@ def open_browser_tabs(
     batch_limit = 30
 
     while batch_cnt < batch_limit:
-        if stop_event.is_set():
+        if _is_stopped(stop_event):
             break
         if total_tabs >= max_tabs:
             logger.info(f"Max tabs ({total_tabs}). Stop opening.")
@@ -221,7 +226,7 @@ def open_browser_tabs(
     if batch_cnt >= batch_limit:
         logger.warning(f"Reached max batch limit ({batch_limit})")
 
-def curl_requests(urls, stop_event):
+def curl_requests(urls, stop_event=None):
     if not urls:
         return
 
@@ -230,7 +235,38 @@ def curl_requests(urls, stop_event):
     logger.info(f"Running CURL on {count} random URLs...")
 
     for url in selected:
-        if stop_event.is_set():
+        if _is_stopped(stop_event):
             break
         run_curl(url)
         logger.info(f"CURL with URL: {url}")
+
+def _curl_flood_worker(url):
+    try:
+        cmd = ["curl", "-s", "-o", "NUL", url]
+        subprocess.run(
+            cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
+    except Exception:
+        pass
+
+def generate_curl_flood(urls, count, concurrency, stop_event=None):
+    if not urls:
+        logger.warning("No URLs for CURL flood.")
+        return
+
+    logger.info(f"Start CURL Flood: {count} reqs, {concurrency} workers.")
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as exe:
+        futures = []
+        for _ in range(count):
+            if _is_stopped(stop_event):
+                break
+            url = random.choice(urls)
+            futures.append(exe.submit(_curl_flood_worker, url))
+        
+        for f in concurrent.futures.as_completed(futures):
+            if _is_stopped(stop_event):
+                exe.shutdown(wait=False, cancel_futures=True)
+                break
+    
+    logger.info("CURL Flood finished.")
