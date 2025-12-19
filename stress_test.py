@@ -92,9 +92,8 @@ class StressTest:
     def _client_toggler(self):
         logger.info("Client Toggle Thread Started.")
         while not self.stop_event.is_set():
-            wait_time = random.randint(90, 180)
-            
-            if self._wait_interval(wait_time): break
+            run_time = random.randint(180, 300)
+            if self._wait_interval(run_time): break
             
             if get_service_status(self.service_name) != "RUNNING":
                 logger.info("Thread: Service not running, skip toggle.")
@@ -103,10 +102,12 @@ class StressTest:
             logger.info("Thread: Disabling Client...")
             nsdiag_enable_client(False, self.cfg_mgr.is_64bit)
             
-            if self._wait_interval(wait_time): break
-            
-            logger.info("Thread: Enabling Client...")
-            nsdiag_enable_client(True, self.cfg_mgr.is_64bit)
+            disable_time = random.randint(90, 150)
+            if self._wait_interval(disable_time): break
+
+            if get_service_status(self.service_name) == "RUNNING":
+                logger.info("Thread: Enabling Client...")
+                nsdiag_enable_client(True, self.cfg_mgr.is_64bit)
 
     def start_client_thread(self):
         if self.config.disable_client == 1:
