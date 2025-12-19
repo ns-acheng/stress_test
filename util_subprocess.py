@@ -97,6 +97,11 @@ def nsdiag_update_config(is_64bit: bool = True):
     nsdiag_path = _get_nsdiag_path(is_64bit)
     _run_nsdiag_generic(nsdiag_path, ["-u"], "config update")
 
+def nsdiag_enable_client(enable: bool, is_64bit: bool = True):
+    nsdiag_path = _get_nsdiag_path(is_64bit)
+    action = "enable" if enable else "disable"
+    _run_nsdiag_generic(nsdiag_path, ["-t", action], f"client {action}")
+
 def enable_wake_timers():
     subgroup = "238C9FA8-0AAD-41ED-83F4-97BE242C8F20" 
     setting  = "BD3B718A-0680-4D9D-8AB2-E1D2B4EF806D"

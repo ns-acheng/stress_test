@@ -3,21 +3,17 @@ import os
 import random
 import threading
 from util_service import (
-    start_service, 
-    stop_service, 
-    get_service_status, 
+    start_service, stop_service, get_service_status,
     handle_non_stop
 )
 from util_log import LogSetup
 from util_time import smart_sleep
 from util_subprocess import (
-    run_powershell, 
-    nsdiag_update_config,
-    enable_wake_timers
+    run_powershell, nsdiag_update_config, enable_wake_timers, 
+    nsdiag_enable_client
 )
 from util_resources import (
-    log_resource_usage, 
-    enable_debug_privilege
+    log_resource_usage, enable_debug_privilege
 )
 from util_input import start_input_monitor
 from util_crash import check_crash_dumps, crash_handle
@@ -54,6 +50,7 @@ class StressTest:
         self.urls = []
         self.manage_nic_script = os.path.join(self.tool_dir, "manage_nic.ps1")
         self.total_zero_dumps = 0
+        self.client_thread = None
 
     def setup(self):
         enable_debug_privilege()
@@ -68,7 +65,6 @@ class StressTest:
 
     def tear_down(self):
         self.cfg_mgr.restore_config()
-
         if os.path.exists(self.manage_nic_script):
             logger.info("Tear down: Ensuring NICs are enabled...")
             run_powershell(self.manage_nic_script, ["-Action", "Enable"])
@@ -78,30 +74,52 @@ class StressTest:
             if not os.path.exists(self.url_file):
                 logger.error(f"{self.url_file} not found.")
                 return
-
             with open(self.url_file, 'r') as f:
                 lines = f.readlines()
-            
             self.urls = [line.strip() for line in lines if line.strip()]
             logger.info(f"Loaded {len(self.urls)} URLs from {self.url_file}")
-            
         except Exception as e:
             logger.error(f"Error loading URLs: {e}")
+
+    def _client_toggler(self):
+        logger.info("Client Toggle Thread Started.")
+        while not self.stop_event.is_set():
+            wait_time = random.randint(90, 180)
+            if smart_sleep(wait_time, self.stop_event):
+                break
+            
+            status = get_service_status(self.service_name)
+            if status != "RUNNING":
+                continue
+            
+            logger.info("Thread: Disabling Client...")
+            nsdiag_enable_client(False, self.cfg_mgr.is_64bit)
+            
+            if smart_sleep(15, self.stop_event):
+                break
+                
+            status = get_service_status(self.service_name)
+            if status == "RUNNING":
+                logger.info("Thread: Enabling Client...")
+                nsdiag_enable_client(True, self.cfg_mgr.is_64bit)
+
+    def start_client_thread(self):
+        if self.config.disable_client == 1:
+            self.client_thread = threading.Thread(
+                target=self._client_toggler, daemon=True
+            )
+            self.client_thread.start()
 
     def exec_failclose_check(self):
         if not os.path.exists(self.manage_nic_script):
             logger.error(f"NIC Manager not found: {self.manage_nic_script}")
             return
-
         logger.info("Simulating FailClose by Disabling NICs...")
         run_powershell(self.manage_nic_script, ["-Action", "Disable"])
-
         if smart_sleep(SHORT_SEC, self.stop_event):
             return
-
         test_urls = random.sample(self.urls, min(len(self.urls), 10))
         logger.info(f"Checking {len(test_urls)} URLs for reachability...")
-
         for url in test_urls:
             if self.stop_event.is_set(): break
             alive = util_traffic.check_url_alive(url)
@@ -109,7 +127,6 @@ class StressTest:
             logger.info(f"URL: {url} -> {status}")
             if smart_sleep(1, self.stop_event):
                 break
-
         logger.info("FailClose check done. Re-Enabling NICs...")
         run_powershell(self.manage_nic_script, ["-Action", "Enable"])
         smart_sleep(SHORT_SEC, self.stop_event)
@@ -119,22 +136,20 @@ class StressTest:
         logger.info(f"Stop svc int: {self.config.stop_svc_interval}")
         logger.info(f"Switch FailClose int: {self.config.failclose_interval}")
         logger.info(f"Stop/Start drv int: {self.config.stop_drv_interval}")
+        logger.info(f"Disable Client Thread: {self.config.disable_client}")
         logger.info(f"Max Mem: {self.config.max_mem_usage}%")
         logger.info(f"Max Tabs: {self.config.max_tabs_open}")
-        
         if self.config.system_sleep_interval > 0:
             logger.info(f"Sys Sleep Int: {self.config.system_sleep_interval}")
             logger.info(f"Sys Sleep Dur: {self.config.system_sleep_seconds}s")
-
         if self.config.long_idle_interval > 0:
             logger.info(f"Long Idle Int: {self.config.long_idle_interval}")
             logger.info(
-                f"Long Idle Time: {self.config.long_idle_time_min} - "
-                f"{self.config.long_idle_time_max} sec"
+                f"Long Idle: {self.config.long_idle_time_min} - "
+                f"{self.config.long_idle_time_max}s"
             )
         else:
             logger.info("Long Idle is 0. Random sleep 30-120s enabled.")
-
         if self.config.custom_dump_path:
             logger.info(f"Custom Dump Path: {self.config.custom_dump_path}")
         logger.info(f"Log Folder: {current_log_dir}")
@@ -147,13 +162,17 @@ class StressTest:
             logger.error(f"Service {self.service_name} NOT FOUND.")
             self.stop_event.set()
             return
-
         logger.info(f"Current status: {status}")
         if status != "RUNNING":
             start_service(self.service_name)
             logger.info(f"Waiting for {STD_SEC} seconds")
             if smart_sleep(STD_SEC, self.stop_event): 
                 return
+            
+            if self.config.disable_client == 1:
+                logger.info("Service Started. Ensuring Client Enabled.")
+                nsdiag_enable_client(True, self.cfg_mgr.is_64bit)
+
         log_resource_usage("stAgentSvc.exe", current_log_dir)
 
     def exec_stop_service(self):
@@ -162,11 +181,9 @@ class StressTest:
             logger.error(f"Service {self.service_name} NOT FOUND.")
             self.stop_event.set()
             return
-
         logger.info(f"Current status: {status}")
         if status == "RUNNING":
             log_resource_usage("stAgentSvc.exe", current_log_dir)
-
             stopped = stop_service(self.service_name)
             if not stopped:
                 logger.error(f"{self.service_name} failed to stop.")
@@ -177,7 +194,6 @@ class StressTest:
                 )
                 self.stop_event.set()
                 return
-
             self.cur_svc_status = get_service_status(self.service_name)
             logger.info(f"Current status: {self.cur_svc_status}")
             if smart_sleep(TINY_SEC, self.stop_event): 
@@ -188,7 +204,6 @@ class StressTest:
             logger.error(f"Driver {self.drv_name} NOT FOUND.")
             self.stop_event.set()
             return
-            
         logger.info(f"To STOP and START driver 'stadrv'")
         stop_service(self.drv_name)
         status = get_service_status(self.service_name)
@@ -201,12 +216,8 @@ class StressTest:
     
     def exec_browser_tabs(self):
         util_traffic.open_browser_tabs(
-            self.urls,
-            self.tool_dir,
-            self.config.max_tabs_open,
-            self.config.max_mem_usage,
-            self.stop_event,
-            current_log_dir,
+            self.urls, self.tool_dir, self.config.max_tabs_open,
+            self.config.max_mem_usage, self.stop_event, current_log_dir,
             STD_SEC
         )
 
@@ -216,6 +227,7 @@ class StressTest:
     def run(self):
         start_input_monitor(self.stop_event)
         self.header_msg()
+        self.start_client_thread()
 
         count = 0
         for count in range(1, self.config.loop_times + 1):
@@ -247,13 +259,10 @@ class StressTest:
                             use_ipv6 = True
                         else:
                             current_target = self.config.udp_target_ip
-
                     util_traffic.generate_udp_flood(
-                        current_target, 
-                        self.config.udp_target_port, 
+                        current_target, self.config.udp_target_port, 
                         float(self.config.traffic_udp_duration), 
-                        self.stop_event, 
-                        use_ipv6
+                        self.stop_event, use_ipv6
                     )
                 
                 if (
@@ -264,19 +273,15 @@ class StressTest:
                     idx = count % len(self.config.ab_urls)
                     current_ab_url = self.config.ab_urls[idx]
                     util_traffic.run_high_concurrency_test(
-                        current_ab_url,
-                        self.config.ab_total_conn, 
-                        self.config.ab_concurrent_conn,
-                        self.tool_dir,
+                        current_ab_url, self.config.ab_total_conn, 
+                        self.config.ab_concurrent_conn, self.tool_dir,
                         self.stop_event
                     )
 
                 if self.config.curl_flood_enabled:
                     util_traffic.generate_curl_flood(
-                        self.urls,
-                        self.config.curl_flood_count,
-                        self.config.curl_flood_concurrency,
-                        self.stop_event
+                        self.urls, self.config.curl_flood_count,
+                        self.config.curl_flood_concurrency, self.stop_event
                     )
 
                 if self.stop_event.is_set(): break
@@ -311,7 +316,9 @@ class StressTest:
 
                 if self.config.system_sleep_interval > 0:
                     if count % self.config.system_sleep_interval == 0:
-                        logger.info(f"Sys Sleep. {self.config.system_sleep_seconds}s...")
+                        logger.info(
+                            f"Sys Sleep. {self.config.system_sleep_seconds}s"
+                        )
                         enter_s0_and_wake(self.config.system_sleep_seconds)
                         if self.stop_event.is_set(): break
 
@@ -332,19 +339,16 @@ class StressTest:
                     self.config.custom_dump_path
                 )
                 self.total_zero_dumps += zero_count
-                
                 if zero_count > 0:
                     logger.info(f"Cleaned {zero_count} 0-byte dump files.")
-
                 if crash_found:
                     logger.error("Crash dump found. Stopping test.")
                     crash_handle(
-                        self.cfg_mgr.is_64bit, 
+                        self.cfg_mgr.is_64bit,
                         current_log_dir, 
                         self.config.custom_dump_path
                     )
                     break
-
             except Exception:
                 logger.exception("An error occurred:")
                 logger.info(f"Retrying in {STD_SEC} seconds")
