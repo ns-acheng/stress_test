@@ -3,8 +3,7 @@ import os
 import random
 import threading
 from util_service import (
-    start_service, stop_service, get_service_status,
-    handle_non_stop
+    start_service, stop_service, get_service_status, handle_non_stop
 )
 from util_log import LogSetup
 from util_time import smart_sleep
@@ -81,27 +80,33 @@ class StressTest:
         except Exception as e:
             logger.error(f"Error loading URLs: {e}")
 
+    def _wait_interval(self, duration):
+        steps = duration // 2
+        remainder = duration % 2
+        for _ in range(steps):
+            if smart_sleep(2, self.stop_event): return True
+        if remainder > 0:
+            if smart_sleep(remainder, self.stop_event): return True
+        return False
+
     def _client_toggler(self):
         logger.info("Client Toggle Thread Started.")
         while not self.stop_event.is_set():
             wait_time = random.randint(90, 180)
-            if smart_sleep(wait_time, self.stop_event):
-                break
             
-            status = get_service_status(self.service_name)
-            if status != "RUNNING":
+            if self._wait_interval(wait_time): break
+            
+            if get_service_status(self.service_name) != "RUNNING":
+                logger.info("Thread: Service not running, skip toggle.")
                 continue
-            
+
             logger.info("Thread: Disabling Client...")
             nsdiag_enable_client(False, self.cfg_mgr.is_64bit)
             
-            if smart_sleep(15, self.stop_event):
-                break
-                
-            status = get_service_status(self.service_name)
-            if status == "RUNNING":
-                logger.info("Thread: Enabling Client...")
-                nsdiag_enable_client(True, self.cfg_mgr.is_64bit)
+            if self._wait_interval(wait_time): break
+            
+            logger.info("Thread: Enabling Client...")
+            nsdiag_enable_client(True, self.cfg_mgr.is_64bit)
 
     def start_client_thread(self):
         if self.config.disable_client == 1:
@@ -203,7 +208,7 @@ class StressTest:
         if get_service_status(self.drv_name) == "NOT_FOUND":
             logger.error(f"Driver {self.drv_name} NOT FOUND.")
             self.stop_event.set()
-            return
+            return  
         logger.info(f"To STOP and START driver 'stadrv'")
         stop_service(self.drv_name)
         status = get_service_status(self.service_name)
@@ -344,8 +349,7 @@ class StressTest:
                 if crash_found:
                     logger.error("Crash dump found. Stopping test.")
                     crash_handle(
-                        self.cfg_mgr.is_64bit,
-                        current_log_dir, 
+                        self.cfg_mgr.is_64bit, current_log_dir, 
                         self.config.custom_dump_path
                     )
                     break
