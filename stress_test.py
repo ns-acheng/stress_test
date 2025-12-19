@@ -92,7 +92,7 @@ class StressTest:
     def _client_toggler(self):
         logger.info("Client Toggle Thread Started.")
         while not self.stop_event.is_set():
-            run_time = random.randint(180, 300)
+            run_time = random.randint(400, 700)
             if self._wait_interval(run_time): break
             
             if get_service_status(self.service_name) != "RUNNING":
