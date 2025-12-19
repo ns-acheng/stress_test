@@ -11,7 +11,11 @@ param (
     [string]$Action
 )
 
-if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+$identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+$principal = [Security.Principal.WindowsPrincipal]$identity
+$adminRole = [Security.Principal.WindowsBuiltInRole]"Administrator"
+
+if (-not $principal.IsInRole($adminRole)) {
     Write-Warning "This script requires Administrator privileges. Please Run as Administrator."
     break
 }
