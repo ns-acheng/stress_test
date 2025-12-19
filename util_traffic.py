@@ -159,34 +159,49 @@ def run_high_concurrency_test(
         logger.warning(f"AB not found at {ab_path}. Skipping.")
         return
 
-    cmd = [
-        ab_path, "-n", str(requests), "-c", str(concurrency), "-k", target_url
-    ]
-    
-    logger.info(f"Run AB: {requests} reqs, {concurrency} conn -> {target_url}")
-    
-    try:
-        proc = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
-        )
+    batches = 5
+    if requests < batches:
+        batches = 1
         
-        while proc.poll() is None:
-            if _is_stopped(stop_event):
-                logger.warning("Stop signal received. Killing AB...")
-                proc.kill()
-                return
-            time.sleep(0.5)
-            
-        stdout, stderr = proc.communicate()
+    chunk_size = max(1, requests // batches)
+    logger.info(
+        f"Run AB: {requests} reqs (split {batches}), "
+        f"{concurrency} conn -> {target_url}"
+    )
+    
+    for i in range(batches):
+        if _is_stopped(stop_event):
+            break
+
+        cmd = [
+            ab_path, "-n", str(chunk_size), 
+            "-c", str(concurrency), "-k", target_url
+        ]
         
-        if proc.returncode != 0:
-            err = stderr.strip()[:200]
-            logger.error(f"AB failed (RC {proc.returncode}): {err}")
-        else:
-            logger.info("AB finished successfully.")
+        try:
+            proc = subprocess.Popen(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+            )
             
-    except Exception as e:
-        logger.error(f"Failed to run AB: {e}")
+            while proc.poll() is None:
+                if _is_stopped(stop_event):
+                    logger.warning("Stop signal received. Killing AB...")
+                    proc.kill()
+                    return
+                time.sleep(0.5)
+                
+            proc.communicate()
+            
+            if proc.returncode != 0:
+                logger.error(f"AB batch {i+1} failed (RC {proc.returncode})")
+            else:
+                pct = int(((i + 1) / batches) * 100)
+                logger.info(f"AB Test progress: {pct}%")
+                
+        except Exception as e:
+            logger.error(f"Failed to run AB batch {i+1}: {e}")
+
+    logger.info("AB finished successfully.")
 
 def open_browser_tabs(
     urls, tool_dir, max_tabs, max_mem, stop_event, log_dir, wait_sec
