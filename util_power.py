@@ -64,5 +64,8 @@ def enter_s0_and_wake(duration_seconds: int):
         kernel32.CloseHandle(handle)
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s'
+    )
     enter_s0_and_wake(45)
