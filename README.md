@@ -59,28 +59,32 @@ pip install -r requirement.txt
 
 `failclose_interval`: Iteration frequency to toggle FailClose settings. Set to 0 to disable.
 
+`disable_client`: (0/1) If 1, runs a background thread that randomly enables/disables the client using `nsdiag`.
+
 `max_mem_usage`: System memory threshold (50-99%). If exceeded, browser tabs stop opening.
 
 `max_tabs_open`: Maximum number of concurrent browser tabs allowed.
 
 `custom_dump_path`: Dump path for external tools like **Windows Debug Diagnostic Tool**
 
-`long_sleep_interval`: Iteration frequency to trigger a long sleep period (useful for soak testing). 
-* If set to **> 0**: Sleeps for `long_sleep_time_min` to `long_sleep_time_max` seconds every N iterations.
+`system_sleep_interval`: Iteration frequency to trigger system sleep (S0 state). Set to 0 to disable.
+
+`system_sleep_seconds`: Duration in seconds to stay in sleep mode before waking.
+
+`long_idle_interval`: Iteration frequency to trigger a long idle period (useful for soak testing). 
+* If set to **> 0**: Sleeps for `long_idle_time_min` to `long_idle_time_max` seconds every N iterations.
 * If set to **0**: Randomly sleeps for **30 to 120 seconds** in *every* iteration.
 
-`long_sleep_time_min`: Minimum duration for the long sleep in seconds (Lower bound: 300s).
+`long_idle_time_min`: Minimum duration for the long idle in seconds (Lower bound: 300s).
 
-`long_sleep_time_max`: Maximum duration for the long sleep in seconds (Upper bound: 7200s).
+`long_idle_time_max`: Maximum duration for the long idle in seconds (Upper bound: 7200s).
 
 ### Traffic Generation Settings (traffic_gen)
 `dns_flood_enabled`: (0/1) If 1, generates random subdomain queries to bypass local DNS cache.
 
+`dns_query_count`: (int) Number of random DNS queries to generate per iteration (default: 500).
+
 `udp_flood_enabled`: (0/1) If 1, sends UDP packets to target. (Note: Automatically toggles between IPv6 and IPv4 on alternate iterations if IPv6 is configured).
-
-`ab_concurrent_conn`: (int) Target number of concurrent connections for Apache Bench. Set to 0 to disable.
-
-`ab_urls`: (list[str]) List of target URLs for Apache Bench. The test cycles through these URLs one by one per iteration. Default: `["https://google.com"]`.
 
 `udp_target_ip`: (str) Target IPv4 address for UDP flood.
 
@@ -88,9 +92,19 @@ pip install -r requirement.txt
 
 `udp_target_port`: (int) Target UDP port (default: 8080).
 
-`dns_query_count`: (int) Number of random DNS queries to generate per iteration (default: 500).
-
 `udp_duration_seconds`: (int/float) Duration in seconds to sustain the UDP flood per iteration (default: 10).
+
+`ab_total_conn`: (int) Total number of requests to perform for Apache Bench.
+
+`ab_concurrent_conn`: (int) Target number of concurrent connections for Apache Bench. Set to 0 to disable.
+
+`ab_urls`: (list[str]) List of target URLs for Apache Bench. The test cycles through these URLs one by one per iteration.
+
+`curl_flood_enabled`: (0/1) If 1, enables high-concurrency HTTP requests using curl.
+
+`curl_flood_count`: (int) Total number of curl requests to send.
+
+`curl_flood_concurrency`: (int) Number of concurrent curl processes.
 
 
 **Strategy 1: Memory & Handle Leak Detection**
@@ -124,9 +138,9 @@ pip install -r requirement.txt
     "max_mem_usage": 80,
     "max_tabs_open": 30,
     "custom_dump_path": "",
-    "long_sleep_interval": 0,
-    "long_sleep_time_min": 300,
-    "long_sleep_time_max": 300,
+    "long_idle_interval": 0,
+    "long_idle_time_min": 300,
+    "long_idle_time_max": 300,
 }
 ```
 
@@ -146,15 +160,15 @@ pip install -r requirement.txt
     "max_mem_usage": 80,
     "max_tabs_open": 30,
     "custom_dump_path": "",
-    "long_sleep_interval": 0,
-    "long_sleep_time_min": 300,
-    "long_sleep_time_max": 300
+    "long_idle_interval": 0,
+    "long_idle_time_min": 300,
+    "long_idle_time_max": 300
 }
 ```
 
 **Strategy 4: Soak Mode**
 * * With very limited resource using for a long term with longer sleep time.
-* * So we give a big loop_times and longer `long_sleep_time`.
+* * So we give a big loop_times and longer `long_idle_time`.
 
 ```json
 {
@@ -166,9 +180,9 @@ pip install -r requirement.txt
     "max_mem_usage": 60,
     "max_tabs_open": 10,
     "custom_dump_path": "",
-    "long_sleep_interval": 1,
-    "long_sleep_time_min": 1000,
-    "long_sleep_time_max": 3600
+    "long_idle_interval": 1,
+    "long_idle_time_min": 1000,
+    "long_idle_time_max": 3600
 }
 ```
 
@@ -186,9 +200,9 @@ pip install -r requirement.txt
   "max_mem_usage": 60,
   "max_tabs_open": 20,
   "custom_dump_path": "C:\\dump\\stAgentSvc.exe\\*.dmp",
-  "long_sleep_interval": 100,
-  "long_sleep_time_min": 300,
-  "long_sleep_time_max": 600,
+  "long_idle_interval": 100,
+  "long_idle_time_min": 300,
+  "long_idle_time_max": 600,
   "traffic_gen": {
     "dns_flood_enabled": 1,
     "dns_query_count": 500,
@@ -197,10 +211,14 @@ pip install -r requirement.txt
     "udp_target_ipv6": "",
     "udp_target_port": 8080,
     "udp_duration_seconds": 20,
+    "ab_total_conn": 10000,
     "ab_concurrent_conn": 256,
     "ab_urls": [
       "http://10.1.2.3"
-    ]
+    ],
+    "curl_flood_enabled": 1,
+    "curl_flood_count": 1000,
+    "curl_flood_concurrency": 50
   }
 }
 ```
@@ -227,3 +245,6 @@ pip install -r requirement.txt
 10. Massive DNS/UDP traffic generation
 11. High concurrency connection testing (via Apache Bench) with multi-URL support
 12. Auto-collect log bundle (`nsdiag`) and dump files upon crash detection
+13. System Sleep (S0) simulation
+14. Client Enable/Disable toggling via `nsdiag`
+15. Curl-based HTTP flood support
