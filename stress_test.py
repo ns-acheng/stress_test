@@ -19,7 +19,8 @@ from util_crash import check_crash_dumps, crash_handle
 from util_config import AgentConfigManager
 from util_tool_config import ToolConfig
 from util_power import enter_s0_and_wake
-import util_traffic 
+import util_traffic
+import util_client
 
 TINY_SEC = 5
 SHORT_SEC = 15
@@ -80,39 +81,16 @@ class StressTest:
         except Exception as e:
             logger.error(f"Error loading URLs: {e}")
 
-    def _wait_interval(self, duration):
-        steps = duration // 2
-        remainder = duration % 2
-        for _ in range(steps):
-            if smart_sleep(2, self.stop_event): return True
-        if remainder > 0:
-            if smart_sleep(remainder, self.stop_event): return True
-        return False
-
-    def _client_toggler(self):
-        logger.info("Client Toggle Thread Started.")
-        while not self.stop_event.is_set():
-            run_time = random.randint(400, 700)
-            if self._wait_interval(run_time): break
-            
-            if get_service_status(self.service_name) != "RUNNING":
-                logger.info("Thread: Service not running, skip toggle.")
-                continue
-
-            logger.info("Thread: Disabling Client...")
-            nsdiag_enable_client(False, self.cfg_mgr.is_64bit)
-            
-            disable_time = random.randint(90, 150)
-            if self._wait_interval(disable_time): break
-
-            if get_service_status(self.service_name) == "RUNNING":
-                logger.info("Thread: Enabling Client...")
-                nsdiag_enable_client(True, self.cfg_mgr.is_64bit)
-
     def start_client_thread(self):
         if self.config.disable_client == 1:
             self.client_thread = threading.Thread(
-                target=self._client_toggler, daemon=True
+                target=util_client.client_toggler_loop,
+                args=(
+                    self.stop_event, 
+                    self.service_name, 
+                    self.cfg_mgr.is_64bit
+                ),
+                daemon=True
             )
             self.client_thread.start()
 
