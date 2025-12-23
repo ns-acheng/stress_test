@@ -21,14 +21,16 @@ def run_powershell(script_path, args=None):
         command.extend(args)
     
     try:
-        logger.info(f"Running PowerShell: {script_path} {args if args else ''}")
+        logger.info(
+            f"Running PowerShell: {script_path} {args if args else ''}"
+        )
         subprocess.run(
             command, 
             check=True, 
             capture_output=True, 
             text=True
         )
-        logger.info(f"PowerShell script executed successfully.")
+        logger.info("PowerShell script executed successfully.")
 
     except subprocess.CalledProcessError as e:
         logger.error(f"PowerShell failed. Return Code: {e.returncode}")
@@ -94,3 +96,40 @@ def nsdiag_collect_log(timestamp: str, is_64bit: bool, output_dir: str):
 def nsdiag_update_config(is_64bit: bool = True):
     nsdiag_path = _get_nsdiag_path(is_64bit)
     _run_nsdiag_generic(nsdiag_path, ["-u"], "config update")
+
+def nsdiag_enable_client(enable: bool, is_64bit: bool = True):
+    nsdiag_path = _get_nsdiag_path(is_64bit)
+    action = "enable" if enable else "disable"
+    _run_nsdiag_generic(nsdiag_path, ["-t", action], f"client {action}")
+
+def enable_wake_timers():
+    subgroup = "238C9FA8-0AAD-41ED-83F4-97BE242C8F20" 
+    setting  = "BD3B718A-0680-4D9D-8AB2-E1D2B4EF806D"
+    val = "1"
+
+    commands = [
+        [
+            "powercfg", "/setacvalueindex", "SCHEME_CURRENT", 
+            subgroup, setting, val
+        ],
+        [
+            "powercfg", "/setdcvalueindex", "SCHEME_CURRENT", 
+            subgroup, setting, val
+        ],
+        ["powercfg", "/setactive", "SCHEME_CURRENT"]
+    ]
+
+    try:
+        logger.info("Enabling 'Allow wake timers' in Power Settings...")
+        for cmd in commands:
+            subprocess.run(
+                cmd, 
+                check=True, 
+                stdout=subprocess.DEVNULL, 
+                stderr=subprocess.DEVNULL
+            )
+        logger.info("Wake timers successfully enabled.")
+        return True
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Failed to enable wake timers: {e}")
+        return False

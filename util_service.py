@@ -46,7 +46,9 @@ def stop_service(service_name, timeout=30):
                 return True
             time.sleep(1)
             
-        logger.error(f"Error: Timeout. Service '{service_name}' did not stop within {timeout}s.")
+        logger.error(
+            f"Error: Timeout. Service '{service_name}' did not stop within {timeout}s."
+        )
         return False
         
     except Exception as e:
@@ -64,13 +66,19 @@ def handle_non_stop(service_name, is_64bit, log_dir):
     for i in range(60):
         status = get_service_status(service_name)
         if status == "STOPPED":
-            logger.info(f"Service '{service_name}' finally stopped after {i+1}s extra wait.")
+            logger.info(
+                f"Service '{service_name}' finally stopped after {i+1}s extra wait."
+            )
             return
         time.sleep(1)
     
-    logger.error(f"Service '{service_name}' IS STILL RUNNING/HANGING after extra wait.")
+    logger.error(
+        f"Service '{service_name}' IS STILL RUNNING/HANGING after extra wait."
+    )
 
-    proc_name = "stAgentSvc.exe" if "stagent" in service_name.lower() else f"{service_name}.exe"
+    proc_name = "stAgentSvc.exe"
+    if "stagent" not in service_name.lower():
+        proc_name = f"{service_name}.exe"
 
     pid = _get_pid_by_name(proc_name)
     if pid:
@@ -80,3 +88,16 @@ def handle_non_stop(service_name, is_64bit, log_dir):
 
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     nsdiag_collect_log(timestamp, is_64bit, log_dir)
+
+    logger.info("Waiting up to 300s for service to stop...")
+    for j in range(300):
+        if get_service_status(service_name) == "STOPPED":
+            logger.info(
+                f"Service '{service_name}' stopped after {j}s post-collection wait."
+            )
+            return
+        time.sleep(1)
+    
+    logger.error(
+        f"Service '{service_name}' did NOT stop after 300s post-collection wait."
+    )
