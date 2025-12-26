@@ -88,7 +88,11 @@ if __name__ == "__main__":
     )
     
     # Ensure environment is ready
-    enable_privilege("SeWakeAlarmPrivilege")
+    if not enable_privilege("SeWakeAlarmPrivilege"):
+        logger.error("Failed to enable SeWakeAlarmPrivilege! Run as Admin.")
+    else:
+        logger.info("SeWakeAlarmPrivilege enabled.")
+
     enable_wake_timers()
     
     # Test

@@ -123,6 +123,10 @@ def enable_privilege(privilege_name):
     ):
         k32.CloseHandle(hToken)
         return False
+    
+    if k32.GetLastError() == 1300: # ERROR_NOT_ALL_ASSIGNED
+        k32.CloseHandle(hToken)
+        return False
         
     k32.CloseHandle(hToken)
     return True
