@@ -79,8 +79,17 @@ def enter_s0_and_wake(duration_seconds: int):
         kernel32.CloseHandle(handle)
 
 if __name__ == "__main__":
+    from util_resources import enable_privilege
+    from util_subprocess import enable_wake_timers
+
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s'
     )
+    
+    # Ensure environment is ready
+    enable_privilege("SeWakeAlarmPrivilege")
+    enable_wake_timers()
+    
+    # Test
     enter_s0_and_wake(25)
