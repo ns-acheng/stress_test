@@ -7,6 +7,7 @@ This tool is designed to perform stress testing, resource monitoring, and stabil
 * **Operating System:** Windows 10, Windows 11, or Windows Server (64-bit recommended).
 * **Python:** Python 3.6 or higher.
 * **Permissions:** **Administrator privileges** are strictly required to control Windows services and access system debug privileges.
+* **AOAC S0 (Optional):** To ensure the system wakes up from sleep, "Allow wake timers" must be enabled in Power Options -> Sleep -> Allow wake timers.
 * **Flooding target (Optional):**
     * use the powersheel command to open the 80 and 8080 port
       
