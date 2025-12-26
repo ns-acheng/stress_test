@@ -104,13 +104,13 @@ def enable_privilege(privilege_name):
         TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,
         ctypes.byref(hToken)
     ):
-        return k32.GetLastError()
+        return ctypes.get_last_error()
 
     luid = LUID()
     if not advapi32.LookupPrivilegeValueW(
         None, privilege_name, ctypes.byref(luid)
     ):
-        err = k32.GetLastError()
+        err = ctypes.get_last_error()
         k32.CloseHandle(hToken)
         return err
 
@@ -122,11 +122,11 @@ def enable_privilege(privilege_name):
     if not advapi32.AdjustTokenPrivileges(
         hToken, False, ctypes.byref(tp), 0, None, None
     ):
-        err = k32.GetLastError()
+        err = ctypes.get_last_error()
         k32.CloseHandle(hToken)
         return err
     
-    err = k32.GetLastError()
+    err = ctypes.get_last_error()
     k32.CloseHandle(hToken)
     return err
 
