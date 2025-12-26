@@ -106,7 +106,7 @@ def nsdiag_enable_client(enable: bool, is_64bit: bool = True):
 
 def enable_wake_timers():
     subgroup = "238C9FA8-0AAD-41ED-83F4-97BE242C8F20" 
-    setting  = "BD3B718A-0680-4D9D-8AB2-E1D2B4EF806D"
+    setting  = "BD3B718A-0680-4D9D-8AB2-E1D2B4AC806D"
     val = "1"
 
     commands = [
