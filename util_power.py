@@ -36,8 +36,10 @@ def enter_s0_and_wake(duration_seconds: int):
         return False
 
     try:
-        dt = int(duration_seconds * 10000000) * -1
-        li = LARGE_INTEGER(dt & 0xFFFFFFFF, dt >> 32)
+        now_sec = time.time()
+        wake_time_sec = now_sec + duration_seconds
+        file_time_val = int((wake_time_sec + 11644473600) * 10000000)
+        li = LARGE_INTEGER(file_time_val & 0xFFFFFFFF, file_time_val >> 32)
 
         if not kernel32.SetWaitableTimer(
             handle, ctypes.byref(li), 0, None, None, True
@@ -48,7 +50,14 @@ def enter_s0_and_wake(duration_seconds: int):
             return False
 
         logger.info(f"Enter S0 (Monitor OFF) for {duration_seconds}s...")
-        
+
+        try:
+            import subprocess
+            res = subprocess.run(["powercfg", "/waketimers"], capture_output=True, text=True, errors='replace')
+            logger.info(f"Active Wake Timers:\n{res.stdout.strip()}")
+        except Exception as e:
+            logger.warning(f"Failed to query waketimers: {e}")
+
         user32.PostMessageW(
             HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, MONITOR_OFF
         )
