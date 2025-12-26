@@ -104,14 +104,15 @@ def enable_privilege(privilege_name):
         TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,
         ctypes.byref(hToken)
     ):
-        return False
+        return k32.GetLastError()
 
     luid = LUID()
     if not advapi32.LookupPrivilegeValueW(
         None, privilege_name, ctypes.byref(luid)
     ):
+        err = k32.GetLastError()
         k32.CloseHandle(hToken)
-        return False
+        return err
 
     tp = TOKEN_PRIVILEGES()
     tp.PrivilegeCount = 1
@@ -121,18 +122,13 @@ def enable_privilege(privilege_name):
     if not advapi32.AdjustTokenPrivileges(
         hToken, False, ctypes.byref(tp), 0, None, None
     ):
+        err = k32.GetLastError()
         k32.CloseHandle(hToken)
-        return False
+        return err
     
-    if k32.GetLastError() == 1300: # ERROR_NOT_ALL_ASSIGNED
-        k32.CloseHandle(hToken)
-        return False
-        
+    err = k32.GetLastError()
     k32.CloseHandle(hToken)
-    return True
-
-def enable_debug_privilege():
-    return enable_privilege(SE_DEBUG_NAME)
+    return err
 
 def _filetime_to_int(ft):
     return (ft.dwHighDateTime << 32) + ft.dwLowDateTime
@@ -292,8 +288,6 @@ def log_resource_usage(
     process_name: str,
     log_dir="log"
 ):
-    enable_debug_privilege()
-
     pid = get_pid_by_name(process_name)
     if pid == 0:
         return False

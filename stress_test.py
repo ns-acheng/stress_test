@@ -12,7 +12,7 @@ from util_subprocess import (
     nsdiag_enable_client
 )
 from util_resources import (
-    log_resource_usage, enable_debug_privilege, enable_privilege
+    log_resource_usage, enable_privilege
 )
 from util_input import start_input_monitor
 from util_crash import check_crash_dumps, crash_handle
@@ -53,9 +53,11 @@ class StressTest:
         self.client_thread = None
 
     def setup(self):
-        enable_debug_privilege()
-        enable_privilege("SeSystemtimePrivilege")
-        enable_privilege("SeWakeAlarmPrivilege")
+        for priv in ["SeDebugPrivilege", "SeSystemtimePrivilege", "SeWakeAlarmPrivilege"]:
+            err = enable_privilege(priv)
+            if err != 0:
+                logger.warning(f"Failed to enable {priv}. Err: {err}")
+
         self.config.load()
         self.load_urls()
         
