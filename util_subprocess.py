@@ -28,7 +28,8 @@ def run_powershell(script_path, args=None):
             command, 
             check=True, 
             capture_output=True, 
-            text=True
+            encoding='utf-8',
+            errors='replace'
         )
         logger.info("PowerShell script executed successfully.")
 
@@ -69,7 +70,8 @@ def _run_nsdiag_generic(nsdiag_path: str, args: list, desc: str) -> bool:
             command,
             check=True,
             capture_output=True,
-            text=True
+            encoding='utf-8',
+            errors='replace'
         )
         logger.info(f"nsdiag {desc} executed successfully.")
         return True
