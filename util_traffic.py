@@ -91,90 +91,151 @@ def _dns_worker(domain):
     except Exception:
         pass
 
-def generate_dns_flood(domains: list, count: int):
+def generate_dns_flood(
+    domains: list, 
+    count: int, 
+    duration: float = 0, 
+    concurrency: int = 20,
+    stop_event: threading.Event = None
+):
     if not domains:
         return
 
-    logger.info(f"Generating DNS flood: {count} queries...")
-    milestone = max(1, int(count * 0.2))
-    completed = 0
+    msg = f"DNS flood: {count} queries"
+    if duration > 0:
+        msg += f", duration {duration}s"
+    msg += f", {concurrency} workers"
+    logger.info(msg)
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as exe:
+    start_time = time.time()
+    end_time = start_time + duration if duration > 0 else 0
+    
+    completed = 0
+    milestone = max(1, int(count * 0.2)) if count > 0 else 100
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as exe:
         futures = []
-        for _ in range(count):
-            dom = random.choice(domains)
-            futures.append(exe.submit(_dns_worker, dom))
         
-        for _ in concurrent.futures.as_completed(futures):
-            completed += 1
-            if completed % milestone == 0:
-                pct = int((completed / count) * 100)
-                logger.info(f"DNS Flood progress: {pct}%")
+        def submit_batch(n):
+            for _ in range(n):
+                dom = random.choice(domains)
+                futures.append(exe.submit(_dns_worker, dom))
+
+        if duration > 0:
+            pass
+        else:
+            submit_batch(count)
+
+        if duration > 0:
+            def _time_worker():
+                while time.time() < end_time:
+                    if _is_stopped(stop_event): break
+                    _dns_worker(random.choice(domains))
+            
+            futures = []
+            for _ in range(concurrency):
+                futures.append(exe.submit(_time_worker))
+                
+            concurrent.futures.wait(futures)
+            
+        else:
+            for _ in concurrent.futures.as_completed(futures):
+                if _is_stopped(stop_event):
+                    exe.shutdown(wait=False, cancel_futures=True)
+                    break
+                completed += 1
+                if count > 0 and completed % milestone == 0:
+                    pct = int((completed / count) * 100)
+                    logger.info(f"DNS Flood progress: {pct}%")
+
+def _udp_worker(target, port, duration, count, stop_event, family):
+    sock = socket.socket(family, socket.SOCK_DGRAM)
+    payload = os.urandom(1024)
+    
+    start_time = time.time()
+    end_time = start_time + duration if duration > 0 else 0
+    
+    sent = 0
+    try:
+        while True:
+            if _is_stopped(stop_event):
+                break
+            
+            if duration > 0:
+                if time.time() >= end_time:
+                    break
+            elif count > 0:
+                if sent >= count:
+                    break
+            else:
+                if sent >= 1:
+                    break
+
+            try:
+                sock.sendto(payload, (target, port))
+                sent += 1
+            except Exception:
+                pass
+    except Exception:
+        pass
+    finally:
+        sock.close()
 
 def generate_udp_flood(
     target: str, 
     port: int, 
-    duration: float, 
+    count: int = 0,
+    duration: float = 0, 
+    concurrency: int = 1,
     stop_event: threading.Event = None, 
     ipv6: bool = False
 ):
-    msg = f"UDP flood -> {target}:{port} for {duration}s (IPv6={ipv6})"
+    msg = f"UDP flood -> {target}:{port}"
+    if duration > 0:
+        msg += f" for {duration}s"
+    if count > 0:
+        msg += f", limit {count} pkts"
+    msg += f", {concurrency} threads (IPv6={ipv6})"
     logger.info(msg)
     
     family = socket.AF_INET6 if ipv6 else socket.AF_INET
-    start_time = time.time()
-    next_pct = 20
     
-    try:
-        sock = socket.socket(family, socket.SOCK_DGRAM)
-        payload = os.urandom(1024)
-        end_time = start_time + duration
+    threads = []
+    count_per_thread = count // concurrency if count > 0 else 0
+    
+    for i in range(concurrency):
+        t = threading.Thread(
+            target=_udp_worker, 
+            args=(target, port, duration, count_per_thread, stop_event, family)
+        )
+        t.start()
+        threads.append(t)
         
-        while time.time() < end_time:
-            if _is_stopped(stop_event):
-                break
-            try:
-                sock.sendto(payload, (target, port))
-            except Exception:
-                pass
-            
-            elapsed = time.time() - start_time
-            if (elapsed / duration) * 100 >= next_pct:
-                logger.info(f"UDP Flood progress: {next_pct}%")
-                next_pct += 20
-            
-        sock.close()
-    except Exception as e:
-        logger.error(f"UDP Flood failed: {e}")
+    for t in threads:
+        t.join()
+        
+    logger.info("UDP Flood finished.")
 
 def run_high_concurrency_test(
     target_url: str, 
     requests: int, 
     concurrency: int, 
     tool_dir: str,
-    stop_event: threading.Event = None
+    stop_event: threading.Event = None,
+    duration: float = 0
 ):
     ab_path = os.path.join(tool_dir, "ab", "ab.exe")
     if not os.path.exists(ab_path):
         logger.warning(f"AB not found at {ab_path}. Skipping.")
         return
 
-    batches = 5
-    if requests < batches:
-        batches = 1
-        
-    chunk_size = max(1, requests // batches)
-    logger.info(
-        f"Run AB: {requests} reqs (split {batches}), "
-        f"{concurrency} conn -> {target_url}"
-    )
-    
-    for i in range(batches):
-        if _is_stopped(stop_event):
-            break
-
+    if duration > 0:
+        logger.info(
+            f"Run AB: {concurrency} conn -> {target_url} for {duration}s"
+        )
         cmd = [
-            ab_path, "-n", str(chunk_size), 
+            ab_path, "-t", str(int(duration)), 
+            "-n", "2000000000", 
             "-c", str(concurrency), "-k", target_url
         ]
         
@@ -183,25 +244,75 @@ def run_high_concurrency_test(
                 cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
             )
             
+            start_time = time.time()
+            next_pct = 20
+            
             while proc.poll() is None:
                 if _is_stopped(stop_event):
                     logger.warning("Stop signal received. Killing AB...")
                     proc.kill()
                     return
+                
+                elapsed = time.time() - start_time
+                if (elapsed / duration) * 100 >= next_pct:
+                    logger.info(f"AB Test progress: {next_pct}%")
+                    next_pct += 20
+                    
                 time.sleep(0.5)
                 
             proc.communicate()
-            
             if proc.returncode != 0:
-                logger.error(f"AB batch {i+1} failed (RC {proc.returncode})")
+                 logger.error(f"AB failed (RC {proc.returncode})")
             else:
-                pct = int(((i + 1) / batches) * 100)
-                logger.info(f"AB Test progress: {pct}%")
-                
+                 logger.info("AB finished successfully.")
+                 
         except Exception as e:
-            logger.error(f"Failed to run AB batch {i+1}: {e}")
+            logger.error(f"Failed to run AB: {e}")
+            
+    else:
+        batches = 5
+        if requests < batches:
+            batches = 1
+            
+        chunk_size = max(1, requests // batches)
+        logger.info(
+            f"Run AB: {requests} reqs (split {batches}), "
+            f"{concurrency} conn -> {target_url}"
+        )
+        
+        for i in range(batches):
+            if _is_stopped(stop_event):
+                break
 
-    logger.info("AB finished successfully.")
+            cmd = [
+                ab_path, "-n", str(chunk_size), 
+                "-c", str(concurrency), "-k", target_url
+            ]
+            
+            try:
+                proc = subprocess.Popen(
+                    cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+                )
+                
+                while proc.poll() is None:
+                    if _is_stopped(stop_event):
+                        logger.warning("Stop signal received. Killing AB...")
+                        proc.kill()
+                        return
+                    time.sleep(0.5)
+                    
+                proc.communicate()
+                
+                if proc.returncode != 0:
+                    logger.error(f"AB batch {i+1} failed (RC {proc.returncode})")
+                else:
+                    pct = int(((i + 1) / batches) * 100)
+                    logger.info(f"AB Test progress: {pct}%")
+                    
+            except Exception as e:
+                logger.error(f"Failed to run AB batch {i+1}: {e}")
+
+        logger.info("AB finished successfully.")
 
 def open_browser_tabs(
     urls, tool_dir, max_tabs, max_mem, stop_event, log_dir, wait_sec
@@ -281,31 +392,63 @@ def _curl_flood_worker(url, seq):
     except Exception:
         pass
 
-def generate_curl_flood(urls, count, concurrency, stop_event=None):
+def generate_curl_flood(
+    urls, 
+    count, 
+    duration=0, 
+    concurrency=50, 
+    stop_event=None
+):
     if not urls:
         logger.warning("No URLs for CURL flood.")
         return
 
-    logger.info(f"Start CURL Flood: {count} reqs, {concurrency} workers.")
-    milestone = max(1, int(count * 0.2))
-    completed = 0
-    
-    with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as exe:
-        futures = []
-        for i in range(1, count + 1):
-            if _is_stopped(stop_event):
-                break
-            url = random.choice(urls)
-            futures.append(exe.submit(_curl_flood_worker, url, i))
+    msg = f"Start CURL Flood: {concurrency} workers"
+    if duration > 0:
+        msg += f", duration {duration}s"
+    else:
+        msg += f", {count} reqs"
+    logger.info(msg)
+
+    if duration > 0:
+        end_time = time.time() + duration
         
-        for f in concurrent.futures.as_completed(futures):
-            if _is_stopped(stop_event):
-                exe.shutdown(wait=False, cancel_futures=True)
-                break
+        def _time_worker():
+            while time.time() < end_time:
+                if _is_stopped(stop_event): break
+                url = random.choice(urls)
+                _curl_flood_worker(url, 0)
+
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=concurrency
+        ) as exe:
+            futures = []
+            for _ in range(concurrency):
+                futures.append(exe.submit(_time_worker))
+            concurrent.futures.wait(futures)
             
-            completed += 1
-            if completed % milestone == 0:
-                pct = int((completed / count) * 100)
-                logger.info(f"CURL Flood progress: {pct}%")
+    else:
+        milestone = max(1, int(count * 0.2))
+        completed = 0
+        
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=concurrency
+        ) as exe:
+            futures = []
+            for i in range(1, count + 1):
+                if _is_stopped(stop_event):
+                    break
+                url = random.choice(urls)
+                futures.append(exe.submit(_curl_flood_worker, url, i))
+            
+            for f in concurrent.futures.as_completed(futures):
+                if _is_stopped(stop_event):
+                    exe.shutdown(wait=False, cancel_futures=True)
+                    break
+                
+                completed += 1
+                if completed % milestone == 0:
+                    pct = int((completed / count) * 100)
+                    logger.info(f"CURL Flood progress: {pct}%")
     
     logger.info("CURL Flood finished.")

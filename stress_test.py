@@ -57,7 +57,7 @@ class StressTest:
         self.config.load()
         self.load_urls()
         
-        if self.config.system_sleep_interval > 0:
+        if self.config.aoac_sleep_enabled:
             enable_wake_timers()
 
         self.cfg_mgr.setup_environment()
@@ -82,13 +82,16 @@ class StressTest:
             logger.error(f"Error loading URLs: {e}")
 
     def start_client_thread(self):
-        if self.config.disable_client == 1:
+        if self.config.client_disabling_enabled:
             self.client_thread = threading.Thread(
                 target=util_client.client_toggler_loop,
                 args=(
                     self.stop_event, 
                     self.service_name, 
-                    self.cfg_mgr.is_64bit
+                    self.cfg_mgr.is_64bit,
+                    self.config.client_enable_min,
+                    self.config.client_enable_max,
+                    self.config.client_disable_ratio
                 ),
                 daemon=True
             )
@@ -116,16 +119,18 @@ class StressTest:
         smart_sleep(SHORT_SEC, self.stop_event)
 
     def header_msg(self):
-        logger.info(f"--- Start. Total iter: {self.config.loop_times} ---")
+        logger.info(f"--------- Start. Total iter: {self.config.loop_times} ---------")
         logger.info(f"Stop svc int: {self.config.stop_svc_interval}")
         logger.info(f"Switch FailClose int: {self.config.failclose_interval}")
         logger.info(f"Stop/Start drv int: {self.config.stop_drv_interval}")
-        logger.info(f"Disable Client Thread: {self.config.disable_client}")
-        logger.info(f"Max Mem: {self.config.max_mem_usage}%")
-        logger.info(f"Max Tabs: {self.config.max_tabs_open}")
-        if self.config.system_sleep_interval > 0:
-            logger.info(f"Sys Sleep Int: {self.config.system_sleep_interval}")
-            logger.info(f"Sys Sleep Dur: {self.config.system_sleep_seconds}s")
+        logger.info(f"Client Disabling: {self.config.client_disabling_enabled}")
+        logger.info(f"Browser Tabs Enabled: {self.config.enable_browser_tabs_open}")
+        if self.config.enable_browser_tabs_open:
+            logger.info(f"Max Mem: {self.config.browser_max_memory}%")
+            logger.info(f"Max Tabs: {self.config.browser_max_tabs}")
+        if self.config.aoac_sleep_enabled:
+            logger.info(f"AOAC Sleep Int: {self.config.aoac_sleep_interval}")
+            logger.info(f"AOAC Sleep Dur: {self.config.aoac_sleep_duration}s")
         if self.config.long_idle_interval > 0:
             logger.info(f"Long Idle Int: {self.config.long_idle_interval}")
             logger.info(
@@ -153,7 +158,7 @@ class StressTest:
             if smart_sleep(STD_SEC, self.stop_event): 
                 return
             
-            if self.config.disable_client == 1:
+            if self.config.client_disabling_enabled:
                 logger.info("Service Started. Ensuring Client Enabled.")
                 nsdiag_enable_client(True, self.cfg_mgr.is_64bit)
 
@@ -199,9 +204,11 @@ class StressTest:
             return
     
     def exec_browser_tabs(self):
+        if not self.config.enable_browser_tabs_open:
+            return
         util_traffic.open_browser_tabs(
-            self.urls, self.tool_dir, self.config.max_tabs_open,
-            self.config.max_mem_usage, self.stop_event, current_log_dir,
+            self.urls, self.tool_dir, self.config.browser_max_tabs,
+            self.config.browser_max_memory, self.stop_event, current_log_dir,
             STD_SEC
         )
 
@@ -231,7 +238,11 @@ class StressTest:
 
                 if self.config.traffic_dns_enabled:
                     util_traffic.generate_dns_flood(
-                        self.urls, self.config.traffic_dns_count
+                        self.urls, 
+                        self.config.traffic_dns_count,
+                        self.config.traffic_dns_duration,
+                        self.config.traffic_dns_concurrent,
+                        self.stop_event
                     )
                 
                 if self.config.traffic_udp_enabled:
@@ -244,28 +255,36 @@ class StressTest:
                         else:
                             current_target = self.config.udp_target_ip
                     util_traffic.generate_udp_flood(
-                        current_target, self.config.udp_target_port, 
+                        current_target, 
+                        self.config.udp_target_port,
+                        self.config.traffic_udp_count,
                         float(self.config.traffic_udp_duration), 
-                        self.stop_event, use_ipv6
+                        self.config.traffic_udp_concurrent,
+                        self.stop_event, 
+                        use_ipv6
                     )
                 
                 if (
-                    self.config.ab_total_conn > 0 and 
+                    (self.config.ab_total_conn > 0 or self.config.ab_duration > 0) and 
                     self.config.ab_concurrent_conn > 0 and 
-                    self.config.ab_urls
+                    self.config.ab_target_urls
                 ):
-                    idx = count % len(self.config.ab_urls)
-                    current_ab_url = self.config.ab_urls[idx]
+                    idx = count % len(self.config.ab_target_urls)
+                    current_ab_url = self.config.ab_target_urls[idx]
                     util_traffic.run_high_concurrency_test(
                         current_ab_url, self.config.ab_total_conn, 
                         self.config.ab_concurrent_conn, self.tool_dir,
-                        self.stop_event
+                        self.stop_event,
+                        self.config.ab_duration
                     )
 
                 if self.config.curl_flood_enabled:
                     util_traffic.generate_curl_flood(
-                        self.urls, self.config.curl_flood_count,
-                        self.config.curl_flood_concurrency, self.stop_event
+                        self.urls, 
+                        self.config.curl_flood_count,
+                        self.config.curl_flood_duration,
+                        self.config.curl_flood_concurrency, 
+                        self.stop_event
                     )
 
                 if self.stop_event.is_set(): break
@@ -288,7 +307,7 @@ class StressTest:
                                 self.exec_restart_driver()
                                 if self.stop_event.is_set(): break
 
-                if self.config.failclose_interval > 0:
+                if self.config.failclose_enabled:
                     if count % self.config.failclose_interval == 0:
                         self.cfg_mgr.toggle_failclose()
                         if self.stop_event.is_set(): break
@@ -298,12 +317,12 @@ class StressTest:
                     logger.info(f"Random Sleep (idle=0). {sleep_dur}s...")
                     if smart_sleep(sleep_dur, self.stop_event): break
 
-                if self.config.system_sleep_interval > 0:
-                    if count % self.config.system_sleep_interval == 0:
+                if self.config.aoac_sleep_enabled:
+                    if count % self.config.aoac_sleep_interval == 0:
                         logger.info(
-                            f"Sys Sleep. {self.config.system_sleep_seconds}s"
+                            f"AOAC Sleep. {self.config.aoac_sleep_duration}s"
                         )
-                        enter_s0_and_wake(self.config.system_sleep_seconds)
+                        enter_s0_and_wake(self.config.aoac_sleep_duration)
                         if self.stop_event.is_set(): break
 
                 if self.config.long_idle_interval > 0:
@@ -337,7 +356,7 @@ class StressTest:
                 logger.info(f"Retrying in {STD_SEC} seconds")
                 if smart_sleep(STD_SEC, self.stop_event): break
 
-        logger.info(f"--- Finished {count} iterations. ---")
+        logger.info(f"--------- Finished {count} iterations. ---------")
         logger.info(f"Total 0-byte dumps deleted: {self.total_zero_dumps}")
 
 if __name__ == "__main__":

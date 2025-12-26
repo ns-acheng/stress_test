@@ -57,19 +57,62 @@ pip install -r requirement.txt
 
 `stop_drv_interval`: Iteration frequency to restart the driver (nested within service stop). Set to 0 to disable.
 
-`failclose_interval`: Iteration frequency to toggle FailClose settings. Set to 0 to disable.
+### Client Feature Toggling (client_feature_toggling)
 
-`disable_client`: (0/1) If 1, runs a background thread that randomly enables/disables the client using `nsdiag`.
+This section controls various client state toggles. Each feature has an `enable` flag (1 for on, 0 for off).
 
-`max_mem_usage`: System memory threshold (50-99%). If exceeded, browser tabs stop opening.
+#### FailClose (`failclose`)
+*   `enable`: (0/1) Enable FailClose toggling.
+*   `interval`: Iteration frequency to toggle FailClose settings.
 
-`max_tabs_open`: Maximum number of concurrent browser tabs allowed.
+#### Client Disabling (`client_disabling`)
+*   `enable`: (0/1) If 1, runs a background thread that randomly enables/disables the client using `nsdiag`.
+*   `enable_sec_min`: Minimum duration (seconds) to keep the client **ENABLED** before toggling (Valid: 180-600).
+*   `enable_sec_max`: Maximum duration (seconds) to keep the client **ENABLED** before toggling (Valid: 600-1200).
+*   `disable_ratio`: Ratio of disable duration relative to the enable duration (Valid: 0.0-1.0).
+    *   *Example*: If enabled for 200s and ratio is 0.15, it will disable for 30s.
 
-`custom_dump_path`: Dump path for external tools like **Windows Debug Diagnostic Tool**
+#### AOAC Sleep (`aoac_sleep`)
+*   `enable`: (0/1) Enable system sleep triggers.
+*   `interval`: Iteration frequency to trigger system sleep (S0 state).
+*   `duration_sec`: Duration in seconds to stay in sleep mode before waking.
 
-`system_sleep_interval`: Iteration frequency to trigger system sleep (S0 state). Set to 0 to disable.
+### Traffic Generation Settings (traffic_gen)
 
-`system_sleep_seconds`: Duration in seconds to stay in sleep mode before waking.
+All traffic modules support `duration_sec` and `count`. If `duration_sec` > 0, it takes precedence over `count`.
+
+#### Browser (`browser`)
+*   `enable`: (0/1) If 1, enables the browser tab opening feature based on memory usage.
+*   `max_memory`: System memory threshold (50-99%). If exceeded, browser tabs stop opening.
+*   `max_tabs`: Maximum number of concurrent browser tabs allowed.
+
+#### HTTPS Flood (`https`)
+*   `enable`: (0/1) Enable HTTPS traffic generation using curl.
+*   `duration_sec`: Duration to run the flood.
+*   `count`: Number of requests (if duration is 0).
+*   `concurrent_conn`: Number of concurrent threads.
+
+#### DNS Flood (`dns`)
+*   `enable`: (0/1) Enable random subdomain queries to bypass local DNS cache.
+*   `duration_sec`: Duration to run the flood.
+*   `count`: Number of queries (if duration is 0).
+*   `concurrent_conn`: Number of concurrent threads.
+
+#### UDP Flood (`udp`)
+*   `enable`: (0/1) Enable UDP packet flooding.
+*   `duration_sec`: Duration to sustain the UDP flood.
+*   `count`: Number of packets (if duration is 0).
+*   `concurrent_conn`: Number of concurrent threads.
+*   `target_ip`: Target IPv4 address.
+*   `target_ipv6`: Target IPv6 address (Optional).
+*   `target_port`: Target UDP port.
+
+#### Apache Benchmark (`ab`)
+*   `enable`: (0/1) Enable Apache Benchmark stress testing.
+*   `duration_sec`: Duration to run the test.
+*   `total_conn`: Total number of requests (if duration is 0).
+*   `concurrent_conn`: Number of concurrent requests.
+*   `target_urls`: List of URLs to target.
 
 `long_idle_interval`: Iteration frequency to trigger a long idle period (useful for soak testing). 
 * If set to **> 0**: Sleeps for `long_idle_time_min` to `long_idle_time_max` seconds every N iterations.
@@ -79,22 +122,6 @@ pip install -r requirement.txt
 
 `long_idle_time_max`: Maximum duration for the long idle in seconds (Upper bound: 7200s).
 
-### Traffic Generation Settings (traffic_gen)
-`dns_flood_enabled`: (0/1) If 1, generates random subdomain queries to bypass local DNS cache.
-
-`dns_query_count`: (int) Number of random DNS queries to generate per iteration (default: 500).
-
-`udp_flood_enabled`: (0/1) If 1, sends UDP packets to target. (Note: Automatically toggles between IPv6 and IPv4 on alternate iterations if IPv6 is configured).
-
-`udp_target_ip`: (str) Target IPv4 address for UDP flood.
-
-`udp_target_ipv6`: (str) Target IPv6 address for UDP flood (Optional).
-
-`udp_target_port`: (int) Target UDP port (default: 8080).
-
-`udp_duration_seconds`: (int/float) Duration in seconds to sustain the UDP flood per iteration (default: 10).
-
-`ab_total_conn`: (int) Total number of requests to perform for Apache Bench.
 
 `ab_concurrent_conn`: (int) Target number of concurrent connections for Apache Bench. Set to 0 to disable.
 
@@ -116,10 +143,18 @@ pip install -r requirement.txt
     "loop_times": 3000,
     "stop_svc_interval": 0,
     "stop_drv_interval": 0,
-    "failclose_interval": 0,
-    "max_mem_usage": 90,
-    "max_tabs_open": 50,
+    "client_feature_toggling": {
+        "failclose_interval": 0,
+        "disable_client": 0,
+        "aoac_sleep_interval": 0,
+        "aoac_sleep_seconds": 60
+    },
     "custom_dump_path": "",
+    "traffic_gen": {
+        "enable_browser_tabs_open": 1,
+        "browser_max_memory": 90,
+        "browser_max_tabs": 50
+    }
 }
 ```
 
@@ -134,13 +169,21 @@ pip install -r requirement.txt
     "loop_times": 1000,
     "stop_svc_interval": 1,
     "stop_drv_interval": 0,
-    "failclose_interval": 50,
-    "max_mem_usage": 80,
-    "max_tabs_open": 30,
+    "client_feature_toggling": {
+        "failclose_interval": 50,
+        "disable_client": 0,
+        "aoac_sleep_interval": 0,
+        "aoac_sleep_seconds": 60
+    },
     "custom_dump_path": "",
     "long_idle_interval": 0,
     "long_idle_time_min": 300,
     "long_idle_time_max": 300,
+    "traffic_gen": {
+        "enable_browser_tabs_open": 1,
+        "browser_max_memory": 80,
+        "browser_max_tabs": 30
+    }
 }
 ```
 
@@ -156,13 +199,21 @@ pip install -r requirement.txt
     "loop_times": 1000,
     "stop_svc_interval": 1,
     "stop_drv_interval": 1,
-    "failclose_interval": 50,
-    "max_mem_usage": 80,
-    "max_tabs_open": 30,
+    "client_feature_toggling": {
+        "failclose_interval": 50,
+        "disable_client": 0,
+        "aoac_sleep_interval": 0,
+        "aoac_sleep_seconds": 60
+    },
     "custom_dump_path": "",
     "long_idle_interval": 0,
     "long_idle_time_min": 300,
-    "long_idle_time_max": 300
+    "long_idle_time_max": 300,
+    "traffic_gen": {
+        "enable_browser_tabs_open": 1,
+        "browser_max_memory": 80,
+        "browser_max_tabs": 30
+    }
 }
 ```
 
@@ -176,13 +227,21 @@ pip install -r requirement.txt
     "loop_times": 9000,
     "stop_svc_interval": 0,
     "stop_drv_interval": 0,
-    "failclose_interval": 100,
-    "max_mem_usage": 60,
-    "max_tabs_open": 10,
+    "client_feature_toggling": {
+        "failclose_interval": 100,
+        "disable_client": 0,
+        "aoac_sleep_interval": 1,
+        "aoac_sleep_seconds": 60
+    },
     "custom_dump_path": "",
     "long_idle_interval": 1,
     "long_idle_time_min": 1000,
-    "long_idle_time_max": 3600
+    "long_idle_time_max": 3600,
+    "traffic_gen": {
+        "enable_browser_tabs_open": 1,
+        "browser_max_memory": 60,
+        "browser_max_tabs": 10
+    }
 }
 ```
 
@@ -196,14 +255,20 @@ pip install -r requirement.txt
   "loop_times": 1000,
   "stop_svc_interval": 5,
   "stop_drv_interval": 0,
-  "failclose_interval": 15,
-  "max_mem_usage": 60,
-  "max_tabs_open": 20,
+  "client_feature_toggling": {
+    "failclose_interval": 15,
+    "disable_client": 0,
+    "aoac_sleep_interval": 0,
+    "aoac_sleep_seconds": 60
+  },
   "custom_dump_path": "C:\\dump\\stAgentSvc.exe\\*.dmp",
   "long_idle_interval": 100,
   "long_idle_time_min": 300,
   "long_idle_time_max": 600,
   "traffic_gen": {
+    "enable_browser_tabs_open": 1,
+    "browser_max_memory": 60,
+    "browser_max_tabs": 20,
     "dns_flood_enabled": 1,
     "dns_query_count": 500,
     "udp_flood_enabled": 1,
@@ -246,5 +311,6 @@ pip install -r requirement.txt
 11. High concurrency connection testing (via Apache Bench) with multi-URL support
 12. Auto-collect log bundle (`nsdiag`) and dump files upon crash detection
 13. System Sleep (S0) simulation
+    * **Note**: To ensure the system wakes up from sleep, "Allow wake timers" must be enabled in Power Options -> Sleep -> Allow wake timers.
 14. Client Enable/Disable toggling via `nsdiag`
 15. Curl-based HTTP flood support
