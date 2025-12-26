@@ -81,4 +81,4 @@ if __name__ == "__main__":
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s'
     )
-    enter_s0_and_wake(45)
+    enter_s0_and_wake(25)
