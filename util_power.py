@@ -1,6 +1,7 @@
 import ctypes
 from ctypes import wintypes
 import logging
+import time
 
 logger = logging.getLogger()
 
@@ -27,7 +28,7 @@ class LARGE_INTEGER(ctypes.Structure):
                 ("HighPart", wintypes.LONG)]
 
 def enter_s0_and_wake(duration_seconds: int):
-    handle = kernel32.CreateWaitableTimerW(None, True, None)
+    handle = kernel32.CreateWaitableTimerW(None, False, None)
     if not handle:
         logger.error(
             f"Failed create timer. Err: {kernel32.GetLastError()}"
@@ -48,17 +49,18 @@ def enter_s0_and_wake(duration_seconds: int):
 
         logger.info(f"Enter S0 (Monitor OFF) for {duration_seconds}s...")
         
-        user32.SendMessageW(
+        user32.PostMessageW(
             HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, MONITOR_OFF
         )
         
+        time.sleep(1)
         kernel32.WaitForSingleObject(handle, -1)
 
         kernel32.SetThreadExecutionState(
             ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED
         )
 
-        user32.SendMessageW(
+        user32.PostMessageW(
             HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, MONITOR_ON
         )
 
