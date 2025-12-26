@@ -16,6 +16,11 @@ MONITOR_ON = -1
 
 # Keyboard Event Flags
 KEYEVENTF_KEYUP = 0x0002
+VK_SHIFT = 0x10
+MOUSEEVENTF_MOVE = 0x0001
+ES_CONTINUOUS = 0x80000000
+ES_SYSTEM_REQUIRED = 0x00000001
+ES_DISPLAY_REQUIRED = 0x00000002
 
 class LARGE_INTEGER(ctypes.Structure):
     _fields_ = [("LowPart", wintypes.DWORD),
@@ -49,13 +54,21 @@ def enter_s0_and_wake(duration_seconds: int):
         
         kernel32.WaitForSingleObject(handle, -1)
 
+        kernel32.SetThreadExecutionState(
+            ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED
+        )
+
         user32.SendMessageW(
             HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, MONITOR_ON
         )
-        
-        # Simulate Key Press (0) and Key Release (KEYEVENTF_KEYUP)
-        user32.keybd_event(0, 0, 0, 0)
-        user32.keybd_event(0, 0, KEYEVENTF_KEYUP, 0)
+
+        user32.mouse_event(MOUSEEVENTF_MOVE, 1, 1, 0, 0)
+        user32.mouse_event(MOUSEEVENTF_MOVE, -1, -1, 0, 0)
+
+        user32.keybd_event(VK_SHIFT, 0, 0, 0)
+        user32.keybd_event(VK_SHIFT, 0, KEYEVENTF_KEYUP, 0)
+
+        kernel32.SetThreadExecutionState(ES_CONTINUOUS)
 
         logger.info("System Woke (Monitor ON).")
         return True
