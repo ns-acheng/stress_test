@@ -12,7 +12,7 @@ from util_subprocess import (
     nsdiag_enable_client
 )
 from util_resources import (
-    log_resource_usage, enable_debug_privilege
+    log_resource_usage, enable_debug_privilege, enable_privilege
 )
 from util_input import start_input_monitor
 from util_crash import check_crash_dumps, crash_handle
@@ -54,6 +54,8 @@ class StressTest:
 
     def setup(self):
         enable_debug_privilege()
+        enable_privilege("SeSystemtimePrivilege")
+        enable_privilege("SeWakeAlarmPrivilege")
         self.config.load()
         self.load_urls()
         

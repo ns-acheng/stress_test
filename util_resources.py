@@ -93,7 +93,7 @@ class TOKEN_PRIVILEGES(ctypes.Structure):
         ("Privileges", LUID_AND_ATTRIBUTES * 1),
     ]
 
-def enable_debug_privilege():
+def enable_privilege(privilege_name):
     k32 = ctypes.windll.kernel32
     advapi32 = ctypes.windll.advapi32
     
@@ -108,7 +108,7 @@ def enable_debug_privilege():
 
     luid = LUID()
     if not advapi32.LookupPrivilegeValueW(
-        None, SE_DEBUG_NAME, ctypes.byref(luid)
+        None, privilege_name, ctypes.byref(luid)
     ):
         k32.CloseHandle(hToken)
         return False
@@ -126,6 +126,9 @@ def enable_debug_privilege():
         
     k32.CloseHandle(hToken)
     return True
+
+def enable_debug_privilege():
+    return enable_privilege(SE_DEBUG_NAME)
 
 def _filetime_to_int(ft):
     return (ft.dwHighDateTime << 32) + ft.dwLowDateTime
