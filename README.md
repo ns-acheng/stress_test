@@ -312,5 +312,6 @@ All traffic modules support `duration_sec` and `count`. If `duration_sec` > 0, i
 11. High concurrency connection testing (via Apache Bench) with multi-URL support
 12. Auto-collect log bundle (`nsdiag`) and dump files upon crash detection
 13. System Sleep (S0) simulation
+    * **Note**: To ensure the system wakes up from sleep, "Allow wake timers" must be enabled in Power Options -> Sleep -> Allow wake timers.
 14. Client Enable/Disable toggling via `nsdiag`
 15. Curl-based HTTP flood support

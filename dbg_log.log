@@ -1,0 +1,52 @@
+C:\git\stress_test>python poc_power.py
+
+============================================================
+S0 Modern Standby Wake Timer PoC
+============================================================
+
+✓ Running with administrator privileges
+
+Step 1: Creating scheduled task with wake timer...
+------------------------------------------------------------
+✓ Wake timer enabled for task
+✓ Trigger set for: 2025-12-28 07:41:52
+✓ Wake action: Run util_wakeup.py
+✓ Scheduled task 'WakeFromS0_PoC' created successfully
+Win32 exception occurred releasing IUnknown at 0x0000019260B16FA0
+Win32 exception occurred releasing IUnknown at 0x0000019260B16BC0
+Win32 exception occurred releasing IUnknown at 0x0000019260B15DE0
+Win32 exception occurred releasing IUnknown at 0x0000019260B15BF0
+Win32 exception occurred releasing IUnknown at 0x0000019260B15910
+
+✓ Wake timer successfully registered with system
+  The RTC alarm will trigger in 10 seconds, even during sleep
+
+
+Step 2: Entering Modern Standby...
+------------------------------------------------------------
+
+============================================================
+Entering Modern Standby in 3 seconds...
+System will wake automatically after 10 seconds
+============================================================
+
+Sleep initiated at: 07:41:45
+✓ Monitor turned OFF (S0 sleep mode)
+Sleeping... 9s remaining
+
+✓ System woke at: 07:42:27
+✓ Sleep duration: 42.17 seconds
+✓ System woke up 32.17s LATE (Hardware likely suspended)
+
+Forcing display wake...
+✓ Display wake completed
+
+============================================================
+System woke up from Modern Standby!
+============================================================
+
+✓ Cleaned up scheduled task
+
+C:\git\stress_test>
+
+

@@ -28,7 +28,8 @@ def run_powershell(script_path, args=None):
             command, 
             check=True, 
             capture_output=True, 
-            text=True
+            encoding='utf-8',
+            errors='replace'
         )
         logger.info("PowerShell script executed successfully.")
 
@@ -69,7 +70,8 @@ def _run_nsdiag_generic(nsdiag_path: str, args: list, desc: str) -> bool:
             command,
             check=True,
             capture_output=True,
-            text=True
+            encoding='utf-8',
+            errors='replace'
         )
         logger.info(f"nsdiag {desc} executed successfully.")
         return True
@@ -104,7 +106,7 @@ def nsdiag_enable_client(enable: bool, is_64bit: bool = True):
 
 def enable_wake_timers():
     subgroup = "238C9FA8-0AAD-41ED-83F4-97BE242C8F20" 
-    setting  = "BD3B718A-0680-4D9D-8AB2-E1D2B4EF806D"
+    setting  = "BD3B718A-0680-4D9D-8AB2-E1D2B4AC806D"
     val = "1"
 
     commands = [
