@@ -53,11 +53,10 @@ def enter_s0_and_wake(duration_seconds: int):
 
         try:
             import subprocess
-            # Use 'cp950' (Traditional Chinese) or 'mbcs' (System Default) for decoding
             res = subprocess.run(
                 ["powercfg", "/waketimers"], 
                 capture_output=True, 
-                encoding='cp950', 
+                encoding='utf-8', 
                 errors='replace'
             )
             logger.info(f"Active Wake Timers:\n{res.stdout.strip()}")
@@ -69,7 +68,19 @@ def enter_s0_and_wake(duration_seconds: int):
         )
         
         time.sleep(1)
-        kernel32.WaitForSingleObject(handle, -1)
+        
+        # Wait for the timer to signal, but add a safety timeout (duration + 5 seconds)
+        # WaitForSingleObject takes milliseconds
+        wait_result = kernel32.WaitForSingleObject(
+            handle, (duration_seconds + 5) * 1000
+        )
+        
+        if wait_result == 0: # WAIT_OBJECT_0
+            logger.info("Timer expired normally.")
+        elif wait_result == 0x102: # WAIT_TIMEOUT
+            logger.warning("Wait timed out before timer signaled.")
+        else:
+            logger.warning(f"WaitForSingleObject returned unexpected: {wait_result}")
 
         kernel32.SetThreadExecutionState(
             ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED
