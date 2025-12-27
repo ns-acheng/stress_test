@@ -53,7 +53,13 @@ def enter_s0_and_wake(duration_seconds: int):
 
         try:
             import subprocess
-            res = subprocess.run(["powercfg", "/waketimers"], capture_output=True, text=True, errors='replace')
+            # Use 'cp950' (Traditional Chinese) or 'mbcs' (System Default) for decoding
+            res = subprocess.run(
+                ["powercfg", "/waketimers"], 
+                capture_output=True, 
+                encoding='cp950', 
+                errors='replace'
+            )
             logger.info(f"Active Wake Timers:\n{res.stdout.strip()}")
         except Exception as e:
             logger.warning(f"Failed to query waketimers: {e}")
@@ -95,8 +101,7 @@ if __name__ == "__main__":
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s'
     )
-    
-    # Ensure environment is ready
+
     err = enable_privilege("SeWakeAlarmPrivilege")
     if err != 0:
         logger.error(f"Failed to enable SeWakeAlarmPrivilege! Err: {err}")
@@ -104,6 +109,4 @@ if __name__ == "__main__":
         logger.info("SeWakeAlarmPrivilege enabled.")
 
     enable_wake_timers()
-    
-    # Test
     enter_s0_and_wake(25)
