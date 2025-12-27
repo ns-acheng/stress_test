@@ -105,9 +105,38 @@ def enter_s0_and_wake(duration_seconds: int):
         user32.PostMessageW(
             HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, MONITOR_ON)
         
-        # Simulate tiny mouse movement
-        user32.mouse_event(0x0001, 1, 1, 0, 0) # MOUSEEVENTF_MOVE
-        user32.mouse_event(0x0001, -1, -1, 0, 0)
+        # Simulate tiny mouse movement using SendInput (more reliable than mouse_event)
+        INPUT_MOUSE = 0
+        MOUSEEVENTF_MOVE = 0x0001
+        
+        class MOUSEINPUT(ctypes.Structure):
+            _fields_ = [("dx", ctypes.c_long),
+                        ("dy", ctypes.c_long),
+                        ("mouseData", ctypes.c_ulong),
+                        ("dwFlags", ctypes.c_ulong),
+                        ("time", ctypes.c_ulong),
+                        ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong))]
+
+        class INPUT(ctypes.Structure):
+            _fields_ = [("type", ctypes.c_ulong),
+                        ("mi", MOUSEINPUT)]
+
+        def send_mouse_input(dx, dy):
+            inp = INPUT()
+            inp.type = INPUT_MOUSE
+            inp.mi.dx = dx
+            inp.mi.dy = dy
+            inp.mi.dwFlags = MOUSEEVENTF_MOVE
+            user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(INPUT))
+
+        # Jiggle mouse a few times
+        logger.info("Simulating mouse movement to wake display...")
+        for i in range(5):
+            send_mouse_input(1, 1)
+            time.sleep(0.1)
+            send_mouse_input(-1, -1)
+            time.sleep(0.1)
+            logger.info(f"Mouse jiggle {i+1}/5 performed.")
 
         logger.info("Wake requests sent. Holding power request for 5 seconds to ensure screen lights up...")
         time.sleep(5) 
