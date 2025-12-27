@@ -21,8 +21,66 @@ import win32com.client
 import pythoncom
 import ctypes
 import time
+import os
 from datetime import datetime, timedelta
 import sys
+
+# Constants for wake functionality
+ES_CONTINUOUS = 0x80000000
+ES_SYSTEM_REQUIRED = 0x00000001
+ES_DISPLAY_REQUIRED = 0x00000002
+INPUT_MOUSE = 0
+MOUSEEVENTF_MOVE = 0x0001
+
+class MOUSEINPUT(ctypes.Structure):
+    _fields_ = [("dx", ctypes.c_long),
+                ("dy", ctypes.c_long),
+                ("mouseData", ctypes.c_ulong),
+                ("dwFlags", ctypes.c_ulong),
+                ("time", ctypes.c_ulong),
+                ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong))]
+
+class INPUT(ctypes.Structure):
+    _fields_ = [("type", ctypes.c_ulong),
+                ("mi", MOUSEINPUT)]
+
+
+def send_mouse_input(dx, dy):
+    """Simulate mouse movement to wake display."""
+    user32 = ctypes.windll.user32
+    inp = INPUT()
+    inp.type = INPUT_MOUSE
+    inp.mi.dx = dx
+    inp.mi.dy = dy
+    inp.mi.dwFlags = MOUSEEVENTF_MOVE
+    user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(INPUT))
+
+
+def force_display_wake():
+    """Force display to wake using execution state and mouse simulation."""
+    kernel32 = ctypes.windll.kernel32
+    user32 = ctypes.windll.user32
+    
+    # Set thread execution state to require display
+    kernel32.SetThreadExecutionState(
+        ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED
+    )
+    
+    # Turn monitor ON
+    HWND_BROADCAST = 0xFFFF
+    WM_SYSCOMMAND = 0x0112
+    SC_MONITORPOWER = 0xF170
+    MONITOR_ON = -1
+    
+    user32.PostMessageW(
+        HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, MONITOR_ON)
+    
+    # Simulate mouse movement to ensure wake
+    for _ in range(5):
+        send_mouse_input(1, 1)
+        time.sleep(0.1)
+        send_mouse_input(-1, -1)
+        time.sleep(0.1)
 
 
 def create_wake_task(task_name="WakeFromS0", delay_seconds=10):
@@ -86,10 +144,22 @@ def create_wake_task(task_name="WakeFromS0", delay_seconds=10):
         
         print(f"✓ Trigger set for: {trigger_time.strftime('%Y-%m-%d %H:%M:%S')}")
         
-        # Create action (simple command that does nothing)
+        # Create action to wake display using Python
+        # Use util_wakeup.py if available, otherwise use inline PowerShell
+        helper_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "util_wakeup.py")
+        
         action = task_def.Actions.Create(0)  # TASK_ACTION_EXEC
-        action.Path = 'cmd.exe'
-        action.Arguments = '/c echo Wake timer triggered'
+        
+        if os.path.exists(helper_script):
+            # Use the dedicated wake helper script
+            action.Path = 'python'
+            action.Arguments = f'"{helper_script}"'
+            print(f"✓ Wake action: Run {os.path.basename(helper_script)}")
+        else:
+            # Fallback: Use PowerShell to wake display
+            action.Path = 'powershell.exe'
+            action.Arguments = '-WindowStyle Hidden -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point(0, 0); Start-Sleep -Milliseconds 100; [System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point(1, 1)"'
+            print(f"✓ Wake action: PowerShell mouse simulation")
         
         # Register the task
         TASK_CREATE_OR_UPDATE = 6
@@ -170,8 +240,11 @@ def enter_modern_standby():
         if drift > 2:
             print(f"✓ System woke up {drift:.2f}s LATE (Hardware likely suspended)")
         else:
-            print(f"✓ System woke up on time (Drift: {drift:.2f}s)")
-            
+            print(f"✓ System woke up on time (Drift: {drift:.2f}s)")        
+        # Force display wake to ensure full system wake
+        print("\nForcing display wake...")
+        force_display_wake()
+        print("\u2713 Display wake completed")            
     except Exception as e:
         print(f"✗ Error entering Modern Standby: {e}")
 
