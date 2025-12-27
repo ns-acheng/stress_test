@@ -22,6 +22,7 @@ import pythoncom
 import ctypes
 import time
 import os
+import argparse
 from datetime import datetime, timedelta
 import sys
 
@@ -83,13 +84,14 @@ def force_display_wake():
         time.sleep(0.1)
 
 
-def create_wake_task(task_name="WakeFromS0", delay_seconds=10):
+def create_wake_task(task_name="WakeFromS0", delay_seconds=10, completion_script=None):
     """
     Create a scheduled task with wake timer enabled.
     
     Args:
         task_name: Name of the scheduled task
         delay_seconds: Seconds from now when task should trigger and wake system
+        completion_script: Optional script to run on wake (for Mode 1)
     
     Returns:
         bool: True if task created successfully
@@ -144,22 +146,27 @@ def create_wake_task(task_name="WakeFromS0", delay_seconds=10):
         
         print(f"✓ Trigger set for: {trigger_time.strftime('%Y-%m-%d %H:%M:%S')}")
         
-        # Create action to wake display using Python
-        # Use util_wakeup.py if available, otherwise use inline PowerShell
-        helper_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "util_wakeup.py")
-        
+        # Create action to wake display
         action = task_def.Actions.Create(0)  # TASK_ACTION_EXEC
         
-        if os.path.exists(helper_script):
-            # Use the dedicated wake helper script
+        if completion_script:
+            # Mode 1: Run completion script
             action.Path = 'python'
-            action.Arguments = f'"{helper_script}"'
-            print(f"✓ Wake action: Run {os.path.basename(helper_script)}")
+            action.Arguments = f'"{completion_script}"'
+            print(f"✓ Wake action: Run {os.path.basename(completion_script)}")
         else:
-            # Fallback: Use PowerShell to wake display
-            action.Path = 'powershell.exe'
-            action.Arguments = '-WindowStyle Hidden -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point(0, 0); Start-Sleep -Milliseconds 100; [System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point(1, 1)"'
-            print(f"✓ Wake action: PowerShell mouse simulation")
+            # Mode 2/3: Use util_wakeup.py if available, otherwise PowerShell
+            helper_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "util_wakeup.py")
+            
+            if os.path.exists(helper_script):
+                action.Path = 'python'
+                action.Arguments = f'"{helper_script}"'
+                print(f"✓ Wake action: Run {os.path.basename(helper_script)}")
+            else:
+                # Fallback: Use PowerShell to wake display
+                action.Path = 'powershell.exe'
+                action.Arguments = '-WindowStyle Hidden -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point(0, 0); Start-Sleep -Milliseconds 100; [System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point(1, 1)"'
+                print(f"✓ Wake action: PowerShell mouse simulation")
         
         # Register the task
         TASK_CREATE_OR_UPDATE = 6
@@ -257,8 +264,114 @@ def check_admin():
         return False
 
 
+def create_completion_script():
+    """Create completion script for Mode 1."""
+    script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "poc_wake_complete.py")
+    
+    script_content = '''"""Completion script for Mode 1 wake timer."""
+import time
+import os
+from datetime import datetime
+
+# Force display wake
+import ctypes
+
+ES_CONTINUOUS = 0x80000000
+ES_SYSTEM_REQUIRED = 0x00000001
+ES_DISPLAY_REQUIRED = 0x00000002
+
+kernel32 = ctypes.windll.kernel32
+user32 = ctypes.windll.user32
+
+# Turn monitor ON
+HWND_BROADCAST = 0xFFFF
+WM_SYSCOMMAND = 0x0112
+SC_MONITORPOWER = 0xF170
+MONITOR_ON = -1
+
+user32.PostMessageW(HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, MONITOR_ON)
+
+# Set execution state
+kernel32.SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED)
+
+# Simulate mouse movement
+INPUT_MOUSE = 0
+MOUSEEVENTF_MOVE = 0x0001
+
+class MOUSEINPUT(ctypes.Structure):
+    _fields_ = [("dx", ctypes.c_long),
+                ("dy", ctypes.c_long),
+                ("mouseData", ctypes.c_ulong),
+                ("dwFlags", ctypes.c_ulong),
+                ("time", ctypes.c_ulong),
+                ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong))]
+
+class INPUT(ctypes.Structure):
+    _fields_ = [("type", ctypes.c_ulong), ("mi", MOUSEINPUT)]
+
+def send_mouse():
+    inp = INPUT()
+    inp.type = INPUT_MOUSE
+    inp.mi.dx = 1
+    inp.mi.dy = 1
+    inp.mi.dwFlags = MOUSEEVENTF_MOVE
+    user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(INPUT))
+
+for _ in range(5):
+    send_mouse()
+    time.sleep(0.1)
+
+wake_time = time.time()
+print(f"\\n=" * 60)
+print(f"Wake Timer Completion - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+print("=" * 60)
+
+# Read state file
+state_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "poc_wake_state.txt")
+if os.path.exists(state_file):
+    with open(state_file, 'r') as f:
+        for line in f:
+            if line.startswith('sleep_start='):
+                sleep_start = float(line.split('=')[1].strip())
+                duration = wake_time - sleep_start
+                print(f"✓ System woke up after {duration:.2f} seconds")
+            elif line.startswith('sleep_time='):
+                sleep_time_str = line.split('=')[1].strip()
+                print(f"✓ Sleep initiated: {sleep_time_str}")
+    
+    # Cleanup
+    os.remove(state_file)
+    print("✓ State file cleaned up")
+else:
+    print("✓ Wake timer triggered successfully")
+
+print("✓ Display wake completed")
+print("\\nMode 1 wake cycle complete!\\n")
+'''
+    
+    with open(script_path, 'w') as f:
+        f.write(script_content)
+    
+    return script_path
+
+
 def main():
-    """Main execution flow."""
+    """Main execution flow with mode selection."""
+    parser = argparse.ArgumentParser(
+        description='S0 Modern Standby Wake Timer PoC',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog='''Modes:
+  1 - Exit-and-Resume: Script exits after sleep, wake timer runs completion
+  2 - Wait-for-Wake: No countdown, script waits for user input after wake
+  3 - Demo Mode: Monitor off only, verify wake timer without suspend
+        ''')
+    parser.add_argument('mode', type=int, choices=[1, 2, 3], 
+                        help='Wake mode to use (1, 2, or 3)')
+    parser.add_argument('-d', '--delay', type=int, default=10,
+                        help='Delay in seconds before wake (default: 10)')
+    
+    args = parser.parse_args()
+    
     print("\n" + "="*60)
     print("S0 Modern Standby Wake Timer PoC")
     print("="*60 + "\n")
@@ -269,25 +382,46 @@ def main():
         print("Please run PowerShell or Command Prompt as Administrator")
         sys.exit(1)
     
-    print("✓ Running with administrator privileges\n")
+    print("✓ Running with administrator privileges")
+    print(f"✓ Selected Mode: {args.mode}")
+    print(f"✓ Wake delay: {args.delay} seconds\n")
     
     # Step 1: Create scheduled task with wake timer
     print("Step 1: Creating scheduled task with wake timer...")
     print("-" * 60)
     
-    if not create_wake_task(task_name="WakeFromS0_PoC", delay_seconds=10):
+    completion_script = None
+    if args.mode == 1:
+        # Create completion script for Mode 1
+        completion_script = create_completion_script()
+        print(f"✓ Created completion script: {os.path.basename(completion_script)}")
+    
+    if not create_wake_task(task_name="WakeFromS0_PoC", 
+                           delay_seconds=args.delay,
+                           completion_script=completion_script):
         print("\n✗ Failed to create wake task. Aborting.")
         sys.exit(1)
     
     print("\n" + "✓ Wake timer successfully registered with system")
-    print("  The RTC alarm will trigger in 10 seconds, even during sleep\n")
+    print(f"  The RTC alarm will trigger in {args.delay} seconds, even during sleep\n")
     
-    # Step 2: Enter Modern Standby
+    # Step 2: Enter Modern Standby based on mode
     print("\nStep 2: Entering Modern Standby...")
     print("-" * 60)
-    enter_modern_standby()
     
-    # If we reach here, system woke up
+    if args.mode == 1:
+        enter_standby_mode1(args.delay)
+        # For Mode 1, script exits here
+        print("="*60)
+        print("Mode 1: Script completed (wake handled by scheduled task)")
+        print("="*60 + "\n")
+        return  # Don't cleanup - let wake task run
+    elif args.mode == 2:
+        enter_standby_mode2(args.delay)
+    else:  # mode == 3
+        enter_standby_mode3(args.delay)
+    
+    # If we reach here, system woke up (Mode 2 or 3)
     print("\n" + "="*60)
     print("System woke up from Modern Standby!")
     print("="*60)
@@ -310,6 +444,8 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         print("\n\nOperation cancelled by user")
+    except SystemExit:
+        pass  # Normal exit from argparse
     except Exception as e:
         print(f"\n✗ Unexpected error: {e}")
         import traceback
