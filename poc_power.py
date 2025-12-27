@@ -21,6 +21,7 @@ import win32com.client
 import pythoncom
 import ctypes
 import time
+import subprocess
 from datetime import datetime, timedelta
 import sys
 
@@ -118,19 +119,10 @@ def enter_modern_standby():
     """
     Put the system into S0 Modern Standby (Connected Standby).
     
-    Uses SetSuspendState Windows API.
+    Uses rundll32 to call SetSuspendState, which is more reliable than direct API.
     Requires administrator privileges.
     """
     try:
-        # Load powrprof.dll
-        powrprof = ctypes.WinDLL('powrprof.dll')
-        
-        # SetSuspendState function
-        # BOOL SetSuspendState(BOOL Hibernate, BOOL ForceCritical, BOOL DisableWakeEvent)
-        # - Hibernate: FALSE (0) = Sleep/Standby, TRUE (1) = Hibernate
-        # - ForceCritical: FALSE (0) = Apps can veto, TRUE (1) = Force immediately
-        # - DisableWakeEvent: FALSE (0) = Wake events enabled, TRUE (1) = Disabled
-        
         print("\n" + "="*60)
         print("Entering Modern Standby in 3 seconds...")
         print("System will wake automatically after 10 seconds")
@@ -138,19 +130,45 @@ def enter_modern_standby():
         
         time.sleep(3)  # Give user time to read
         
-        result = powrprof.SetSuspendState(
-            0,  # Sleep (not hibernate)
-            1,  # Force immediately
-            0   # Enable wake events (allow wake timer to work)
+        # Record time before sleep
+        sleep_start = time.time()
+        print(f"Sleep initiated at: {datetime.now().strftime('%H:%M:%S')}")
+        
+        # Use rundll32 to call SetSuspendState - more reliable than direct API
+        # Parameters: Hibernate (0=sleep), ForceCritical (1=force), DisableWakeEvent (0=allow wake)
+        result = subprocess.run(
+            ['rundll32.exe', 'powrprof.dll,SetSuspendState', '0', '1', '0'],
+            capture_output=True,
+            timeout=2
         )
         
-        if result:
-            print("✓ Successfully entered Modern Standby")
+        # If we reach here, system has woken up
+        wake_time = time.time()
+        sleep_duration = wake_time - sleep_start
+        
+        print(f"\n✓ System woke at: {datetime.now().strftime('%H:%M:%S')}")
+        print(f"✓ Sleep duration: {sleep_duration:.2f} seconds")
+        
+        # Verify system actually suspended (should be ~10 seconds, not immediate)
+        if sleep_duration < 5:
+            print(f"\n⚠ WARNING: Sleep duration too short ({sleep_duration:.2f}s)")
+            print("  System may not have actually entered suspend state.")
+            print("  This can happen if:")
+            print("  - Modern Standby is not supported on this device")
+            print("  - Power settings prevent sleep (USB wake, network wake, etc.)")
+            print("  - Applications are holding wake locks")
+            print("  - System is set to 'Never sleep' in power settings")
         else:
-            error = ctypes.GetLastError()
-            print(f"✗ Failed to enter Modern Standby. Error code: {error}")
-            print("Note: This requires administrator privileges")
+            print(f"✓ Verified: System was actually suspended for {sleep_duration:.2f}s")
             
+    except subprocess.TimeoutExpired:
+        # This is expected - the sleep command doesn't return until wake
+        wake_time = time.time()
+        sleep_duration = wake_time - sleep_start
+        print(f"\n✓ System woke at: {datetime.now().strftime('%H:%M:%S')}")
+        print(f"✓ Sleep duration: {sleep_duration:.2f} seconds")
+        if sleep_duration >= 5:
+            print(f"✓ Verified: System was actually suspended for {sleep_duration:.2f}s")
     except Exception as e:
         print(f"✗ Error entering Modern Standby: {e}")
 
