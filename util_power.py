@@ -2,6 +2,7 @@ import ctypes
 from ctypes import wintypes
 import logging
 import time
+import os
 
 logger = logging.getLogger()
 
@@ -48,116 +49,51 @@ class LARGE_INTEGER(ctypes.Structure):
                 ("HighPart", wintypes.LONG)]
 
 def enter_s0_and_wake(duration_seconds: int):
-    # 1. Create the Timer
-    hTimer = kernel32.CreateWaitableTimerW(None, False, None)
-    if not hTimer:
-        logger.error(f"Failed create timer. Err: {kernel32.GetLastError()}")
-        return False
-
-    # 2. Create Power Request Object
-    # We prepare this beforehand so we can call it immediately upon waking
-    reason = REASON_CONTEXT()
-    reason.Version = POWER_REQUEST_CONTEXT_VERSION
-    reason.Flags = POWER_REQUEST_CONTEXT_SIMPLE_STRING
-    reason.Reason.SimpleReasonString = "Stress Test Wakeup"
+    # Use Task Scheduler to wake the system
+    from util_task_scheduler import create_wake_task, delete_wake_task
+    import sys
     
-    hPowerRequest = kernel32.PowerCreateRequest(ctypes.byref(reason))
-    if not hPowerRequest:
-        logger.error(f"Failed to create Power Request. Err: {kernel32.GetLastError()}")
-        kernel32.CloseHandle(hTimer)
+    task_name = "StressTestWakeTask"
+    
+    # Create a helper script that just prints "I am awake" and exits
+    # This is what the scheduled task will run to wake the system
+    helper_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "wake_helper.py")
+    with open(helper_script, "w") as f:
+        f.write("import time; print('System Woken by Task Scheduler'); time.sleep(5)")
+        
+    logger.info(f"Scheduling task '{task_name}' to wake system in {duration_seconds} seconds...")
+    if not create_wake_task(task_name, duration_seconds, helper_script):
+        logger.error("Failed to schedule wake task.")
         return False
 
-    try:
-        # 3. Set the Timer (Relative Time)
-        dt = int(duration_seconds * 10000000) * -1
-        li = LARGE_INTEGER(dt & 0xFFFFFFFF, dt >> 32)
-
-        if not kernel32.SetWaitableTimer(hTimer, ctypes.byref(li), 0, None, None, True):
-            logger.error(f"Failed set timer. Err: {kernel32.GetLastError()}")
-            return False
-
-        logger.info(f"Enter S0 (Monitor OFF) for {duration_seconds}s...")
+    logger.info(f"Enter S0 (Monitor OFF) for {duration_seconds}s...")
+    
+    # Turn Monitor OFF
+    user32.PostMessageW(
+        HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, MONITOR_OFF)
+    
+    # Wait for the duration + buffer
+    # We use a simple sleep here because the Task Scheduler will handle the waking
+    # Even if this thread is suspended, the Task Scheduler will wake the system,
+    # which will unsleep this thread eventually (or at least wake the hardware).
+    time.sleep(duration_seconds + 5)
+    
+    logger.info("Sleep duration passed. Cleaning up...")
+    
+    # Turn Monitor ON
+    user32.PostMessageW(
+        HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, MONITOR_ON)
         
-        # Debug: Check if timer is registered
-        try:
-            import subprocess
-            res = subprocess.run(
-                ["powercfg", "/waketimers"], 
-                capture_output=True, 
-                encoding='utf-8', 
-                errors='replace'
-            )
-            logger.info(f"Active Wake Timers:\n{res.stdout.strip()}")
-        except Exception as e:
-            logger.warning(f"Failed to query waketimers: {e}")
-
-        user32.PostMessageW(
-            HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, MONITOR_OFF)
+    # Force display on
+    kernel32.SetThreadExecutionState(
+        ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED
+    )
+    
+    delete_wake_task(task_name)
+    if os.path.exists(helper_script):
+        os.remove(helper_script)
         
-
-        def timer_apc(lpArgToCompletionRoutine, dwTimerLowValue, dwTimerHighValue):
-            pass # Dummy APC function
-
-        CMPFUNC = ctypes.WINFUNCTYPE(None, ctypes.c_void_p, ctypes.c_ulong, ctypes.c_ulong)
-        completion_routine = CMPFUNC(timer_apc)
-
-        # Reset timer to use APC
-        if not kernel32.SetWaitableTimer(
-            hTimer, ctypes.byref(li), 0, completion_routine, None, True
-        ):
-             logger.error(f"Failed set timer with APC. Err: {kernel32.GetLastError()}")
-             return False
-             
-        logger.info("Waiting for timer (SleepEx with Alertable=True)...")
-        
-        # SleepEx puts the thread in an alertable state. 
-        # When the timer expires, the APC is queued, and SleepEx returns WAIT_IO_COMPLETION (0xC0)
-        wait_result = kernel32.SleepEx((duration_seconds + 10) * 1000, True)
-        
-        if wait_result == 0x000000C0: # WAIT_IO_COMPLETION
-            logger.info("Timer expired (APC executed). SoC is awake. Requesting Display ON...")
-        elif wait_result == 0: # Timeout
-             logger.warning("SleepEx timed out.")
-        else:
-            logger.warning(f"SleepEx returned unexpected: {wait_result}")
-
-        # 6. FORCE DISPLAY ON using PowerSetRequest
-        # This tells the Power Manager: "I need the System AND Display running right now"
-        if not kernel32.PowerSetRequest(hPowerRequest, PowerRequestSystemRequired):
-             logger.error(
-                 f"Failed to set SystemRequired. Err: {kernel32.GetLastError()}")
-        
-        if not kernel32.PowerSetRequest(hPowerRequest, PowerRequestDisplayRequired):
-             logger.error(
-                 f"Failed to set DisplayRequired. Err: {kernel32.GetLastError()}")
-
-        # 7. Legacy Wake Methods (Backup)
-        # Send the legacy monitor on message
-        user32.PostMessageW(
-            HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, MONITOR_ON)
-        
-        # Try to use SetThreadExecutionState in a loop to force update
-        # Sometimes a single call is ignored if the system is transitioning
-        for _ in range(3):
-            kernel32.SetThreadExecutionState(
-                ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED
-            )
-            time.sleep(0.5)
-
-        logger.info("Wake requests sent. Holding power request for 5 seconds to ensure screen lights up...")
-        time.sleep(5) 
-
-        # 8. Cleanup Power Request
-        # Once we are sure the user is back or the test continues, we can clear the request
-        kernel32.PowerClearRequest(hPowerRequest, PowerRequestSystemRequired)
-        kernel32.PowerClearRequest(hPowerRequest, PowerRequestDisplayRequired)
-        
-        logger.info("Power request cleared.")
-        return True
-
-    finally:
-        kernel32.CloseHandle(hTimer)
-        kernel32.CloseHandle(hPowerRequest)
+    return True
 
 if __name__ == "__main__":
     from util_resources import enable_privilege
