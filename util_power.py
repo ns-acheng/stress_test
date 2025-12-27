@@ -95,13 +95,39 @@ def enter_s0_and_wake(duration_seconds: int):
         # 5. Wait for Timer
         # The system will likely enter S0 Idle here.
         # When timer fires, SoC wakes up, but display stays off.
-        wait_result = kernel32.WaitForSingleObject(
-            hTimer, (duration_seconds + 5) * 1000)
         
-        if wait_result == 0:
-            logger.info("Timer expired. SoC is awake. Requesting Display ON...")
+        # Use WaitForMultipleObjectsEx to allow APCs if needed, though WaitForSingleObject is usually fine.
+        # The issue might be that the system is in a state where it doesn't process the timer signal
+        # until a hardware interrupt (mouse click) occurs.
+        
+        # Let's try using SleepEx with an APC (Asynchronous Procedure Call) completion routine.
+        # This is sometimes more reliable for waking threads.
+        
+        def timer_apc(lpArgToCompletionRoutine, dwTimerLowValue, dwTimerHighValue):
+            pass # Dummy APC function
+
+        CMPFUNC = ctypes.WINFUNCTYPE(None, ctypes.c_void_p, ctypes.c_ulong, ctypes.c_ulong)
+        completion_routine = CMPFUNC(timer_apc)
+
+        # Reset timer to use APC
+        if not kernel32.SetWaitableTimer(
+            hTimer, ctypes.byref(li), 0, completion_routine, None, True
+        ):
+             logger.error(f"Failed set timer with APC. Err: {kernel32.GetLastError()}")
+             return False
+             
+        logger.info("Waiting for timer (SleepEx with Alertable=True)...")
+        
+        # SleepEx puts the thread in an alertable state. 
+        # When the timer expires, the APC is queued, and SleepEx returns WAIT_IO_COMPLETION (0xC0)
+        wait_result = kernel32.SleepEx((duration_seconds + 10) * 1000, True)
+        
+        if wait_result == 0x000000C0: # WAIT_IO_COMPLETION
+            logger.info("Timer expired (APC executed). SoC is awake. Requesting Display ON...")
+        elif wait_result == 0: # Timeout
+             logger.warning("SleepEx timed out.")
         else:
-            logger.warning(f"Wait returned unexpected: {wait_result}")
+            logger.warning(f"SleepEx returned unexpected: {wait_result}")
 
         # 6. FORCE DISPLAY ON using PowerSetRequest
         # This tells the Power Manager: "I need the System AND Display running right now"
