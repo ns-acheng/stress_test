@@ -15,6 +15,11 @@ SC_MONITORPOWER = 0xF170
 MONITOR_OFF = 2
 MONITOR_ON = -1
 
+# Execution State Constants
+ES_CONTINUOUS = 0x80000000
+ES_SYSTEM_REQUIRED = 0x00000001
+ES_DISPLAY_REQUIRED = 0x00000002
+
 # Power Request Constants
 POWER_REQUEST_CONTEXT_VERSION = 0
 POWER_REQUEST_CONTEXT_SIMPLE_STRING = 0x1
@@ -86,23 +91,10 @@ def enter_s0_and_wake(duration_seconds: int):
         except Exception as e:
             logger.warning(f"Failed to query waketimers: {e}")
 
-        # 4. Turn Monitor OFF (S0 Modern Standby entry)
-        # In S0, we do NOT use SetSuspendState. We just turn off the monitor.
-        # The OS will transition to DRIPS (Deep Runtime Idle Platform State) automatically.
         user32.PostMessageW(
             HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, MONITOR_OFF)
         
-        # 5. Wait for Timer
-        # The system will likely enter S0 Idle here.
-        # When timer fires, SoC wakes up, but display stays off.
-        
-        # Use WaitForMultipleObjectsEx to allow APCs if needed, though WaitForSingleObject is usually fine.
-        # The issue might be that the system is in a state where it doesn't process the timer signal
-        # until a hardware interrupt (mouse click) occurs.
-        
-        # Let's try using SleepEx with an APC (Asynchronous Procedure Call) completion routine.
-        # This is sometimes more reliable for waking threads.
-        
+
         def timer_apc(lpArgToCompletionRoutine, dwTimerLowValue, dwTimerHighValue):
             pass # Dummy APC function
 
@@ -144,65 +136,13 @@ def enter_s0_and_wake(duration_seconds: int):
         user32.PostMessageW(
             HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, MONITOR_ON)
         
-        # Simulate tiny mouse movement using SendInput (more reliable than mouse_event)
-        INPUT_MOUSE = 0
-        INPUT_KEYBOARD = 1
-        MOUSEEVENTF_MOVE = 0x0001
-        KEYEVENTF_KEYUP = 0x0002
-        VK_SHIFT = 0x10
-        
-        class MOUSEINPUT(ctypes.Structure):
-            _fields_ = [("dx", ctypes.c_long),
-                        ("dy", ctypes.c_long),
-                        ("mouseData", ctypes.c_ulong),
-                        ("dwFlags", ctypes.c_ulong),
-                        ("time", ctypes.c_ulong),
-                        ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong))]
-
-        class KEYBDINPUT(ctypes.Structure):
-            _fields_ = [("wVk", wintypes.WORD),
-                        ("wScan", wintypes.WORD),
-                        ("dwFlags", wintypes.DWORD),
-                        ("time", wintypes.DWORD),
-                        ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong))]
-
-        class INPUT_UNION(ctypes.Union):
-            _fields_ = [("mi", MOUSEINPUT),
-                        ("ki", KEYBDINPUT)]
-
-        class INPUT(ctypes.Structure):
-            _fields_ = [("type", ctypes.c_ulong),
-                        ("u", INPUT_UNION)]
-
-        def send_mouse_input(dx, dy):
-            inp = INPUT()
-            inp.type = INPUT_MOUSE
-            inp.u.mi.dx = dx
-            inp.u.mi.dy = dy
-            inp.u.mi.dwFlags = MOUSEEVENTF_MOVE
-            user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(INPUT))
-
-        def send_key_input(vk, flags):
-            inp = INPUT()
-            inp.type = INPUT_KEYBOARD
-            inp.u.ki.wVk = vk
-            inp.u.ki.dwFlags = flags
-            user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(INPUT))
-
-        # Jiggle mouse a few times
-        logger.info("Simulating mouse movement to wake display...")
-        for i in range(5):
-            send_mouse_input(1, 1)
-            time.sleep(0.1)
-            send_mouse_input(-1, -1)
-            time.sleep(0.1)
-            logger.info(f"Mouse jiggle {i+1}/5 performed.")
-
-        # Simulate Keyboard Input (Shift Key)
-        logger.info("Simulating keyboard input (Shift key)...")
-        send_key_input(VK_SHIFT, 0) # Press
-        time.sleep(0.05)
-        send_key_input(VK_SHIFT, KEYEVENTF_KEYUP) # Release
+        # Try to use SetThreadExecutionState in a loop to force update
+        # Sometimes a single call is ignored if the system is transitioning
+        for _ in range(3):
+            kernel32.SetThreadExecutionState(
+                ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED
+            )
+            time.sleep(0.5)
 
         logger.info("Wake requests sent. Holding power request for 5 seconds to ensure screen lights up...")
         time.sleep(5) 
