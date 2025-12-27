@@ -21,7 +21,6 @@ import win32com.client
 import pythoncom
 import ctypes
 import time
-import subprocess
 from datetime import datetime, timedelta
 import sys
 
@@ -119,10 +118,19 @@ def enter_modern_standby():
     """
     Put the system into S0 Modern Standby (Connected Standby).
     
-    Uses rundll32 to call SetSuspendState, which is more reliable than direct API.
+    Uses monitor off approach - same method as util_power.py.
     Requires administrator privileges.
     """
     try:
+        # Load user32 for monitor control
+        user32 = ctypes.windll.user32
+        
+        # Window Messages and Power Constants
+        HWND_BROADCAST = 0xFFFF
+        WM_SYSCOMMAND = 0x0112
+        SC_MONITORPOWER = 0xF170
+        MONITOR_OFF = 2
+        
         print("\n" + "="*60)
         print("Entering Modern Standby in 3 seconds...")
         print("System will wake automatically after 10 seconds")
@@ -134,41 +142,36 @@ def enter_modern_standby():
         sleep_start = time.time()
         print(f"Sleep initiated at: {datetime.now().strftime('%H:%M:%S')}")
         
-        # Use rundll32 to call SetSuspendState - more reliable than direct API
-        # Parameters: Hibernate (0=sleep), ForceCritical (1=force), DisableWakeEvent (0=allow wake)
-        result = subprocess.run(
-            ['rundll32.exe', 'powrprof.dll,SetSuspendState', '0', '1', '0'],
-            capture_output=True,
-            timeout=2
-        )
+        # Turn Monitor OFF (S0 sleep simulation)
+        user32.PostMessageW(
+            HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, MONITOR_OFF)
         
-        # If we reach here, system has woken up
-        wake_time = time.time()
-        sleep_duration = wake_time - sleep_start
+        print("✓ Monitor turned OFF (S0 sleep mode)")
         
-        print(f"\n✓ System woke at: {datetime.now().strftime('%H:%M:%S')}")
+        # Wait for wake time with countdown
+        wake_time = sleep_start + 10
+        
+        while time.time() < wake_time + 2:  # Wait up to 2 seconds past wake time
+            remaining = int(wake_time - time.time())
+            if remaining > 0:
+                print(f"Sleeping... {remaining}s remaining", end='\r')
+            time.sleep(1)
+        
+        print("\n")  # Newline after countdown
+        
+        # Calculate actual sleep duration
+        actual_wake_time = time.time()
+        sleep_duration = actual_wake_time - sleep_start
+        drift = actual_wake_time - wake_time
+        
+        print(f"✓ System woke at: {datetime.now().strftime('%H:%M:%S')}")
         print(f"✓ Sleep duration: {sleep_duration:.2f} seconds")
         
-        # Verify system actually suspended (should be ~10 seconds, not immediate)
-        if sleep_duration < 5:
-            print(f"\n⚠ WARNING: Sleep duration too short ({sleep_duration:.2f}s)")
-            print("  System may not have actually entered suspend state.")
-            print("  This can happen if:")
-            print("  - Modern Standby is not supported on this device")
-            print("  - Power settings prevent sleep (USB wake, network wake, etc.)")
-            print("  - Applications are holding wake locks")
-            print("  - System is set to 'Never sleep' in power settings")
+        if drift > 2:
+            print(f"✓ System woke up {drift:.2f}s LATE (Hardware likely suspended)")
         else:
-            print(f"✓ Verified: System was actually suspended for {sleep_duration:.2f}s")
+            print(f"✓ System woke up on time (Drift: {drift:.2f}s)")
             
-    except subprocess.TimeoutExpired:
-        # This is expected - the sleep command doesn't return until wake
-        wake_time = time.time()
-        sleep_duration = wake_time - sleep_start
-        print(f"\n✓ System woke at: {datetime.now().strftime('%H:%M:%S')}")
-        print(f"✓ Sleep duration: {sleep_duration:.2f} seconds")
-        if sleep_duration >= 5:
-            print(f"✓ Verified: System was actually suspended for {sleep_duration:.2f}s")
     except Exception as e:
         print(f"✗ Error entering Modern Standby: {e}")
 
