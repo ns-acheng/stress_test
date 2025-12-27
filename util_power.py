@@ -63,19 +63,32 @@ def enter_s0_and_wake(duration_seconds: int):
         return False
 
     try:
-        # 3. Set the Timer
-        now_sec = time.time()
-        wake_time_sec = now_sec + duration_seconds
-        file_time_val = int((wake_time_sec + 11644473600) * 10000000)
-        li = LARGE_INTEGER(file_time_val & 0xFFFFFFFF, file_time_val >> 32)
+        # 3. Set the Timer (Relative Time)
+        dt = int(duration_seconds * 10000000) * -1
+        li = LARGE_INTEGER(dt & 0xFFFFFFFF, dt >> 32)
 
         if not kernel32.SetWaitableTimer(hTimer, ctypes.byref(li), 0, None, None, True):
             logger.error(f"Failed set timer. Err: {kernel32.GetLastError()}")
             return False
 
         logger.info(f"Enter S0 (Monitor OFF) for {duration_seconds}s...")
+        
+        # Debug: Check if timer is registered
+        try:
+            import subprocess
+            res = subprocess.run(
+                ["powercfg", "/waketimers"], 
+                capture_output=True, 
+                encoding='utf-8', 
+                errors='replace'
+            )
+            logger.info(f"Active Wake Timers:\n{res.stdout.strip()}")
+        except Exception as e:
+            logger.warning(f"Failed to query waketimers: {e}")
 
-        # 4. Turn Monitor OFF
+        # 4. Turn Monitor OFF (S0 Modern Standby entry)
+        # In S0, we do NOT use SetSuspendState. We just turn off the monitor.
+        # The OS will transition to DRIPS (Deep Runtime Idle Platform State) automatically.
         user32.PostMessageW(
             HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, MONITOR_OFF)
         
@@ -107,7 +120,10 @@ def enter_s0_and_wake(duration_seconds: int):
         
         # Simulate tiny mouse movement using SendInput (more reliable than mouse_event)
         INPUT_MOUSE = 0
+        INPUT_KEYBOARD = 1
         MOUSEEVENTF_MOVE = 0x0001
+        KEYEVENTF_KEYUP = 0x0002
+        VK_SHIFT = 0x10
         
         class MOUSEINPUT(ctypes.Structure):
             _fields_ = [("dx", ctypes.c_long),
@@ -117,16 +133,34 @@ def enter_s0_and_wake(duration_seconds: int):
                         ("time", ctypes.c_ulong),
                         ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong))]
 
+        class KEYBDINPUT(ctypes.Structure):
+            _fields_ = [("wVk", wintypes.WORD),
+                        ("wScan", wintypes.WORD),
+                        ("dwFlags", wintypes.DWORD),
+                        ("time", wintypes.DWORD),
+                        ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong))]
+
+        class INPUT_UNION(ctypes.Union):
+            _fields_ = [("mi", MOUSEINPUT),
+                        ("ki", KEYBDINPUT)]
+
         class INPUT(ctypes.Structure):
             _fields_ = [("type", ctypes.c_ulong),
-                        ("mi", MOUSEINPUT)]
+                        ("u", INPUT_UNION)]
 
         def send_mouse_input(dx, dy):
             inp = INPUT()
             inp.type = INPUT_MOUSE
-            inp.mi.dx = dx
-            inp.mi.dy = dy
-            inp.mi.dwFlags = MOUSEEVENTF_MOVE
+            inp.u.mi.dx = dx
+            inp.u.mi.dy = dy
+            inp.u.mi.dwFlags = MOUSEEVENTF_MOVE
+            user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(INPUT))
+
+        def send_key_input(vk, flags):
+            inp = INPUT()
+            inp.type = INPUT_KEYBOARD
+            inp.u.ki.wVk = vk
+            inp.u.ki.dwFlags = flags
             user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(INPUT))
 
         # Jiggle mouse a few times
@@ -137,6 +171,12 @@ def enter_s0_and_wake(duration_seconds: int):
             send_mouse_input(-1, -1)
             time.sleep(0.1)
             logger.info(f"Mouse jiggle {i+1}/5 performed.")
+
+        # Simulate Keyboard Input (Shift Key)
+        logger.info("Simulating keyboard input (Shift key)...")
+        send_key_input(VK_SHIFT, 0) # Press
+        time.sleep(0.05)
+        send_key_input(VK_SHIFT, KEYEVENTF_KEYUP) # Release
 
         logger.info("Wake requests sent. Holding power request for 5 seconds to ensure screen lights up...")
         time.sleep(5) 
