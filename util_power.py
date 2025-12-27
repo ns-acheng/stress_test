@@ -50,8 +50,29 @@ def enter_s0_and_wake(duration_seconds: int):
     # We use a simple sleep here because the Task Scheduler will handle the waking
     # Even if this thread is suspended, the Task Scheduler will wake the system,
     # which will unsleep this thread eventually (or at least wake the hardware).
-    time.sleep(duration_seconds + 5)
     
+    # We will print a countdown to see exactly when the script stops running (suspends)
+    start_time = time.time()
+    wake_time = start_time + duration_seconds
+    
+    try:
+        while time.time() < wake_time + 5: # Wait up to 5 seconds past wake time
+            remaining = int(wake_time - time.time())
+            if remaining > 0:
+                print(f"Sleeping... {remaining}s remaining", end='\r')
+            time.sleep(1)
+    except KeyboardInterrupt:
+        pass
+    
+    print("\n") # Newline after countdown
+    actual_wake_time = time.time()
+    drift = actual_wake_time - wake_time
+    
+    if drift > 2:
+        logger.warning(f"System woke up {drift:.2f}s LATE. (Hardware likely suspended)")
+    else:
+        logger.info(f"System woke up on time (Drift: {drift:.2f}s).")
+
     logger.info("Sleep duration passed. Cleaning up...")
     
     # Turn Monitor ON
