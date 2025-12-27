@@ -63,21 +63,35 @@ def enter_s0_and_wake(duration_seconds: int):
         return False
 
     try:
-        # 3. Set the Timer
-        now_sec = time.time()
-        wake_time_sec = now_sec + duration_seconds
-        file_time_val = int((wake_time_sec + 11644473600) * 10000000)
-        li = LARGE_INTEGER(file_time_val & 0xFFFFFFFF, file_time_val >> 32)
+        # 3. Set the Timer (Relative Time)
+        dt = int(duration_seconds * 10000000) * -1
+        li = LARGE_INTEGER(dt & 0xFFFFFFFF, dt >> 32)
 
         if not kernel32.SetWaitableTimer(hTimer, ctypes.byref(li), 0, None, None, True):
             logger.error(f"Failed set timer. Err: {kernel32.GetLastError()}")
             return False
 
-        logger.info(f"Enter S0 (Monitor OFF) for {duration_seconds}s...")
+        logger.info(f"Enter S0 (Sleep) for {duration_seconds}s...")
+        
+        # Debug: Check if timer is registered
+        try:
+            import subprocess
+            # Use 'cp950' (Traditional Chinese) or 'mbcs' (System Default) for decoding
+            res = subprocess.run(
+                ["powercfg", "/waketimers"], 
+                capture_output=True, 
+                encoding='cp950', 
+                errors='replace'
+            )
+            logger.info(f"Active Wake Timers:\n{res.stdout.strip()}")
+        except Exception as e:
+            logger.warning(f"Failed to query waketimers: {e}")
 
-        # 4. Turn Monitor OFF
-        user32.PostMessageW(
-            HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, MONITOR_OFF)
+        # 4. Explicitly request System Suspend (Sleep)
+        # This works for both S3 and S0 Modern Standby
+        # Args: Hibernate=False, Force=False, WakeupEventsDisabled=False
+        logger.info("Calling SetSuspendState(Sleep)...")
+        ctypes.windll.powrprof.SetSuspendState(False, False, False)
         
         # 5. Wait for Timer
         # The system will likely enter S0 Idle here.
