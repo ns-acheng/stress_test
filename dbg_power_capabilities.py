@@ -6,7 +6,7 @@ def run_command(command, description):
     print(f"\n--- {description} ---")
     print(f"Command: {' '.join(command)}")
     try:
-        result = subprocess.run(command, capture_output=True, text=True, errors='replace')
+        result = subprocess.run(command, capture_output=True, text=True, encoding='utf-8', errors='replace')
         print(result.stdout)
         if result.stderr:
             print("STDERR:", result.stderr)
@@ -66,7 +66,7 @@ def main():
     """
     
     # Write PS script to file to avoid escaping hell
-    with open("dbg_create_task.ps1", "w") as f:
+    with open("dbg_create_task.ps1", "w", encoding='utf-8') as f:
         f.write(ps_script)
         
     run_command(["powershell", "-ExecutionPolicy", "Bypass", "-File", "dbg_create_task.ps1"], "Create Test Task")
