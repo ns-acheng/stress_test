@@ -160,20 +160,20 @@ def main():
         print("Service may not be logging properly")
     
     # Check Windows power events (Event ID 506 = sleep, 507 = wake)
-    print("\nWindows Power Event Log:")
+    print("\nWindows System Event Log (All Recent Events):")
     print("-" * 60)
     try:
         result = subprocess.run([
             'powershell', '-Command',
-            "Get-WinEvent -FilterHashtable @{LogName='System'; ID=506,507} -ErrorAction SilentlyContinue | Select-Object -Property TimeCreated, Id, Message | Format-List"
-        ], capture_output=True, text=True, timeout=10)
+            "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-WinEvent -LogName System -MaxEvents 50 -ErrorAction SilentlyContinue | Select-Object -Property TimeCreated, Id, ProviderName, Message | Format-List"
+        ], capture_output=True, text=True, encoding='utf-8', errors='ignore', timeout=15)
         
         if result.stdout.strip():
             print(result.stdout)
         else:
-            print("[INFO] No power events (506/507) found")
+            print("[INFO] No system events found")
     except Exception as e:
-        print(f"[ERROR] Could not read power events: {e}")
+        print(f"[ERROR] Could not read system events: {e}")
 
 
 if __name__ == '__main__':
