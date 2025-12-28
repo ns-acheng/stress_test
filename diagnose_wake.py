@@ -9,35 +9,33 @@ print("WAKE SYSTEM DIAGNOSTICS")
 print("=" * 60)
 print()
 
-# Check if restart flag is provided
-if len(sys.argv) > 1 and sys.argv[1] == '--restart':
-    print("RESTARTING SERVICE WITH FRESH CODE...")
-    print("=" * 60)
-    
-    print("\n1. Removing old service...")
-    result = subprocess.run([sys.executable, 'service/wake_service_install.py', 'remove'], 
-                           capture_output=True, text=True)
-    print(result.stdout if result.stdout else "[OK] Service removed")
-    
-    print("\n2. Installing service with new code...")
-    result = subprocess.run([sys.executable, 'service/wake_service_install.py', 'install'], 
-                           capture_output=True, text=True)
-    print(result.stdout if result.stdout else "[OK] Service installed")
-    
-    print("\n3. Starting service...")
-    result = subprocess.run(['sc', 'start', 'StressTestWakeService'], 
-                           capture_output=True, text=True)
-    if 'SUCCESS' in result.stdout or 'already been started' in result.stdout:
-        print("[OK] Service started")
-    else:
-        print(result.stdout)
-    
-    print("\n" + "=" * 60)
-    print("SERVICE RESTART COMPLETE")
-    print("=" * 60)
-    print()
+print("RESTARTING SERVICE WITH FRESH CODE...")
+print("=" * 60)
 
-print("\nRUNNING DIAGNOSTICS...")
+print("\n1. Removing old service...")
+result = subprocess.run([sys.executable, 'service/wake_service_install.py', 'remove'], 
+                       capture_output=True, text=True)
+print(result.stdout if result.stdout else "[OK] Service removed")
+
+print("\n2. Installing service with new code...")
+result = subprocess.run([sys.executable, 'service/wake_service_install.py', 'install'], 
+                       capture_output=True, text=True)
+print(result.stdout if result.stdout else "[OK] Service installed")
+
+print("\n3. Starting service...")
+result = subprocess.run(['sc', 'start', 'StressTestWakeService'], 
+                       capture_output=True, text=True)
+if 'SUCCESS' in result.stdout or 'already been started' in result.stdout:
+    print("[OK] Service started")
+else:
+    print(result.stdout)
+
+print("\n" + "=" * 60)
+print("SERVICE RESTART COMPLETE")
+print("=" * 60)
+print()
+
+print("RUNNING DIAGNOSTICS...")
 print("=" * 60)
 
 # Check if task exists
