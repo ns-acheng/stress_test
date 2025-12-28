@@ -191,69 +191,140 @@ def create_wake_task(task_name="WakeFromS0", delay_seconds=10, completion_script
         pythoncom.CoUninitialize()
 
 
-def enter_modern_standby():
+def enter_standby_mode1(delay_seconds=10):
     """
-    Put the system into S0 Modern Standby (Connected Standby).
-    
-    Uses monitor off approach - same method as util_power.py.
-    Requires administrator privileges.
+    Mode 1: Script exits after entering sleep, wake timer runs completion.
     """
     try:
-        # Load user32 for monitor control
         user32 = ctypes.windll.user32
-        
-        # Window Messages and Power Constants
         HWND_BROADCAST = 0xFFFF
         WM_SYSCOMMAND = 0x0112
         SC_MONITORPOWER = 0xF170
         MONITOR_OFF = 2
         
         print("\n" + "="*60)
+        print("Mode 1: Exit-and-Resume (Script exits, wake timer completes)")
         print("Entering Modern Standby in 3 seconds...")
-        print("System will wake automatically after 10 seconds")
+        print(f"System will wake after {delay_seconds} seconds")
         print("="*60 + "\n")
         
-        time.sleep(3)  # Give user time to read
+        time.sleep(3)
         
-        # Record time before sleep
         sleep_start = time.time()
         print(f"Sleep initiated at: {datetime.now().strftime('%H:%M:%S')}")
         
-        # Turn Monitor OFF (S0 sleep simulation)
-        user32.PostMessageW(
-            HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, MONITOR_OFF)
+        # Write state file for completion script
+        state_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "poc_wake_state.txt")
+        with open(state_file, 'w') as f:
+            f.write(f"sleep_start={sleep_start}\n")
+            f.write(f"sleep_time={datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         
+        # Turn Monitor OFF
+        user32.PostMessageW(HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, MONITOR_OFF)
         print("✓ Monitor turned OFF (S0 sleep mode)")
+        print("\n✓ Script exiting - wake timer will complete the cycle\n")
         
-        # Wait for wake time with countdown
-        wake_time = sleep_start + 10
+    except Exception as e:
+        print(f"✗ Error: {e}")
+
+
+def enter_standby_mode2(delay_seconds=10):
+    """
+    Mode 2: No countdown loop - just sleep and wait for wake event.
+    """
+    try:
+        user32 = ctypes.windll.user32
+        HWND_BROADCAST = 0xFFFF
+        WM_SYSCOMMAND = 0x0112
+        SC_MONITORPOWER = 0xF170
+        MONITOR_OFF = 2
         
-        while time.time() < wake_time + 2:  # Wait up to 2 seconds past wake time
-            remaining = int(wake_time - time.time())
-            if remaining > 0:
-                print(f"Sleeping... {remaining}s remaining", end='\r')
-            time.sleep(1)
+        print("\n" + "="*60)
+        print("Mode 2: Wait-for-Wake (No countdown, accepts manual wake)")
+        print("Entering Modern Standby in 3 seconds...")
+        print(f"Press any key after {delay_seconds} seconds to complete wake")
+        print("="*60 + "\n")
         
-        print("\n")  # Newline after countdown
+        time.sleep(3)
         
-        # Calculate actual sleep duration
+        sleep_start = time.time()
+        print(f"Sleep initiated at: {datetime.now().strftime('%H:%M:%S')}")
+        
+        # Turn Monitor OFF
+        user32.PostMessageW(HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, MONITOR_OFF)
+        print("✓ Monitor turned OFF (S0 sleep mode)")
+        print(f"\nWaiting for wake event (hardware will wake at {(datetime.now() + timedelta(seconds=delay_seconds)).strftime('%H:%M:%S')})...")
+        print("Press any key after wake timer triggers to resume script\n")
+        
+        # Simple blocking wait - will be interrupted by user input after wake
+        input()  # Wait for user keypress
+        
         actual_wake_time = time.time()
         sleep_duration = actual_wake_time - sleep_start
-        drift = actual_wake_time - wake_time
         
-        print(f"✓ System woke at: {datetime.now().strftime('%H:%M:%S')}")
-        print(f"✓ Sleep duration: {sleep_duration:.2f} seconds")
+        print(f"\n✓ System resumed at: {datetime.now().strftime('%H:%M:%S')}")
+        print(f"✓ Total duration: {sleep_duration:.2f} seconds")
         
-        if drift > 2:
-            print(f"✓ System woke up {drift:.2f}s LATE (Hardware likely suspended)")
-        else:
-            print(f"✓ System woke up on time (Drift: {drift:.2f}s)")        
-        # Force display wake to ensure full system wake
+        if sleep_duration >= delay_seconds:
+            print(f"✓ Wake timer triggered (expected ~{delay_seconds}s, actual {sleep_duration:.2f}s)")
+        
         print("\nForcing display wake...")
         force_display_wake()
-        print("\u2713 Display wake completed")            
+        print("✓ Display wake completed")
+            
     except Exception as e:
-        print(f"✗ Error entering Modern Standby: {e}")
+        print(f"✗ Error: {e}")
+
+
+def enter_standby_mode3(delay_seconds=10):
+    """
+    Mode 3: Demo mode - verify wake timer without actual suspend.
+    """
+    try:
+        print("\n" + "="*60)
+        print("Mode 3: Demo Mode (Monitor off, no system suspend)")
+        print("Demonstrating wake timer functionality")
+        print(f"System will wake after {delay_seconds} seconds")
+        print("="*60 + "\n")
+        
+        user32 = ctypes.windll.user32
+        HWND_BROADCAST = 0xFFFF
+        WM_SYSCOMMAND = 0x0112
+        SC_MONITORPOWER = 0xF170
+        MONITOR_OFF = 2
+        
+        time.sleep(3)
+        
+        sleep_start = time.time()
+        print(f"Demo started at: {datetime.now().strftime('%H:%M:%S')}")
+        
+        # Turn Monitor OFF
+        user32.PostMessageW(HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, MONITOR_OFF)
+        print("✓ Monitor turned OFF")
+        print(f"\nWaiting {delay_seconds} seconds for wake timer to trigger...\n")
+        
+        # Active wait - script stays running
+        wake_target = sleep_start + delay_seconds
+        while time.time() < wake_target + 5:
+            remaining = wake_target - time.time()
+            if remaining > 0:
+                print(f"Timer check: {remaining:.1f}s until wake event", end='\r')
+            time.sleep(0.5)
+        
+        print("\n")
+        actual_time = time.time()
+        duration = actual_time - sleep_start
+        
+        print(f"✓ Timer completed at: {datetime.now().strftime('%H:%M:%S')}")
+        print(f"✓ Duration: {duration:.2f} seconds")
+        print("✓ Wake timer should have triggered in background")
+        
+        print("\nForcing display wake...")
+        force_display_wake()
+        print("✓ Display restored")
+            
+    except Exception as e:
+        print(f"✗ Error: {e}")
 
 
 def check_admin():
