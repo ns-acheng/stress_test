@@ -29,6 +29,8 @@ from util_subprocess import enable_wake_timers
 
 def main():
     """Demo the service-based S0 wake."""
+    import subprocess
+    
     # Setup logging
     logging.basicConfig(
         level=logging.INFO,
@@ -40,6 +42,31 @@ def main():
     print("S0 Modern Standby Service-Based Wake Demo")
     print("=" * 60)
     print()
+    
+    # Restart service with fresh code
+    print("RESTARTING SERVICE WITH FRESH CODE...")
+    print("-" * 60)
+    
+    print("Removing old service...")
+    subprocess.run([sys.executable, 'service/wake_service_install.py', 'remove'], 
+                   capture_output=True, text=True)
+    
+    print("Installing service with new code...")
+    subprocess.run([sys.executable, 'service/wake_service_install.py', 'install'], 
+                   capture_output=True, text=True)
+    
+    print("Starting service...")
+    subprocess.run(['sc', 'start', 'StressTestWakeService'], 
+                   capture_output=True, text=True)
+    
+    print("Waiting for service to initialize...")
+    import time
+    time.sleep(3)
+    
+    print("[OK] Service restart complete")
+    print("-" * 60)
+    print()
+    
     print("This will:")
     print("  1. Install StressTestWakeService (if needed)")
     print("  2. Enter S0 Modern Standby for 10 seconds")
