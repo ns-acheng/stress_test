@@ -215,7 +215,7 @@ def enter_standby_mode1(delay_seconds=10):
         
         # Write state file for completion script
         state_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "poc_wake_state.txt")
-        with open(state_file, 'w') as f:
+        with open(state_file, 'w', encoding='utf-8') as f:
             f.write(f"sleep_start={sleep_start}\n")
             f.write(f"sleep_time={datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         
@@ -420,7 +420,7 @@ print("✓ Display wake completed")
 print("\\nMode 1 wake cycle complete!\\n")
 '''
     
-    with open(script_path, 'w') as f:
+    with open(script_path, 'w', encoding='utf-8') as f:
         f.write(script_content)
     
     return script_path

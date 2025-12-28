@@ -1,6 +1,5 @@
 import ctypes
 import time
-import sys
 import datetime
 import os
 
