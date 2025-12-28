@@ -158,6 +158,22 @@ def main():
     else:
         print(f"[WARN] Service log not found at: {log_file}")
         print("Service may not be logging properly")
+    
+    # Check Windows power events (Event ID 506 = sleep, 507 = wake)
+    print("\nWindows Power Event Log:")
+    print("-" * 60)
+    try:
+        result = subprocess.run([
+            'powershell', '-Command',
+            "Get-WinEvent -FilterHashtable @{LogName='System'; ID=506,507} -MaxEvents 20 -ErrorAction SilentlyContinue | Select-Object -Property TimeCreated, Id, Message | Format-List"
+        ], capture_output=True, text=True, timeout=10)
+        
+        if result.stdout.strip():
+            print(result.stdout)
+        else:
+            print("[INFO] No recent power events (506/507) found")
+    except Exception as e:
+        print(f"[ERROR] Could not read power events: {e}")
 
 
 if __name__ == '__main__':
