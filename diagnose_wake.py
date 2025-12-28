@@ -87,5 +87,22 @@ if 'RUNNING' in result.stdout:
 else:
     print("[ERROR] Service not running")
     print(result.stdout)
+    
+    # If service failed, check event log for error
+    print("\n5. Checking Windows Event Log for service errors...")
+    event_result = subprocess.run([
+        'powershell', '-Command',
+        "Get-EventLog -LogName Application -Source 'StressTestWakeService' -Newest 3 -ErrorAction SilentlyContinue | Select-Object -Property TimeGenerated, EntryType, Message | Format-List"
+    ], capture_output=True, text=True)
+    
+    if event_result.stdout.strip():
+        print(event_result.stdout)
+    else:
+        print("[INFO] No application errors found, checking system log...")
+        sys_result = subprocess.run([
+            'powershell', '-Command',
+            "Get-EventLog -LogName System -Source 'Service Control Manager' -Newest 5 | Where-Object {$_.Message -like '*StressTestWakeService*'} | Select-Object -Property TimeGenerated, Message | Format-List"
+        ], capture_output=True, text=True)
+        print(sys_result.stdout if sys_result.stdout.strip() else "[INFO] No system errors found")
 
 print("\n" + "=" * 60)
