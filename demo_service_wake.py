@@ -27,6 +27,78 @@ from util_power import enter_s0_with_service
 from util_resources import enable_privilege
 from util_subprocess import enable_wake_timers
 
+def cleanup_service_and_tasks():
+    """Remove the service and all scheduled tasks."""
+    import subprocess
+    
+    print("\n" + "=" * 60)
+    print("CLEANUP: Removing Service and Tasks")
+    print("=" * 60)
+    
+    # Remove scheduled task
+    print("Removing Task Scheduler task...")
+    try:
+        result = subprocess.run(
+            ['schtasks', '/delete', '/tn', 'WakeFromS0_Service', '/f'],
+            capture_output=True,
+            text=True
+        )
+        if result.returncode == 0:
+            print("[OK] Task 'WakeFromS0_Service' removed")
+        else:
+            print("[INFO] Task 'WakeFromS0_Service' not found (already removed or never created)")
+    except Exception as e:
+        print(f"[ERROR] Failed to remove task: {e}")
+    
+    # Stop service
+    print("\nStopping service...")
+    try:
+        result = subprocess.run(
+            ['sc', 'stop', 'StressTestWakeService'],
+            capture_output=True,
+            text=True
+        )
+        if result.returncode == 0 or 'not started' in result.stdout.lower():
+            print("[OK] Service stopped")
+        else:
+            print(f"[INFO] Service stop status: {result.stdout.strip()}")
+    except Exception as e:
+        print(f"[ERROR] Failed to stop service: {e}")
+    
+    # Remove service
+    print("Removing service...")
+    try:
+        result = subprocess.run(
+            [sys.executable, 'service/wake_service_install.py', 'remove'],
+            capture_output=True,
+            text=True
+        )
+        if result.returncode == 0 or 'does not exist' in result.stdout.lower():
+            print("[OK] Service 'StressTestWakeService' removed")
+        else:
+            print(f"[INFO] Service removal: {result.stdout.strip()}")
+    except Exception as e:
+        print(f"[ERROR] Failed to remove service: {e}")
+    
+    # Verify removal
+    print("\nVerifying removal...")
+    try:
+        result = subprocess.run(
+            ['sc', 'query', 'StressTestWakeService'],
+            capture_output=True,
+            text=True
+        )
+        if result.returncode != 0:
+            print("[OK] Service successfully removed")
+        else:
+            print("[WARN] Service still exists")
+    except:
+        print("[OK] Service not found (confirmed removal)")
+    
+    print("=" * 60)
+    print("[OK] Cleanup complete")
+    print()
+
 def main():
     """Demo the service-based S0 wake."""
     import subprocess
@@ -174,6 +246,17 @@ def main():
             print("[INFO] No system events found")
     except Exception as e:
         print(f"[ERROR] Could not read system events: {e}")
+    
+    # Ask if user wants to cleanup
+    print("\n" + "=" * 60)
+    response = input("Do you want to remove the service and tasks? (y/n): ").strip().lower()
+    if response == 'y':
+        cleanup_service_and_tasks()
+    else:
+        print("\n[INFO] Service and tasks left installed")
+        print("To manually remove later, run:")
+        print("  python service/wake_service_install.py remove")
+        print("  schtasks /delete /tn WakeFromS0_Service /f")
 
 
 if __name__ == '__main__':
