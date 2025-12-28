@@ -33,7 +33,7 @@ else:
 # Wait for service to fully initialize
 import time
 print("Waiting for service to initialize...")
-time.sleep()
+time.sleep(5)
 
 print("\n" + "=" * 60)
 print("SERVICE RESTART COMPLETE")
