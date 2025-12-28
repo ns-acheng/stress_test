@@ -216,9 +216,10 @@ class WakeService(win32serviceutil.ServiceFramework):
                 task_def.RegistrationInfo.Description = 'S0 Wake Timer - Stress Test Service'
                 task_def.RegistrationInfo.Author = 'StressTestWakeService'
                 
-                # Set principal
+                # Set principal - run as SYSTEM account (works on any machine)
                 task_def.Principal.RunLevel = 1  # TASK_RUNLEVEL_HIGHEST
-                task_def.Principal.LogonType = 3  # TASK_LOGON_INTERACTIVE_TOKEN
+                task_def.Principal.UserId = 'SYSTEM'
+                task_def.Principal.LogonType = 5  # TASK_LOGON_SERVICE_ACCOUNT
                 
                 # Configure settings
                 task_def.Settings.Enabled = True
@@ -241,14 +242,14 @@ class WakeService(win32serviceutil.ServiceFramework):
                 action.Path = 'python'
                 action.Arguments = f'"{wake_handler}"'
                 
-                # Register the task
+                # Register the task with SYSTEM account
                 root_folder.RegisterTaskDefinition(
                     task_name,
                     task_def,
                     6,  # TASK_CREATE_OR_UPDATE
-                    None,
-                    None,
-                    3  # TASK_LOGON_INTERACTIVE_TOKEN
+                    '',  # Empty string = use Principal.UserId (SYSTEM)
+                    '',  # No password needed
+                    5    # TASK_LOGON_SERVICE_ACCOUNT
                 )
                 
                 self.logger.info(f"Wake task '{task_name}' created successfully")
