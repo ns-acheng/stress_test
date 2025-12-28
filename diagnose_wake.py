@@ -30,6 +30,11 @@ if 'SUCCESS' in result.stdout or 'already been started' in result.stdout:
 else:
     print(result.stdout)
 
+# Wait for service to fully initialize
+import time
+print("Waiting for service to initialize...")
+time.sleep()
+
 print("\n" + "=" * 60)
 print("SERVICE RESTART COMPLETE")
 print("=" * 60)
