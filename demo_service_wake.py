@@ -165,13 +165,13 @@ def main():
     try:
         result = subprocess.run([
             'powershell', '-Command',
-            "Get-WinEvent -FilterHashtable @{LogName='System'; ID=506,507} -MaxEvents 20 -ErrorAction SilentlyContinue | Select-Object -Property TimeCreated, Id, Message | Format-List"
+            "Get-WinEvent -FilterHashtable @{LogName='System'; ID=506,507} -ErrorAction SilentlyContinue | Select-Object -Property TimeCreated, Id, Message | Format-List"
         ], capture_output=True, text=True, timeout=10)
         
         if result.stdout.strip():
             print(result.stdout)
         else:
-            print("[INFO] No recent power events (506/507) found")
+            print("[INFO] No power events (506/507) found")
     except Exception as e:
         print(f"[ERROR] Could not read power events: {e}")
 
