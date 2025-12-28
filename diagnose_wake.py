@@ -55,7 +55,8 @@ else:
 
 # Check power.json
 print("\n2. Checking power.json...")
-power_json = r'c:\mycode\stress_test\data\power.json'
+script_dir = os.path.dirname(os.path.abspath(__file__))
+power_json = os.path.join(script_dir, 'data', 'power.json')
 if os.path.exists(power_json):
     with open(power_json, 'r', encoding='utf-8') as f:
         data = json.load(f)
@@ -68,7 +69,7 @@ else:
 
 # Check wake_complete.json
 print("\n3. Checking wake_complete.json...")
-wake_complete = r'c:\mycode\stress_test\data\wake_complete.json'
+wake_complete = os.path.join(script_dir, 'data', 'wake_complete.json')
 if os.path.exists(wake_complete):
     with open(wake_complete, 'r', encoding='utf-8') as f:
         data = json.load(f)
