@@ -241,7 +241,11 @@ def run_high_concurrency_test(
         
         try:
             proc = subprocess.Popen(
-                cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+                cmd, 
+                stdout=subprocess.PIPE, 
+                stderr=subprocess.PIPE, 
+                encoding='utf-8',
+                errors='replace'
             )
             
             start_time = time.time()
@@ -291,7 +295,11 @@ def run_high_concurrency_test(
             
             try:
                 proc = subprocess.Popen(
-                    cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+                    cmd, 
+                    stdout=subprocess.PIPE, 
+                    stderr=subprocess.PIPE, 
+                    encoding='utf-8',
+                    errors='replace'
                 )
                 
                 while proc.poll() is None:
@@ -382,7 +390,7 @@ def curl_requests(urls, stop_event=None):
         logger.info(f"CURL with URL: {url}")
 
 def _curl_flood_worker(url, seq):
-    if seq % 10 == 0:
+    if seq > 0 and seq % 100 == 0:
         logger.info(f"Req #{seq}: {url}")
     try:
         cmd = ["curl", "-s", "-o", "NUL", url]

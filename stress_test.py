@@ -12,7 +12,7 @@ from util_subprocess import (
     nsdiag_enable_client
 )
 from util_resources import (
-    log_resource_usage, enable_debug_privilege
+    log_resource_usage, enable_privilege
 )
 from util_input import start_input_monitor
 from util_crash import check_crash_dumps, crash_handle
@@ -53,7 +53,11 @@ class StressTest:
         self.client_thread = None
 
     def setup(self):
-        enable_debug_privilege()
+        for priv in ["SeDebugPrivilege", "SeSystemtimePrivilege", "SeWakeAlarmPrivilege"]:
+            err = enable_privilege(priv)
+            if err != 0:
+                logger.warning(f"Failed to enable {priv}. Err: {err}")
+
         self.config.load()
         self.load_urls()
         
@@ -307,7 +311,7 @@ class StressTest:
                                 self.exec_restart_driver()
                                 if self.stop_event.is_set(): break
 
-                if self.config.failclose_enabled:
+                if self.config.failclose_enabled and self.config.failclose_interval > 0:
                     if count % self.config.failclose_interval == 0:
                         self.cfg_mgr.toggle_failclose()
                         if self.stop_event.is_set(): break
@@ -317,7 +321,7 @@ class StressTest:
                     logger.info(f"Random Sleep (idle=0). {sleep_dur}s...")
                     if smart_sleep(sleep_dur, self.stop_event): break
 
-                if self.config.aoac_sleep_enabled:
+                if self.config.aoac_sleep_enabled and self.config.aoac_sleep_interval > 0:
                     if count % self.config.aoac_sleep_interval == 0:
                         logger.info(
                             f"AOAC Sleep. {self.config.aoac_sleep_duration}s"

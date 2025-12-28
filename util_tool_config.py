@@ -116,10 +116,13 @@ class ToolConfig:
             tg_ab = tg.get('ab', {})
             ab_enabled = tg_ab.get('enable', 1)
             self.ab_total_conn = tg_ab.get('total_conn', 10000)
-            if not ab_enabled:
-                self.ab_total_conn = 0
             self.ab_concurrent_conn = tg_ab.get('concurrent_conn', 0)
             self.ab_duration = tg_ab.get('duration_sec', 0)
+            
+            if not ab_enabled:
+                self.ab_total_conn = 0
+                self.ab_duration = 0
+                
             self.ab_target_urls = tg_ab.get('target_urls', ["https://google.com"])
             if not isinstance(self.ab_target_urls, list):
                 if self.ab_target_urls:
