@@ -114,6 +114,9 @@ class WakeService(win32serviceutil.ServiceFramework):
     
     def SvcDoRun(self):
         """Main service loop."""
+        # Report service is starting
+        self.ReportServiceStatus(win32service.SERVICE_RUNNING)
+        
         self.logger.info('Service started')
         servicemanager.LogMsg(
             servicemanager.EVENTLOG_INFORMATION_TYPE,
