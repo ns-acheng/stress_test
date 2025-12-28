@@ -92,6 +92,25 @@ def main():
             print(result.stdout)
     except:
         pass
+    
+    # Check if wake task was created
+    print("\nTask Scheduler Check:")
+    try:
+        task_result = subprocess.run(
+            ['schtasks', '/query', '/tn', 'WakeFromS0_Service', '/fo', 'LIST'],
+            capture_output=True,
+            text=True
+        )
+        if task_result.returncode == 0:
+            print("[OK] Wake task exists")
+            for line in task_result.stdout.split('\n'):
+                if 'Task Name' in line or 'Status' in line or 'Last Run Time' in line or 'Next Run Time' in line:
+                    print(f"  {line.strip()}")
+        else:
+            print("[ERROR] Wake task NOT found - service failed to create it")
+            print("This is why manual wake was needed!")
+    except:
+        pass
 
 
 if __name__ == '__main__':
