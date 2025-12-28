@@ -138,6 +138,26 @@ def main():
             print("This is why manual wake was needed!")
     except:
         pass
+    
+    # Check service log for errors
+    print("\nService Log Check:")
+    log_file = os.path.join(os.path.dirname(__file__), 'log', 'wake_service.log')
+    if os.path.exists(log_file):
+        print(f"Reading: {log_file}")
+        print("-" * 60)
+        try:
+            with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+                lines = f.readlines()
+            
+            # Show last 20 lines or all if fewer
+            recent_lines = lines[-20:] if len(lines) > 20 else lines
+            for line in recent_lines:
+                print(line.rstrip())
+        except Exception as e:
+            print(f"[ERROR] Could not read log: {e}")
+    else:
+        print(f"[WARN] Service log not found at: {log_file}")
+        print("Service may not be logging properly")
 
 
 if __name__ == '__main__':
