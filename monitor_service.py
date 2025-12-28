@@ -10,7 +10,14 @@ import os
 import time
 import json
 import subprocess
+import io
 from datetime import datetime
+
+# Force UTF-8 encoding for stdout/stderr
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+if sys.stderr.encoding != 'utf-8':
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -40,15 +47,15 @@ def get_service_status():
         
         if result.returncode == 0:
             if "RUNNING" in result.stdout:
-                return "RUNNING", "✓"
+                return "RUNNING", "[OK]"
             elif "STOPPED" in result.stdout:
-                return "STOPPED", "✗"
+                return "STOPPED", "[STOP]"
             else:
-                return "UNKNOWN", "?"
+                return "UNKNOWN", "[?]"
         else:
-            return "NOT_INSTALLED", "✗"
+            return "NOT_INSTALLED", "[NO]"
     except:
-        return "ERROR", "✗"
+        return "ERROR", "[ERR]"
 
 
 def format_datetime(iso_str):
@@ -76,7 +83,7 @@ def display_status(data, service_status, status_icon):
     print()
     
     if not data:
-        print("⚠ power.json not found or unreadable")
+        print("[WARN] power.json not found or unreadable")
         print()
         print("Press Ctrl+C to exit")
         return
@@ -122,7 +129,7 @@ def display_status(data, service_status, status_icon):
             wake_time = format_datetime(entry.get('wake_time'))
             duration = f"{entry.get('duration_actual', 0):.2f}s"
             drift = f"{entry.get('drift', 0):.2f}s"
-            status = "✓ OK" if entry.get('success') else "✗ FAIL"
+            status = "[OK]" if entry.get('success') else "[FAIL]"
             
             print(f"  {wake_time:<20} {duration:<12} {drift:<10} {status:<10}")
     else:
@@ -163,7 +170,7 @@ def show_history_details():
     
     data = _read_power_json()
     if not data:
-        print("⚠ power.json not found")
+        print("[WARN] power.json not found")
         return
     
     history = data.get('wake_history', [])
@@ -288,11 +295,11 @@ def export_power_json():
             with open(export_path, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
             
-            print(f"\n✓ Exported to: {export_path}")
+            print(f"\n[OK] Exported to: {export_path}")
         else:
-            print("\n✗ Failed to read power.json")
+            print("\n[ERROR] Failed to read power.json")
     except Exception as e:
-        print(f"\n✗ Export failed: {e}")
+        print(f"\n[ERROR] Export failed: {e}")
     
     input("\nPress Enter to continue...")
 

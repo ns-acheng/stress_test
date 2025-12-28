@@ -6,7 +6,15 @@ existing stress test without major code changes.
 """
 
 import logging
+import sys
+import io
 from util_power import enter_s0_with_service, _is_service_running
+
+# Force UTF-8 encoding for stdout/stderr
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+if sys.stderr.encoding != 'utf-8':
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 # Your existing stress test setup
 logging.basicConfig(
@@ -51,9 +59,9 @@ def run_single_iteration(iteration_num, sleep_duration=10):
     wake_success = enter_s0_with_service(sleep_duration)
     
     if wake_success:
-        logger.info("✓ Wake successful - continuing tests")
+        logger.info("[OK] Wake successful - continuing tests")
     else:
-        logger.warning("⚠ Wake timeout - display manually restored")
+        logger.warning("[WARN] Wake timeout - display manually restored")
         # Test can still continue - display is guaranteed to be on
     
     # Your post-wake test operations

@@ -14,6 +14,13 @@ import time
 import json
 import subprocess
 import logging
+import io
+
+# Force UTF-8 encoding for stdout/stderr
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+if sys.stderr.encoding != 'utf-8':
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -57,17 +64,17 @@ def test_service_installation():
             print(f"Service start result: {result}")
             
             if result:
-                print("✓ TEST 1 PASSED: Service running")
+                print("[OK] TEST 1 PASSED: Service running")
                 return True
             else:
-                print("✗ TEST 1 FAILED: Could not start service")
+                print("[ERROR] TEST 1 FAILED: Could not start service")
                 return False
         else:
-            print("✓ TEST 1 PASSED: Service already running")
+            print("[OK] TEST 1 PASSED: Service already running")
             return True
             
     except Exception as e:
-        print(f"✗ TEST 1 FAILED: {e}")
+        print(f"[ERROR] TEST 1 FAILED: {e}")
         return False
 
 
@@ -81,11 +88,11 @@ def test_power_json_operations():
         # Test read
         data = _read_power_json()
         if data:
-            print("✓ power.json read successfully")
+            print("[OK] power.json read successfully")
             print(f"  Service running: {data['current_state'].get('service_running')}")
             print(f"  Wake history entries: {len(data.get('wake_history', []))}")
         else:
-            print("⚠ power.json not found or empty")
+            print("[WARN] power.json not found or empty")
             data = {
                 "service_config": {"test": True},
                 "current_state": {"test_mode": True},
@@ -98,28 +105,28 @@ def test_power_json_operations():
         data['current_state']['test_marker'] = test_marker
         
         if _write_power_json(data):
-            print("✓ power.json write successful")
+            print("[OK] power.json write successful")
             
             # Verify write
             verify_data = _read_power_json()
             if verify_data and verify_data['current_state'].get('test_marker') == test_marker:
-                print("✓ power.json write verification passed")
+                print("[OK] power.json write verification passed")
                 
                 # Cleanup test marker
                 del verify_data['current_state']['test_marker']
                 _write_power_json(verify_data)
                 
-                print("✓ TEST 2 PASSED")
+                print("[OK] TEST 2 PASSED")
                 return True
             else:
-                print("✗ TEST 2 FAILED: Write verification failed")
+                print("[ERROR] TEST 2 FAILED: Write verification failed")
                 return False
         else:
-            print("✗ TEST 2 FAILED: Write operation failed")
+            print("[ERROR] TEST 2 FAILED: Write operation failed")
             return False
             
     except Exception as e:
-        print(f"✗ TEST 2 FAILED: {e}")
+        print(f"[ERROR] TEST 2 FAILED: {e}")
         return False
 
 
@@ -144,17 +151,17 @@ def test_short_wake():
         print(f"Expected: ~5-6s")
         
         if success and 4 < duration < 70:  # Allow buffer for timeout
-            print(f"✓ TEST 3 PASSED: Wake successful in {duration:.2f}s")
+            print(f"[OK] TEST 3 PASSED: Wake successful in {duration:.2f}s")
             return True
         elif duration > 70:
-            print(f"✗ TEST 3 FAILED: Timeout occurred ({duration:.2f}s)")
+            print(f"[ERROR] TEST 3 FAILED: Timeout occurred ({duration:.2f}s)")
             return False
         else:
-            print(f"✗ TEST 3 FAILED: Wake unsuccessful")
+            print(f"[ERROR] TEST 3 FAILED: Wake unsuccessful")
             return False
             
     except Exception as e:
-        print(f"✗ TEST 3 FAILED: {e}")
+        print(f"[ERROR] TEST 3 FAILED: {e}")
         return False
 
 
@@ -167,13 +174,13 @@ def test_wake_history():
     try:
         data = _read_power_json()
         if not data:
-            print("✗ TEST 4 FAILED: Could not read power.json")
+            print("[ERROR] TEST 4 FAILED: Could not read power.json")
             return False
         
         history = data.get('wake_history', [])
         
         if not history:
-            print("⚠ No wake history entries found (run test 3 first)")
+            print("[WARN] No wake history entries found (run test 3 first)")
             return False
         
         print(f"Wake history entries: {len(history)}")
@@ -195,14 +202,14 @@ def test_wake_history():
         missing_fields = [f for f in required_fields if f not in last_wake]
         
         if missing_fields:
-            print(f"✗ TEST 4 FAILED: Missing fields: {missing_fields}")
+            print(f"[ERROR] TEST 4 FAILED: Missing fields: {missing_fields}")
             return False
         
-        print("✓ TEST 4 PASSED: History logging working correctly")
+        print("[OK] TEST 4 PASSED: History logging working correctly")
         return True
         
     except Exception as e:
-        print(f"✗ TEST 4 FAILED: {e}")
+        print(f"[ERROR] TEST 4 FAILED: {e}")
         return False
 
 
@@ -225,30 +232,30 @@ def test_service_recovery():
         time.sleep(2)
         
         if not _is_service_running():
-            print("✓ Service stopped successfully")
+            print("[OK] Service stopped successfully")
             
             # Try to ensure service running (should restart)
             print("Attempting auto-recovery...")
             if _ensure_service_running():
-                print("✓ Service auto-recovery successful")
+                print("[OK] Service auto-recovery successful")
                 
                 time.sleep(2)
                 
                 if _is_service_running():
-                    print("✓ TEST 5 PASSED: Service recovery working")
+                    print("[OK] TEST 5 PASSED: Service recovery working")
                     return True
                 else:
-                    print("✗ TEST 5 FAILED: Service not running after recovery")
+                    print("[ERROR] TEST 5 FAILED: Service not running after recovery")
                     return False
             else:
-                print("✗ TEST 5 FAILED: Auto-recovery failed")
+                print("[ERROR] TEST 5 FAILED: Auto-recovery failed")
                 return False
         else:
-            print("✗ TEST 5 FAILED: Service stop failed")
+            print("[ERROR] TEST 5 FAILED: Service stop failed")
             return False
             
     except Exception as e:
-        print(f"✗ TEST 5 FAILED: {e}")
+        print(f"[ERROR] TEST 5 FAILED: {e}")
         return False
 
 
@@ -259,7 +266,7 @@ def test_fallback_mechanism():
     print("="*60)
     print("This would test fallback to legacy method if service fails")
     print("Skipping to avoid service disruption")
-    print("✓ TEST 6 SKIPPED")
+    print("[OK] TEST 6 SKIPPED")
     return True
 
 
@@ -353,15 +360,15 @@ def run_all_tests():
     total = len(results)
     
     for test, result in results.items():
-        status = "✓ PASS" if result else "✗ FAIL"
+        status = "[OK] PASS" if result else "[ERROR] FAIL"
         print(f"{test.upper()}: {status}")
     
     print(f"\nTotal: {passed}/{total} tests passed")
     
     if passed == total:
-        print("\n✓ ALL TESTS PASSED - System ready for production use")
+        print("\n[OK] ALL TESTS PASSED - System ready for production use")
     else:
-        print(f"\n⚠ {total - passed} test(s) failed - Review diagnostics below")
+        print(f"\n[WARN] {total - passed} test(s) failed - Review diagnostics below")
     
     # Print diagnostics
     print_diagnostics()

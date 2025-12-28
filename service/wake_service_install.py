@@ -8,6 +8,13 @@ import sys
 import os
 import subprocess
 import time
+import io
+
+# Force UTF-8 encoding for stdout/stderr
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+if sys.stderr.encoding != 'utf-8':
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -54,7 +61,7 @@ def install_service():
         )
         
         if result.returncode == 0:
-            print("✓ Service installed successfully")
+            print("[OK] Service installed successfully")
             
             # Set service to auto-start
             subprocess.run(['sc', 'config', SERVICE_NAME, 'start=', 'auto'], 
@@ -62,11 +69,11 @@ def install_service():
             
             return True
         else:
-            print(f"✗ Installation failed: {result.stderr}")
+            print(f"[ERROR] Installation failed: {result.stderr}")
             return False
             
     except Exception as e:
-        print(f"✗ Error installing service: {e}")
+        print(f"[ERROR] Error installing service: {e}")
         return False
 
 
@@ -82,14 +89,14 @@ def start_service():
         )
         
         if result.returncode == 0 or "already been started" in result.stdout:
-            print("✓ Service started successfully")
+            print("[OK] Service started successfully")
             return True
         else:
-            print(f"✗ Failed to start service: {result.stderr}")
+            print(f"[ERROR] Failed to start service: {result.stderr}")
             return False
             
     except Exception as e:
-        print(f"✗ Error starting service: {e}")
+        print(f"[ERROR] Error starting service: {e}")
         return False
 
 
@@ -105,14 +112,14 @@ def stop_service():
         )
         
         if result.returncode == 0:
-            print("✓ Service stopped successfully")
+            print("[OK] Service stopped successfully")
             return True
         else:
-            print(f"✗ Failed to stop service: {result.stderr}")
+            print(f"[ERROR] Failed to stop service: {result.stderr}")
             return False
             
     except Exception as e:
-        print(f"✗ Error stopping service: {e}")
+        print(f"[ERROR] Error stopping service: {e}")
         return False
 
 
@@ -134,14 +141,14 @@ def remove_service():
         )
         
         if result.returncode == 0:
-            print("✓ Service removed successfully")
+            print("[OK] Service removed successfully")
             return True
         else:
-            print(f"✗ Removal failed: {result.stderr}")
+            print(f"[ERROR] Removal failed: {result.stderr}")
             return False
             
     except Exception as e:
-        print(f"✗ Error removing service: {e}")
+        print(f"[ERROR] Error removing service: {e}")
         return False
 
 
@@ -212,7 +219,7 @@ def main():
             if run_as_admin(sys.argv[1:]):
                 sys.exit(0)
             else:
-                print("✗ Failed to elevate privileges. Please run as administrator.")
+                print("[ERROR] Failed to elevate privileges. Please run as administrator.")
                 sys.exit(1)
     
     # Execute command

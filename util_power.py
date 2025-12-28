@@ -314,9 +314,9 @@ def enter_s0_with_service(duration_seconds: int):
         actual_duration = time.time() - sleep_start
         
         if wake_success:
-            logger.info(f"✓ Wake completed successfully after {actual_duration:.2f}s")
+            logger.info(f"[OK] Wake completed successfully after {actual_duration:.2f}s")
         else:
-            logger.warning(f"⚠ Wake timeout - forcing manual display wake")
+            logger.warning(f"[WARN] Wake timeout - forcing manual display wake")
             _force_display_wake()
             logger.warning(f"Manual wake completed after {actual_duration:.2f}s")
         
@@ -430,9 +430,9 @@ if __name__ == "__main__":
     success = enter_s0_with_service(10)
     
     if success:
-        print("\n✓ Service-based wake test completed successfully")
+        print("\n[OK] Service-based wake test completed successfully")
     else:
-        print("\n✗ Service-based wake test failed")
+        print("\n[ERROR] Service-based wake test failed")
     
     # Optionally test legacy method
     # print("\nTesting legacy manual wake (10 seconds)...\n")

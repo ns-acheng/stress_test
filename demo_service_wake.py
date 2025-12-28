@@ -12,6 +12,13 @@ The system will:
 import sys
 import os
 import logging
+import io
+
+# Force UTF-8 encoding for stdout/stderr
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+if sys.stderr.encoding != 'utf-8':
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -60,13 +67,13 @@ def main():
     print()
     print("=" * 60)
     if success:
-        print("✓ Demo completed successfully!")
+        print("[OK] Demo completed successfully!")
         print("  - Service auto-installed and started")
         print("  - S0 sleep initiated")
         print("  - Automatic wake triggered")
         print("  - No manual input required")
     else:
-        print("✗ Demo encountered issues")
+        print("[ERROR] Demo encountered issues")
         print("  - Check log/wake_service.log for details")
         print("  - Service may need manual installation")
     print("=" * 60)
