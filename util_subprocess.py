@@ -28,15 +28,20 @@ def run_powershell(script_path, args=None):
             command, 
             check=True, 
             capture_output=True, 
-            text=True
+            text=True,
+            encoding='utf-8',
+            errors='replace'
         )
         logger.info("PowerShell script executed successfully.")
 
     except subprocess.CalledProcessError as e:
         logger.error(f"PowerShell failed. Return Code: {e.returncode}")
-        err_msg = e.stderr.strip() if e.stderr else (
-            e.stdout.strip() if e.stdout else "No output"
-        )
+        err_msg = "No output"
+        if e.stderr:
+            err_msg = e.stderr.strip()
+        elif e.stdout:
+            err_msg = e.stdout.strip()
+            
         logger.error(f"Error details: {err_msg}")
     
     except FileNotFoundError:

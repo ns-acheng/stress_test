@@ -82,7 +82,7 @@ class AgentConfigManager:
                 logger.warning(f"Source {self.source_devconfig} not found.")
 
             if os.path.exists(self.target_nsconfig):
-                with open(self.target_nsconfig, 'r') as f:
+                with open(self.target_nsconfig, 'r', encoding='utf-8') as f:
                     ns_data = json.load(f)
                 
                 fc_sec = ns_data.get("failClose", {})
@@ -109,7 +109,7 @@ class AgentConfigManager:
 
                 ns_data["failClose"] = new_cfg
 
-                with open(self.target_nsconfig, 'w') as f:
+                with open(self.target_nsconfig, 'w', encoding='utf-8') as f:
                     json.dump(ns_data, f, indent=4)
                 logger.info(f"{self.target_nsconfig} updated successfully.")
             else:

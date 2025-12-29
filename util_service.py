@@ -11,7 +11,8 @@ def get_service_status(service_name):
     try:
         status = subprocess.check_output(
             ["sc", "query", service_name], 
-            text=True
+            encoding='utf-8',
+            errors='replace'
         )
         if "RUNNING" in status:
             return "RUNNING"

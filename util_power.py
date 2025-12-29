@@ -3,7 +3,6 @@ from ctypes import wintypes
 import logging
 
 logger = logging.getLogger()
-
 kernel32 = ctypes.windll.kernel32
 user32 = ctypes.windll.user32
 
@@ -64,8 +63,7 @@ def enter_s0_and_wake(duration_seconds: int):
         kernel32.CloseHandle(handle)
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s'
-    )
+    from util_log import LogSetup
+    log_helper = LogSetup()
+    log_helper.setup_logging()
     enter_s0_and_wake(45)

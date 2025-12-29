@@ -1,15 +1,12 @@
 import threading
 import logging
-import sys
 import os
 import util_traffic
+from util_log import LogSetup
 
 def main():
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
-    )
+    log_helper = LogSetup()
+    logger = log_helper.setup_logging()
     
     url_file = r"data\url.txt"
     if not os.path.exists(url_file):

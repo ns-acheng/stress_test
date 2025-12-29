@@ -93,7 +93,7 @@ class TOKEN_PRIVILEGES(ctypes.Structure):
         ("Privileges", LUID_AND_ATTRIBUTES * 1),
     ]
 
-def enable_debug_privilege():
+def enable_privilege(privilege_name):
     k32 = ctypes.windll.kernel32
     advapi32 = ctypes.windll.advapi32
     
@@ -104,14 +104,15 @@ def enable_debug_privilege():
         TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,
         ctypes.byref(hToken)
     ):
-        return False
+        return ctypes.get_last_error()
 
     luid = LUID()
     if not advapi32.LookupPrivilegeValueW(
-        None, SE_DEBUG_NAME, ctypes.byref(luid)
+        None, privilege_name, ctypes.byref(luid)
     ):
+        err = ctypes.get_last_error()
         k32.CloseHandle(hToken)
-        return False
+        return err
 
     tp = TOKEN_PRIVILEGES()
     tp.PrivilegeCount = 1
@@ -121,11 +122,13 @@ def enable_debug_privilege():
     if not advapi32.AdjustTokenPrivileges(
         hToken, False, ctypes.byref(tp), 0, None, None
     ):
+        err = ctypes.get_last_error()
         k32.CloseHandle(hToken)
-        return False
-        
+        return err
+    
+    err = ctypes.get_last_error()
     k32.CloseHandle(hToken)
-    return True
+    return err
 
 def _filetime_to_int(ft):
     return (ft.dwHighDateTime << 32) + ft.dwLowDateTime
@@ -285,8 +288,6 @@ def log_resource_usage(
     process_name: str,
     log_dir="log"
 ):
-    enable_debug_privilege()
-
     pid = get_pid_by_name(process_name)
     if pid == 0:
         return False
@@ -312,7 +313,7 @@ def log_resource_usage(
         f"{mem_mb:.1f}MB, {mem_kb:.0f}KB, {handle_count}\n"
     )
     
-    with open(full_path, "a") as f:
+    with open(full_path, "a", encoding='utf-8') as f:
         if write_header:
             f.write("Timestamp, CPU, Memory(MB), Memory(KB), Handles\n")
         f.write(log_line)
