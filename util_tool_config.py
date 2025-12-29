@@ -335,6 +335,16 @@ class ToolConfig:
 
     def _cap_concurrency(self, concurrency, name):
         new_concurrency = concurrency
+        
+        if name in ["FTP", "FTPS", "SFTP"]:
+            if new_concurrency < 1:
+                logger.warning(f"{name} concurrency {new_concurrency} < 1. Resetting to 1.")
+                new_concurrency = 1
+            if new_concurrency > 50:
+                logger.warning(f"{name} concurrency {new_concurrency} > 50. Capping at 50.")
+                new_concurrency = 50
+            return new_concurrency
+
         if new_concurrency < 10:
             logger.warning(f"{name} concurrency {new_concurrency} < 10. Resetting to 10.")
             new_concurrency = 10

@@ -512,6 +512,13 @@ def _ftp_worker(target, port, user, password, file_size_mb, is_ftps):
         vfile = VirtualFile(size_bytes)
         
         ftp.storbinary(f"STOR {filename}", vfile)
+        
+        # Delete the file after upload to save disk space on server
+        try:
+            ftp.delete(filename)
+        except Exception:
+            pass
+            
         ftp.quit()
         return True
     except Exception:
@@ -592,6 +599,13 @@ def _sftp_worker(target, port, user, password, file_size_mb):
         vfile = VirtualFile(size_bytes)
         
         sftp.putfo(vfile, filename)
+        
+        # Delete the file after upload to save disk space on server
+        try:
+            sftp.remove(filename)
+        except Exception:
+            pass
+            
         return True
     except Exception:
         return False
