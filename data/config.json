@@ -58,6 +58,39 @@
       "target_urls": [
         "http://192.168.15.17/"
       ]
+    },
+    "ftp": {
+      "enable": 0,
+      "target_ip": "127.0.0.1",
+      "target_port": 21,
+      "user": "test",
+      "password": "password",
+      "file_size_mb": 10,
+      "duration_sec": 0,
+      "count": 10,
+      "concurrent_conn": 5
+    },
+    "ftps": {
+      "enable": 0,
+      "target_ip": "127.0.0.1",
+      "target_port": 990,
+      "user": "test",
+      "password": "password",
+      "file_size_mb": 10,
+      "duration_sec": 0,
+      "count": 10,
+      "concurrent_conn": 5
+    },
+    "sftp": {
+      "enable": 0,
+      "target_ip": "127.0.0.1",
+      "target_port": 2222,
+      "user": "test",
+      "password": "password",
+      "file_size_mb": 10,
+      "duration_sec": 0,
+      "count": 10,
+      "concurrent_conn": 5
     }
   }
 }
