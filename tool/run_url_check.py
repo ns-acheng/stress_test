@@ -60,9 +60,9 @@ def main():
         f.write("")
 
     total_to_check = len(urls_to_check)
-    logger.info(f"Starting check for {total_to_check} unique URLs with 10 threads...")
+    logger.info(f"Starting check for {total_to_check} unique URLs with 20 threads...")
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
         future_to_url = {executor.submit(check_url_alive, url): url for url in urls_to_check}
         
         completed_checks = 0
