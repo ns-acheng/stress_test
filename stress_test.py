@@ -78,7 +78,7 @@ class StressTest:
             if not os.path.exists(self.url_file):
                 logger.error(f"{self.url_file} not found.")
                 return
-            with open(self.url_file, 'r') as f:
+            with open(self.url_file, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
             self.urls = [line.strip() for line in lines if line.strip()]
             logger.info(f"Loaded {len(self.urls)} URLs from {self.url_file}")

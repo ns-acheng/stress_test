@@ -7,8 +7,8 @@ import subprocess
 import os
 import logging
 import threading
-import sys
 import requests
+
 from util_subprocess import run_batch, run_curl
 from util_resources import get_system_memory_usage, log_resource_usage
 from util_time import smart_sleep
@@ -64,15 +64,14 @@ def check_urls_and_write_status(urls):
     flush_interval = 50
     alive_count = 0
 
-    with open(out_file, 'w') as f:
+    with open(out_file, 'w', encoding='utf-8') as f:
         for index, url in enumerate(urls):
             if url in existing_urls:
                 continue
 
             is_alive = check_url_alive(url)
             status_text = "ALIVE" if is_alive else "DEAD"
-            print(f"[{index + 1}/{len(urls)}] {url} -> {status_text}")
-            sys.stdout.flush()
+            logger.info(f"[{index + 1}/{len(urls)}] {url} -> {status_text}")
             
             if is_alive:
                 f.write(f"{url}\n")
@@ -80,7 +79,7 @@ def check_urls_and_write_status(urls):
                 if (index + 1) % flush_interval == 0:
                     f.flush()
 
-    print(f"\nComplete. Wrote {alive_count} ALIVE URLs to '{out_file}'.")
+    logger.info(f"Complete. Wrote {alive_count} ALIVE URLs to '{out_file}'.")
 
 def _dns_worker(domain):
     try:

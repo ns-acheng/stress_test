@@ -24,7 +24,6 @@ class LogSetup:
         if logger.hasHandlers():
             logger.handlers.clear()
 
-        # Log file name simplified since folder is already timestamped
         log_filename = 'stress_test.log'
         log_path = os.path.join(self.log_folder, log_filename)
 

@@ -1,16 +1,9 @@
 import os
-import sys
-import logging
 from util_traffic import check_url_alive
+from util_log import LogSetup
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
-)
-logger = logging.getLogger()
+log_helper = LogSetup()
+logger = log_helper.setup_logging()
 
 def load_urls(filepath):
     if not os.path.exists(filepath):
@@ -52,12 +45,12 @@ def main():
         
         if url in existing_urls:
             skipped_count += 1
-            print(f"[{processed_count}/{total_to_process}] SKIPPED (Duplicate in url.txt): {url}")
+            logger.info(f"[{processed_count}/{total_to_process}] SKIPPED (Duplicate in url.txt): {url}")
             continue
 
         if url in seen_urls:
             skipped_count += 1
-            print(f"[{processed_count}/{total_to_process}] SKIPPED (Duplicate in batch): {url}")
+            logger.info(f"[{processed_count}/{total_to_process}] SKIPPED (Duplicate in batch): {url}")
             continue
         
         seen_urls.add(url)
@@ -67,9 +60,9 @@ def main():
         if is_alive:
             valid_urls.append(url)
             alive_count += 1
-            print(f"[{processed_count}/{total_to_process}] ALIVE: {url}")
+            logger.info(f"[{processed_count}/{total_to_process}] ALIVE: {url}")
         else:
-            print(f"[{processed_count}/{total_to_process}] DEAD: {url}")
+            logger.info(f"[{processed_count}/{total_to_process}] DEAD: {url}")
 
         if len(valid_urls) >= 50:
             logger.info(f"Flushing {len(valid_urls)} URLs to {url_new_file}...")

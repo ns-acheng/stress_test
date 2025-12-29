@@ -313,7 +313,7 @@ def log_resource_usage(
         f"{mem_mb:.1f}MB, {mem_kb:.0f}KB, {handle_count}\n"
     )
     
-    with open(full_path, "a") as f:
+    with open(full_path, "a", encoding='utf-8') as f:
         if write_header:
             f.write("Timestamp, CPU, Memory(MB), Memory(KB), Handles\n")
         f.write(log_line)
