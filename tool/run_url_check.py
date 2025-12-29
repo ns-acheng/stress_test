@@ -1,5 +1,6 @@
 import os
 import sys
+import concurrent.futures
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -39,53 +40,69 @@ def main():
     skipped_count = 0
     
     seen_urls = set()
+    urls_to_check = []
 
-    with open(url_new_file, 'w', encoding='utf-8') as f:
-        f.write("")
-
-    total_to_process = len(raw_new_urls)
-
-    for url in raw_new_urls:
-        processed_count += 1
-        
+    total_raw = len(raw_new_urls)
+    for i, url in enumerate(raw_new_urls):
         if url in existing_urls:
             skipped_count += 1
-            logger.info(f"[{processed_count}/{total_to_process}] SKIPPED (Duplicate in url.txt): {url}")
+            logger.info(f"[{i+1}/{total_raw}] SKIPPED (Duplicate in url.txt): {url}")
             continue
-
         if url in seen_urls:
             skipped_count += 1
-            logger.info(f"[{processed_count}/{total_to_process}] SKIPPED (Duplicate in batch): {url}")
+            logger.info(f"[{i+1}/{total_raw}] SKIPPED (Duplicate in batch): {url}")
             continue
-        
         seen_urls.add(url)
-        
-        is_alive = check_url_alive(url)
-        
-        if is_alive:
-            valid_urls.append(url)
-            alive_count += 1
-            logger.info(f"[{processed_count}/{total_to_process}] ALIVE: {url}")
-        else:
-            logger.info(f"[{processed_count}/{total_to_process}] DEAD: {url}")
+        urls_to_check.append(url)
 
-        if len(valid_urls) >= 50:
-            logger.info(f"Flushing {len(valid_urls)} URLs to {url_new_file}...")
-            with open(url_new_file, 'a', encoding='utf-8') as f:
-                for v_url in valid_urls:
-                    f.write(v_url + "\n")
-            valid_urls = []
+    url_alive_file = os.path.join(base_dir, "data", "url_alive.txt")
+    with open(url_alive_file, 'w', encoding='utf-8') as f:
+        f.write("")
+
+    total_to_check = len(urls_to_check)
+    logger.info(f"Starting check for {total_to_check} unique URLs with 10 threads...")
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        future_to_url = {executor.submit(check_url_alive, url): url for url in urls_to_check}
+        
+        completed_checks = 0
+        for future in concurrent.futures.as_completed(future_to_url):
+            url = future_to_url[future]
+            completed_checks += 1
+            processed_count += 1 # This is actually skipped + checked
+            
+            try:
+                is_alive = future.result()
+            except Exception as exc:
+                logger.error(f"{url} generated an exception: {exc}")
+                is_alive = False
+
+            if is_alive:
+                valid_urls.append(url)
+                alive_count += 1
+                logger.info(f"[{completed_checks}/{total_to_check}] ALIVE: {url}")
+            else:
+                logger.info(f"[{completed_checks}/{total_to_check}] DEAD: {url}")
+
+            if len(valid_urls) >= 50:
+                logger.info(f"Flushing {len(valid_urls)} URLs to {url_alive_file}...")
+                with open(url_alive_file, 'a', encoding='utf-8') as f:
+                    for v_url in valid_urls:
+                        f.write(v_url + "\n")
+                valid_urls = []
 
     if valid_urls:
-        logger.info(f"Flushing remaining {len(valid_urls)} URLs to {url_new_file}...")
-        with open(url_new_file, 'a', encoding='utf-8') as f:
+        logger.info(f"Flushing remaining {len(valid_urls)} URLs to {url_alive_file}...")
+        with open(url_alive_file, 'a', encoding='utf-8') as f:
             for v_url in valid_urls:
                 f.write(v_url + "\n")
 
     logger.info("Processing complete.")
-    logger.info(f"Total Processed: {processed_count}")
-    logger.info(f"Total Alive & New: {alive_count}")
+    logger.info(f"Total Processed (Raw): {total_raw}")
+    logger.info(f"Total Checked: {total_to_check}")
+    logger.info(f"Total Alive: {alive_count}")
     logger.info(f"Total Skipped (Duplicate): {skipped_count}")
+    logger.info(f"Alive URLs written to: {url_alive_file}")
 
 if __name__ == "__main__":
     main()
