@@ -240,16 +240,16 @@ class StressTest:
 
                 if self.stop_event.is_set(): break
 
-                if self.config.traffic_dns_enabled:
+                if self.config.dns_enabled:
                     util_traffic.generate_dns_flood(
                         self.urls, 
-                        self.config.traffic_dns_count,
-                        self.config.traffic_dns_duration,
-                        self.config.traffic_dns_concurrent,
+                        self.config.dns_count,
+                        self.config.dns_duration,
+                        self.config.dns_concurrent,
                         self.stop_event
                     )
                 
-                if self.config.traffic_udp_enabled:
+                if self.config.udp_enabled:
                     current_target = self.config.udp_target_ip
                     use_ipv6 = False
                     if self.config.udp_target_ipv6:
@@ -261,23 +261,23 @@ class StressTest:
                     util_traffic.generate_udp_flood(
                         current_target, 
                         self.config.udp_target_port,
-                        self.config.traffic_udp_count,
-                        float(self.config.traffic_udp_duration), 
-                        self.config.traffic_udp_concurrent,
+                        self.config.udp_count,
+                        float(self.config.udp_duration), 
+                        self.config.udp_concurrent,
                         self.stop_event, 
                         use_ipv6
                     )
                 
                 if (
                     (self.config.ab_total_conn > 0 or self.config.ab_duration > 0) and 
-                    self.config.ab_concurrent_conn > 0 and 
+                    self.config.ab_concurrent > 0 and 
                     self.config.ab_target_urls
                 ):
                     idx = count % len(self.config.ab_target_urls)
                     current_ab_url = self.config.ab_target_urls[idx]
                     util_traffic.run_high_concurrency_test(
                         current_ab_url, self.config.ab_total_conn, 
-                        self.config.ab_concurrent_conn, self.tool_dir,
+                        self.config.ab_concurrent, self.tool_dir,
                         self.stop_event,
                         self.config.ab_duration
                     )
@@ -287,7 +287,7 @@ class StressTest:
                         self.urls, 
                         self.config.curl_flood_count,
                         self.config.curl_flood_duration,
-                        self.config.curl_flood_concurrency, 
+                        self.config.curl_flood_concurrent, 
                         self.stop_event
                     )
 

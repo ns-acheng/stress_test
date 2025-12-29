@@ -115,6 +115,12 @@ All traffic modules support `duration_sec` and `count`. If `duration_sec` > 0, i
 *   `concurrent_conn`: Number of concurrent requests.
 *   `target_urls`: List of URLs to target.
 
+#### HTTPS Flood (`https`)
+*   `enable`: (0/1) If 1, enables high-concurrency HTTP requests using curl.
+*   `count`: (int) Total number of curl requests to send.
+*   `duration_sec`: Duration to run the test.
+*   `concurrent_conn`: (int) Number of concurrent curl processes.
+
 `long_idle_interval`: Iteration frequency to trigger a long idle period (useful for soak testing). 
 * If set to **> 0**: Sleeps for `long_idle_time_min` to `long_idle_time_max` seconds every N iterations.
 * If set to **0**: Randomly sleeps for **30 to 120 seconds** in *every* iteration.
@@ -122,18 +128,6 @@ All traffic modules support `duration_sec` and `count`. If `duration_sec` > 0, i
 `long_idle_time_min`: Minimum duration for the long idle in seconds (Lower bound: 300s).
 
 `long_idle_time_max`: Maximum duration for the long idle in seconds (Upper bound: 7200s).
-
-
-`ab_concurrent_conn`: (int) Target number of concurrent connections for Apache Bench. Set to 0 to disable.
-
-`ab_urls`: (list[str]) List of target URLs for Apache Bench. The test cycles through these URLs one by one per iteration.
-
-`curl_flood_enabled`: (0/1) If 1, enables high-concurrency HTTP requests using curl.
-
-`curl_flood_count`: (int) Total number of curl requests to send.
-
-`curl_flood_concurrency`: (int) Number of concurrent curl processes.
-
 
 **Strategy 1: Memory & Handle Leak Detection**
 * * The main idea is NOT to stop client service and keep it running but open/close the browser tabs.
@@ -145,16 +139,17 @@ All traffic modules support `duration_sec` and `count`. If `duration_sec` > 0, i
     "stop_svc_interval": 0,
     "stop_drv_interval": 0,
     "client_feature_toggling": {
-        "failclose_interval": 0,
-        "disable_client": 0,
-        "aoac_sleep_interval": 0,
-        "aoac_sleep_seconds": 60
+        "failclose": { "enable": 0, "interval": 0 },
+        "client_disabling": { "enable": 0 },
+        "aoac_sleep": { "enable": 0, "interval": 0, "duration_sec": 60 }
     },
     "custom_dump_path": "",
     "traffic_gen": {
-        "enable_browser_tabs_open": 1,
-        "browser_max_memory": 90,
-        "browser_max_tabs": 50
+        "browser": {
+            "enable": 1,
+            "max_memory": 90,
+            "max_tabs": 50
+        }
     }
 }
 ```
@@ -171,19 +166,20 @@ All traffic modules support `duration_sec` and `count`. If `duration_sec` > 0, i
     "stop_svc_interval": 1,
     "stop_drv_interval": 0,
     "client_feature_toggling": {
-        "failclose_interval": 50,
-        "disable_client": 0,
-        "aoac_sleep_interval": 0,
-        "aoac_sleep_seconds": 60
+        "failclose": { "enable": 1, "interval": 50 },
+        "client_disabling": { "enable": 0 },
+        "aoac_sleep": { "enable": 0, "interval": 0, "duration_sec": 60 }
     },
     "custom_dump_path": "",
     "long_idle_interval": 0,
     "long_idle_time_min": 300,
     "long_idle_time_max": 300,
     "traffic_gen": {
-        "enable_browser_tabs_open": 1,
-        "browser_max_memory": 80,
-        "browser_max_tabs": 30
+        "browser": {
+            "enable": 1,
+            "max_memory": 80,
+            "max_tabs": 30
+        }
     }
 }
 ```
@@ -201,19 +197,20 @@ All traffic modules support `duration_sec` and `count`. If `duration_sec` > 0, i
     "stop_svc_interval": 1,
     "stop_drv_interval": 1,
     "client_feature_toggling": {
-        "failclose_interval": 50,
-        "disable_client": 0,
-        "aoac_sleep_interval": 0,
-        "aoac_sleep_seconds": 60
+        "failclose": { "enable": 1, "interval": 50 },
+        "client_disabling": { "enable": 0 },
+        "aoac_sleep": { "enable": 0, "interval": 0, "duration_sec": 60 }
     },
     "custom_dump_path": "",
     "long_idle_interval": 0,
     "long_idle_time_min": 300,
     "long_idle_time_max": 300,
     "traffic_gen": {
-        "enable_browser_tabs_open": 1,
-        "browser_max_memory": 80,
-        "browser_max_tabs": 30
+        "browser": {
+            "enable": 1,
+            "max_memory": 80,
+            "max_tabs": 30
+        }
     }
 }
 ```
@@ -229,19 +226,20 @@ All traffic modules support `duration_sec` and `count`. If `duration_sec` > 0, i
     "stop_svc_interval": 0,
     "stop_drv_interval": 0,
     "client_feature_toggling": {
-        "failclose_interval": 100,
-        "disable_client": 0,
-        "aoac_sleep_interval": 1,
-        "aoac_sleep_seconds": 60
+        "failclose": { "enable": 1, "interval": 100 },
+        "client_disabling": { "enable": 0 },
+        "aoac_sleep": { "enable": 1, "interval": 1, "duration_sec": 60 }
     },
     "custom_dump_path": "",
     "long_idle_interval": 1,
     "long_idle_time_min": 1000,
     "long_idle_time_max": 3600,
     "traffic_gen": {
-        "enable_browser_tabs_open": 1,
-        "browser_max_memory": 60,
-        "browser_max_tabs": 10
+        "browser": {
+            "enable": 1,
+            "max_memory": 60,
+            "max_tabs": 10
+        }
     }
 }
 ```
@@ -249,7 +247,7 @@ All traffic modules support `duration_sec` and `count`. If `duration_sec` > 0, i
 
 **Strategy 5: High Concurrency / Traffic Stress**
 * * Uses internal Python generators for DNS/UDP and ab.exe for TCP connections.
-* * If you do not use a real HTTP server, keep `ab_concurrent_conn` lower then 500.
+* * If you do not use a real HTTP server, keep `ab` -> `concurrent_conn` lower then 500.
 
 ```json
 {
@@ -257,34 +255,62 @@ All traffic modules support `duration_sec` and `count`. If `duration_sec` > 0, i
   "stop_svc_interval": 5,
   "stop_drv_interval": 0,
   "client_feature_toggling": {
-    "failclose_interval": 15,
-    "disable_client": 0,
-    "aoac_sleep_interval": 0,
-    "aoac_sleep_seconds": 60
+    "failclose": {
+      "enable": 1,
+      "interval": 15
+    },
+    "client_disabling": {
+      "enable": 0,
+      "enable_sec_min": 180,
+      "enable_sec_max": 600,
+      "disable_ratio": 0.15
+    },
+    "aoac_sleep": {
+      "enable": 0,
+      "interval": 0,
+      "duration_sec": 60
+    }
   },
   "custom_dump_path": "C:\\dump\\stAgentSvc.exe\\*.dmp",
   "long_idle_interval": 100,
   "long_idle_time_min": 300,
   "long_idle_time_max": 600,
   "traffic_gen": {
-    "enable_browser_tabs_open": 1,
-    "browser_max_memory": 60,
-    "browser_max_tabs": 20,
-    "dns_flood_enabled": 1,
-    "dns_query_count": 500,
-    "udp_flood_enabled": 1,
-    "udp_target_ip": "192.168.1.2",
-    "udp_target_ipv6": "",
-    "udp_target_port": 8080,
-    "udp_duration_seconds": 20,
-    "ab_total_conn": 10000,
-    "ab_concurrent_conn": 256,
-    "ab_urls": [
-      "http://10.1.2.3"
-    ],
-    "curl_flood_enabled": 1,
-    "curl_flood_count": 1000,
-    "curl_flood_concurrency": 50
+    "browser": {
+      "enable": 1,
+      "max_memory": 60,
+      "max_tabs": 20
+    },
+    "dns": {
+      "enable": 1,
+      "count": 500,
+      "duration_sec": 0,
+      "concurrent_conn": 20
+    },
+    "udp": {
+      "enable": 1,
+      "target_ip": "192.168.1.2",
+      "target_ipv6": "",
+      "target_port": 8080,
+      "duration_sec": 20,
+      "count": 0,
+      "concurrent_conn": 10
+    },
+    "ab": {
+      "enable": 1,
+      "total_conn": 10000,
+      "concurrent_conn": 256,
+      "duration_sec": 0,
+      "target_urls": [
+        "http://10.1.2.3"
+      ]
+    },
+    "https": {
+      "enable": 1,
+      "count": 1000,
+      "duration_sec": 0,
+      "concurrent_conn": 50
+    }
   }
 }
 ```
