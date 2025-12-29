@@ -1,14 +1,20 @@
 import threading
 import logging
 import os
+import sys
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import util_traffic
 from util_log import LogSetup
 
 def main():
     log_helper = LogSetup()
     logger = log_helper.setup_logging()
+
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    url_file = os.path.join(base_dir, "data", "url.txt")
     
-    url_file = r"data\url.txt"
     if not os.path.exists(url_file):
         logging.error(f"{url_file} not found.")
         return

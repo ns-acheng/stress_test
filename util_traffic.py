@@ -8,6 +8,9 @@ import os
 import logging
 import threading
 import requests
+import ftplib
+import io
+import paramiko
 
 from util_subprocess import run_batch, run_curl
 from util_resources import get_system_memory_usage, log_resource_usage
@@ -459,3 +462,182 @@ def generate_curl_flood(
                     logger.info(f"CURL Flood progress: {pct}%")
     
     logger.info("CURL Flood finished.")
+
+class VirtualFile(io.BytesIO):
+    def __init__(self, size):
+        self._size = size
+        self._pos = 0
+        super().__init__()
+
+    def read(self, size=-1):
+        if self._pos >= self._size:
+            return b''
+        if size == -1 or size is None:
+            size = self._size - self._pos
+        else:
+            size = min(size, self._size - self._pos)
+        
+        self._pos += size
+        return b'0' * size
+
+    def seek(self, pos, whence=0):
+        if whence == 0:
+            self._pos = pos
+        elif whence == 1:
+            self._pos += pos
+        elif whence == 2:
+            self._pos = self._size + pos
+        self._pos = max(0, min(self._pos, self._size))
+        return self._pos
+
+    def tell(self):
+        return self._pos
+
+def _ftp_worker(target, port, user, password, file_size_mb, is_ftps):
+    ftp = None
+    try:
+        if is_ftps:
+            ftp = ftplib.FTP_TLS()
+        else:
+            ftp = ftplib.FTP()
+        
+        ftp.connect(target, port, timeout=10)
+        ftp.login(user, password)
+        
+        if is_ftps:
+            ftp.prot_p()
+
+        filename = f"upload_{random.randint(1000, 9999)}.bin"
+        size_bytes = int(file_size_mb * 1024 * 1024)
+        vfile = VirtualFile(size_bytes)
+        
+        ftp.storbinary(f"STOR {filename}", vfile)
+        ftp.quit()
+        return True
+    except Exception:
+        return False
+    finally:
+        if ftp:
+            try:
+                ftp.close()
+            except Exception:
+                pass
+
+def generate_ftp_traffic(
+    target, port, user, password, file_size_mb, 
+    count, duration, concurrency, stop_event, is_ftps=False
+):
+    protocol = "FTPS" if is_ftps else "FTP"
+    msg = f"{protocol} Traffic: {target}:{port}, Size: {file_size_mb}MB"
+    if duration > 0:
+        msg += f", duration {duration}s"
+    else:
+        msg += f", count {count}"
+    logger.info(msg)
+
+    start_time = time.time()
+    end_time = start_time + duration if duration > 0 else 0
+    completed = 0
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as exe:
+        futures = []
+        
+        def _worker_wrapper():
+            return _ftp_worker(
+                target, port, user, password, file_size_mb, is_ftps
+            )
+
+        if duration > 0:
+            def _time_worker():
+                while time.time() < end_time:
+                    if _is_stopped(stop_event): break
+                    _worker_wrapper()
+            
+            for _ in range(concurrency):
+                futures.append(exe.submit(_time_worker))
+            concurrent.futures.wait(futures)
+        else:
+            for _ in range(count):
+                if _is_stopped(stop_event): break
+                futures.append(exe.submit(_worker_wrapper))
+            
+            for f in concurrent.futures.as_completed(futures):
+                if _is_stopped(stop_event):
+                    exe.shutdown(wait=False, cancel_futures=True)
+                    break
+                if f.result():
+                    completed += 1
+                    
+    logger.info(f"{protocol} finished. Completed uploads: {completed}")
+
+def generate_ftps_traffic(
+    target, port, user, password, file_size_mb, 
+    count, duration, concurrency, stop_event
+):
+    generate_ftp_traffic(
+        target, port, user, password, file_size_mb, 
+        count, duration, concurrency, stop_event, is_ftps=True
+    )
+
+def _sftp_worker(target, port, user, password, file_size_mb):
+    transport = None
+    sftp = None
+    try:
+        transport = paramiko.Transport((target, port))
+        transport.connect(username=user, password=password)
+        sftp = paramiko.SFTPClient.from_transport(transport)
+        
+        filename = f"upload_{random.randint(1000, 9999)}.bin"
+        size_bytes = int(file_size_mb * 1024 * 1024)
+        vfile = VirtualFile(size_bytes)
+        
+        sftp.putfo(vfile, filename)
+        return True
+    except Exception:
+        return False
+    finally:
+        if sftp: sftp.close()
+        if transport: transport.close()
+
+def generate_sftp_traffic(
+    target, port, user, password, file_size_mb, 
+    count, duration, concurrency, stop_event
+):
+    msg = f"SFTP Traffic: {target}:{port}, Size: {file_size_mb}MB"
+    if duration > 0:
+        msg += f", duration {duration}s"
+    else:
+        msg += f", count {count}"
+    logger.info(msg)
+
+    start_time = time.time()
+    end_time = start_time + duration if duration > 0 else 0
+    completed = 0
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as exe:
+        futures = []
+        
+        if duration > 0:
+            def _time_worker():
+                while time.time() < end_time:
+                    if _is_stopped(stop_event): break
+                    _sftp_worker(target, port, user, password, file_size_mb)
+            
+            for _ in range(concurrency):
+                futures.append(exe.submit(_time_worker))
+            concurrent.futures.wait(futures)
+        else:
+            for _ in range(count):
+                if _is_stopped(stop_event): break
+                futures.append(exe.submit(
+                    _sftp_worker, target, port, user, password, file_size_mb
+                ))
+            
+            for f in concurrent.futures.as_completed(futures):
+                if _is_stopped(stop_event):
+                    exe.shutdown(wait=False, cancel_futures=True)
+                    break
+                if f.result():
+                    completed += 1
+
+    logger.info(f"SFTP finished. Completed uploads: {completed}")

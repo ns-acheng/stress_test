@@ -35,6 +35,48 @@ class ToolConfig:
                 "duration_sec": "curl_flood_duration",
                 "concurrent_conn": "curl_flood_concurrent"
             }
+        },
+        {
+            "json_key": "ftp",
+            "enable_attr": "ftp_enabled",
+            "fields": {
+                "count": "ftp_count",
+                "duration_sec": "ftp_duration",
+                "concurrent_conn": "ftp_concurrent",
+                "target_ip": "ftp_target_ip",
+                "target_port": "ftp_target_port",
+                "user": "ftp_user",
+                "password": "ftp_password",
+                "file_size_mb": "ftp_file_size_mb"
+            }
+        },
+        {
+            "json_key": "ftps",
+            "enable_attr": "ftps_enabled",
+            "fields": {
+                "count": "ftps_count",
+                "duration_sec": "ftps_duration",
+                "concurrent_conn": "ftps_concurrent",
+                "target_ip": "ftps_target_ip",
+                "target_port": "ftps_target_port",
+                "user": "ftps_user",
+                "password": "ftps_password",
+                "file_size_mb": "ftps_file_size_mb"
+            }
+        },
+        {
+            "json_key": "sftp",
+            "enable_attr": "sftp_enabled",
+            "fields": {
+                "count": "sftp_count",
+                "duration_sec": "sftp_duration",
+                "concurrent_conn": "sftp_concurrent",
+                "target_ip": "sftp_target_ip",
+                "target_port": "sftp_target_port",
+                "user": "sftp_user",
+                "password": "sftp_password",
+                "file_size_mb": "sftp_file_size_mb"
+            }
         }
     ]
 
@@ -58,7 +100,10 @@ class ToolConfig:
          "udp_concurrent", "udp_enabled"),
         ("HTTPS", "curl_flood_duration", "curl_flood_count", 
          "curl_flood_concurrent", "curl_flood_enabled"),
-        ("AB", "ab_duration", "ab_total_conn", "ab_concurrent", None)
+        ("AB", "ab_duration", "ab_total_conn", "ab_concurrent", None),
+        ("FTP", "ftp_duration", "ftp_count", "ftp_concurrent", "ftp_enabled"),
+        ("FTPS", "ftps_duration", "ftps_count", "ftps_concurrent", "ftps_enabled"),
+        ("SFTP", "sftp_duration", "sftp_count", "sftp_concurrent", "sftp_enabled")
     ]
 
     def __init__(self, config_file: str):
@@ -111,6 +156,36 @@ class ToolConfig:
         self.curl_flood_count = 1000
         self.curl_flood_duration = 0
         self.curl_flood_concurrent = 50
+
+        self.ftp_enabled = False
+        self.ftp_target_ip = "127.0.0.1"
+        self.ftp_target_port = 21
+        self.ftp_user = "test"
+        self.ftp_password = "password"
+        self.ftp_file_size_mb = 10
+        self.ftp_duration = 10
+        self.ftp_count = 0
+        self.ftp_concurrent = 1
+
+        self.ftps_enabled = False
+        self.ftps_target_ip = "127.0.0.1"
+        self.ftps_target_port = 990
+        self.ftps_user = "test"
+        self.ftps_password = "password"
+        self.ftps_file_size_mb = 10
+        self.ftps_duration = 10
+        self.ftps_count = 0
+        self.ftps_concurrent = 1
+
+        self.sftp_enabled = False
+        self.sftp_target_ip = "127.0.0.1"
+        self.sftp_target_port = 2222
+        self.sftp_user = "test"
+        self.sftp_password = "password"
+        self.sftp_file_size_mb = 10
+        self.sftp_duration = 10
+        self.sftp_count = 0
+        self.sftp_concurrent = 1
 
     def load(self):
         try:

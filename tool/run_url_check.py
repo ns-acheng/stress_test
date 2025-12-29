@@ -1,4 +1,8 @@
 import os
+import sys
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from util_traffic import check_url_alive
 from util_log import LogSetup
 
@@ -12,8 +16,9 @@ def load_urls(filepath):
         return set(line.strip() for line in f if line.strip())
 
 def main():
-    url_file = os.path.join("data", "url.txt")
-    url_new_file = os.path.join("data", "urlnew.txt")
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    url_file = os.path.join(base_dir, "data", "url.txt")
+    url_new_file = os.path.join(base_dir, "data", "urlnew.txt")
     
     existing_urls = load_urls(url_file)
     logger.info(f"Loaded {len(existing_urls)} existing URLs from {url_file}")

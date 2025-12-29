@@ -291,6 +291,45 @@ class StressTest:
                         self.stop_event
                     )
 
+                if self.config.ftp_enabled:
+                    util_traffic.generate_ftp_traffic(
+                        self.config.ftp_target_ip,
+                        self.config.ftp_target_port,
+                        self.config.ftp_user,
+                        self.config.ftp_password,
+                        self.config.ftp_file_size_mb,
+                        self.config.ftp_count,
+                        self.config.ftp_duration,
+                        self.config.ftp_concurrent,
+                        self.stop_event
+                    )
+
+                if self.config.ftps_enabled:
+                    util_traffic.generate_ftps_traffic(
+                        self.config.ftps_target_ip,
+                        self.config.ftps_target_port,
+                        self.config.ftps_user,
+                        self.config.ftps_password,
+                        self.config.ftps_file_size_mb,
+                        self.config.ftps_count,
+                        self.config.ftps_duration,
+                        self.config.ftps_concurrent,
+                        self.stop_event
+                    )
+
+                if self.config.sftp_enabled:
+                    util_traffic.generate_sftp_traffic(
+                        self.config.sftp_target_ip,
+                        self.config.sftp_target_port,
+                        self.config.sftp_user,
+                        self.config.sftp_password,
+                        self.config.sftp_file_size_mb,
+                        self.config.sftp_count,
+                        self.config.sftp_duration,
+                        self.config.sftp_concurrent,
+                        self.stop_event
+                    )
+
                 if self.stop_event.is_set(): break
 
                 if self.cfg_mgr.is_false_close:
