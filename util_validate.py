@@ -84,6 +84,38 @@ class NsClientLogValidator:
                 self.last_pos = 0
             return found
 
+    def read_new_logs(self):
+        with self.lock:
+            content = ""
+            current_size = 0
+            if os.path.exists(self.log_path):
+                try:
+                    current_size = os.path.getsize(self.log_path)
+                except OSError:
+                    current_size = 0
+            
+            start_pos_debug = self.last_pos
+            
+            if current_size < self.last_pos:
+                content += self._read_chunk(self.rotated_log_path, self.last_pos)
+                self.last_pos = 0
+                
+            chunk = self._read_chunk(self.log_path, self.last_pos)
+            content += chunk
+            
+            if os.path.exists(self.log_path):
+                self.last_pos = os.path.getsize(self.log_path)
+            else:
+                self.last_pos = 0
+            
+            if content:
+                preview_start = content[:100].replace('\n', '\\n')
+                preview_end = content[-100:].replace('\n', '\\n')
+                logger.info(f"Log Reader: Read {len(content)} bytes. Start: '{preview_start}'")
+                logger.info(f"Log Reader: End: '{preview_end}'")
+            
+            return content
+
 _validator = None
 _validator_lock = threading.Lock()
 

@@ -233,10 +233,9 @@ class StressTest:
     def exec_curl_requests(self):
         util_traffic.curl_requests(self.urls, self.stop_event)
 
-    def validate_tunneling(self, process_name, url):
-        if not self.validation_enabled or not url:
-            return True
-        
+    def check_tunneling_in_text(self, process_name, url, text):
+        if not url or not text:
+            return False
         try:
             parsed = urlparse(url)
             host = parsed.hostname
@@ -245,8 +244,7 @@ class StressTest:
                     host = url.split("/")[0].split(":")[0]
             
             if not host:
-                logger.warning(f"Could not extract hostname from {url}")
-                return True
+                return True 
 
             pat = (
                 r"Tunneling flow from addr: .*, process: " + 
@@ -254,28 +252,11 @@ class StressTest:
                 r" to host: " + re.escape(host) + r","
             )
             
-            found = False
-            for _ in range(5):
-                if util_validate.check_nsclient_log_regex(pat):
-                    found = True
-                    break
-                if smart_sleep(1, self.stop_event):
-                    return False
-            
-            if found:
-                logger.info(
-                    f"validate pass for tunneling url {url} for process: {process_name}"
-                )
+            if re.search(pat, text):
                 return True
-            else:
-                logger.error(
-                    f"!!! validate FAILED for tunneling url {url} for process: {process_name} !!!"
-                )
-                return False
-                
-        except Exception as e:
-            logger.error(f"Validation error: {e}")
-            return True
+            return False
+        except Exception:
+            return False
 
     def exec_validation_step(self, process_name):
         if not self.validation_enabled or not self.urls:
@@ -285,12 +266,41 @@ class StressTest:
         if len(self.urls) > 1:
             targets.append(self.urls[-1])
 
-        for target_url in targets:
-            logger.info(f"Validating {process_name} traffic to {target_url}...")
-            if not self.validate_tunneling(process_name, target_url):
-                return False
+        logger.info(f"Validating {process_name} traffic for {len(targets)} targets...")
         
-        return True
+        log_buffer = ""
+        pending = {url: False for url in targets}
+        
+        for i in range(5):
+            new_logs = util_validate.get_validator().read_new_logs()
+            if new_logs:
+                log_buffer += new_logs
+            
+            all_found = True
+            for url in targets:
+                if pending[url]:
+                    continue
+                
+                if self.check_tunneling_in_text(process_name, url, log_buffer):
+                    pending[url] = True
+                    logger.info(f"validate pass for {url} ({process_name})")
+                else:
+                    all_found = False
+            
+            if all_found:
+                break
+            
+            if i < 4:
+                if smart_sleep(1, self.stop_event):
+                    return False
+
+        success = True
+        for url, found in pending.items():
+            if not found:
+                logger.error(f"!!! validate FAILED for {url} ({process_name}) !!!")
+                success = False
+        
+        return success
 
     def run(self):
         start_input_monitor(self.stop_event)
