@@ -407,11 +407,7 @@ def curl_requests(urls, stop_event=None):
         run_curl(url)
         logger.info(f"CURL with URL: {url}")
 
-def _curl_flood_worker(url, seq, logged_urls=None):
-    if seq > 0 and seq % 100 == 0:
-        logger.info(f"Req #{seq}: {url}")
-        if logged_urls is not None:
-            logged_urls.append(url)
+def _curl_flood_worker(url):
     try:
         cmd = ["curl", "-s", "--max-time", "15", "-o", "NUL", url]
         subprocess.run(
@@ -419,6 +415,7 @@ def _curl_flood_worker(url, seq, logged_urls=None):
         )
     except Exception:
         pass
+    return url
 
 def generate_curl_flood(
     urls, 
@@ -427,10 +424,10 @@ def generate_curl_flood(
     concurrency=50, 
     stop_event=None
 ):
-    logged_urls = []
+    all_used_urls = []
     if not urls:
         logger.warning("No URLs for CURL flood.")
-        return logged_urls
+        return all_used_urls
 
     msg = f"Start CURL Flood: {concurrency} workers"
     if duration > 0:
@@ -446,7 +443,7 @@ def generate_curl_flood(
             while time.time() < end_time:
                 if _is_stopped(stop_event): break
                 url = random.choice(urls)
-                _curl_flood_worker(url, 0, None) # No logging for duration mode yet
+                _curl_flood_worker(url)
 
         with concurrent.futures.ThreadPoolExecutor(
             max_workers=concurrency
@@ -459,6 +456,7 @@ def generate_curl_flood(
     else:
         milestone = max(1, int(count * 0.2))
         completed = 0
+        log_buffer = []
         
         with concurrent.futures.ThreadPoolExecutor(
             max_workers=concurrency
@@ -468,20 +466,31 @@ def generate_curl_flood(
                 if _is_stopped(stop_event):
                     break
                 url = random.choice(urls)
-                futures.append(exe.submit(_curl_flood_worker, url, i, logged_urls))
+                futures.append(exe.submit(_curl_flood_worker, url))
             
             for f in concurrent.futures.as_completed(futures):
                 if _is_stopped(stop_event):
                     exe.shutdown(wait=False, cancel_futures=True)
                     break
                 
+                used_url = f.result()
+                all_used_urls.append(used_url)
+                log_buffer.append(used_url)
+                
+                if len(log_buffer) >= 100:
+                    logger.info("CURL Batch:\n" + "\n".join([f"  -> {u}" for u in log_buffer]))
+                    log_buffer = []
+
                 completed += 1
                 if completed % milestone == 0:
                     pct = int((completed / count) * 100)
                     logger.info(f"CURL Flood progress: {pct}%")
+        
+        if log_buffer:
+            logger.info("CURL Batch:\n" + "\n".join([f"  -> {u}" for u in log_buffer]))
     
     logger.info("CURL Flood finished.")
-    return logged_urls
+    return all_used_urls
 
 class VirtualFile(io.BytesIO):
     def __init__(self, size):
