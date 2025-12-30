@@ -3,7 +3,12 @@ import logging
 import os
 import socket
 import threading
+import sys
+import time
 import paramiko
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from util_input import start_input_monitor
 
 logging.basicConfig(
     level=logging.INFO,
@@ -58,7 +63,7 @@ class StubServer(paramiko.ServerInterface):
 
     def check_auth_password(self, username, password):
         if username == self.user and password == self.password:
-            return paramiko.AUTH_SUCCESS
+            return paramiko.AUTH_SUCCESSFUL
         return paramiko.AUTH_FAILED
 
     def get_allowed_auths(self, username):
@@ -104,17 +109,31 @@ def main():
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.bind(('0.0.0.0', args.port))
     sock.listen(10)
+    sock.settimeout(1.0)
     
     logger.info(f"SFTP Server listening on {args.port}")
+    logger.info("Press ESC to stop the server")
+
+    stop_event = threading.Event()
+    start_input_monitor(stop_event)
     
-    while True:
-        client, addr = sock.accept()
+    while not stop_event.is_set():
+        try:
+            client, addr = sock.accept()
+        except socket.timeout:
+            continue
+        except OSError:
+            break
+
         logger.info(f"Connection from {addr}")
         t = threading.Thread(
             target=handle_client, args=(client, args, host_key)
         )
         t.daemon = True
         t.start()
+    
+    logger.info("Stopping SFTP server...")
+    sock.close()
 
 if __name__ == "__main__":
     main()
