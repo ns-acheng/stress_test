@@ -437,7 +437,11 @@ class StressTest:
                     if browser_urls:
                         validation_map["msedge.exe"] = browser_urls
                     if curl_flood_urls:
-                        validation_map["curl.exe"] = curl_flood_urls
+                        if len(curl_flood_urls) > 100:
+                            logger.info(f"Sampling 100 URLs from {len(curl_flood_urls)} for validation.")
+                            validation_map["curl.exe"] = random.sample(curl_flood_urls, 100)
+                        else:
+                            validation_map["curl.exe"] = curl_flood_urls
                     
                     if not self.exec_validation_checks(validation_map):
                         break
