@@ -3,6 +3,12 @@ import sys
 import logging
 import argparse
 import subprocess
+import threading
+import time
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from util_input import start_input_monitor
+
 from pyftpdlib.authorizers import DummyAuthorizer
 from pyftpdlib.handlers import FTPHandler
 try:
@@ -106,7 +112,23 @@ def main():
 
     server = ThreadedFTPServer(('0.0.0.0', args.port), handler)
     logger.info(f"Starting {'FTPS' if args.ftps else 'FTP'} on {args.port}")
-    server.serve_forever()
+    logger.info("Press ESC to stop the server")
+
+    stop_event = threading.Event()
+    start_input_monitor(stop_event)
+
+    server_thread = threading.Thread(target=server.serve_forever)
+    server_thread.daemon = True
+    server_thread.start()
+
+    try:
+        while not stop_event.is_set():
+            time.sleep(0.5)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        logger.info("Stopping FTP server...")
+        server.close_all()
 
 if __name__ == "__main__":
     main()

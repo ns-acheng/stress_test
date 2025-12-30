@@ -87,7 +87,7 @@ class ToolConfig:
         ("client_disable_ratio", 0.00001, 1.0, 0.15),
         ("browser_max_memory", 50, 99, 85),
         ("browser_max_tabs", 1, 300, 20),
-        ("aoac_sleep_duration", 60, 600, 60),
+        ("aoac_sleep_duration", 10, 600, 60),
         ("long_idle_time_min", 300, 7200, 300),
         ("long_idle_time_max", 300, 7200, 300)
     ]
