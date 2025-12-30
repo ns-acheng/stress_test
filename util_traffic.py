@@ -508,10 +508,12 @@ def _ftp_worker(target, port, user, password, file_size_mb, is_ftps):
             ftp.prot_p()
 
         filename = f"upload_{random.randint(1000, 9999)}.bin"
+        logger.info(f"Generating virtual file {filename} ({file_size_mb} MB)")
         size_bytes = int(file_size_mb * 1024 * 1024)
         vfile = VirtualFile(size_bytes)
         
         ftp.storbinary(f"STOR {filename}", vfile)
+        logger.info(f"Uploaded {filename}")
         
         # Delete the file after upload to save disk space on server
         try:
@@ -595,10 +597,12 @@ def _sftp_worker(target, port, user, password, file_size_mb):
         sftp = paramiko.SFTPClient.from_transport(transport)
         
         filename = f"upload_{random.randint(1000, 9999)}.bin"
+        logger.info(f"Generating virtual file {filename} ({file_size_mb} MB)")
         size_bytes = int(file_size_mb * 1024 * 1024)
         vfile = VirtualFile(size_bytes)
         
         sftp.putfo(vfile, filename)
+        logger.info(f"Uploaded {filename}")
         
         # Delete the file after upload to save disk space on server
         try:

@@ -31,9 +31,11 @@ class StubSFTPServer(paramiko.SFTPServerInterface):
         return paramiko.SFTPAttributes.from_stat(os.stat("."))
 
     def open(self, path, flags, attr):
+        logger.info(f"Client opened file: {path}")
         return paramiko.SFTPHandle(flags)
 
     def remove(self, path):
+        logger.info(f"Client removed file: {path}")
         return paramiko.SFTP_OK
 
     def rename(self, oldpath, newpath):
