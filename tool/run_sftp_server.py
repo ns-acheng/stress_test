@@ -4,7 +4,6 @@ import os
 import socket
 import threading
 import sys
-import time
 import paramiko
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
