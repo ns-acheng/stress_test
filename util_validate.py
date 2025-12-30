@@ -3,22 +3,33 @@ import re
 import logging
 import threading
 import codecs
+import json
 
 logger = logging.getLogger(__name__)
 
 class NsClientLogValidator:
-    def __init__(self, log_path=None):
-        if log_path:
-            self.log_path = log_path
-        else:
-            prog_data = os.environ.get('ProgramData', 'C:\\ProgramData')
-            self.log_path = os.path.join(
-                prog_data, 'netskope', 'stagent', 'logs', 'nsdebuglog.log'
-            )
+    def __init__(self):
+        self.prog_data = os.environ.get('ProgramData', 'C:\\ProgramData')
+        self.stagent_path = os.path.join(self.prog_data, 'netskope', 'stagent')
+
+        self.log_path = os.path.join(
+            self.stagent_path, 'logs', 'nsdebuglog.log'
+        )
         
         self.rotated_log_path = self.log_path.replace('.log', '.1.log')
         self.lock = threading.Lock()
         self.last_pos = 0
+
+    def get_steering_config(self):
+        json_path = os.path.join(self.stagent_path, 'data', 'nssteering.json')
+        if not os.path.exists(json_path):
+            return {}
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Failed to load steering config: {e}")
+            return {}
 
     def update_pos_to_end(self):
         with self.lock:
@@ -82,6 +93,9 @@ def get_validator():
         if _validator is None:
             _validator = NsClientLogValidator()
     return _validator
+
+def get_steering_config():
+    return get_validator().get_steering_config()
 
 def check_nsclient_log(pattern):
     validator = get_validator()

@@ -21,6 +21,9 @@ from util_tool_config import ToolConfig
 from util_power import enter_s0_and_wake
 import util_traffic
 import util_client
+import util_validate
+from urllib.parse import urlparse
+import re
 
 TINY_SEC = 5
 SHORT_SEC = 15
@@ -51,6 +54,7 @@ class StressTest:
         self.manage_nic_script = os.path.join(self.tool_dir, "manage_nic.ps1")
         self.total_zero_dumps = 0
         self.client_thread = None
+        self.validation_enabled = False
 
     def setup(self):
         for priv in ["SeDebugPrivilege", "SeSystemtimePrivilege", "SeWakeAlarmPrivilege"]:
@@ -61,6 +65,16 @@ class StressTest:
         self.config.load()
         self.load_urls()
         
+        # Check steering config for validation
+        st_cfg = util_validate.get_steering_config()
+        fw_mode = st_cfg.get("firewall_traffic_mode", "")
+        if fw_mode == "all":
+            self.validation_enabled = True
+            logger.info(f"Validation Enabled. FW: {fw_mode}")
+            util_validate.get_validator().update_pos_to_end()
+        else:
+            logger.info(f"Validation Disabled. FW: {fw_mode}")
+
         if self.config.aoac_sleep_enabled:
             enable_wake_timers()
 
@@ -219,6 +233,47 @@ class StressTest:
     def exec_curl_requests(self):
         util_traffic.curl_requests(self.urls, self.stop_event)
 
+    def validate_tunneling(self, process_name, url):
+        if not self.validation_enabled or not url:
+            return True
+        
+        try:
+            parsed = urlparse(url)
+            host = parsed.hostname
+            if not host:
+                return True
+            
+            # Tunneling flow from addr: x:y, process: curl.exe to host: some.com,"
+            
+            pat = (
+                r"Tunneling flow from addr: .*, process: " + 
+                re.escape(process_name) + 
+                r" to host: " + re.escape(host) + r","
+            )
+            
+            found = False
+            for _ in range(5):
+                if util_validate.check_nsclient_log_regex(pat):
+                    found = True
+                    break
+                if smart_sleep(1, self.stop_event):
+                    return False
+            
+            if found:
+                logger.info(
+                    f"validate pass for tunneling url {url} for process: {process_name}"
+                )
+                return True
+            else:
+                logger.error(
+                    f"!!! validate FAILED for tunneling url {url} for process: {process_name} !!!"
+                )
+                return False
+                
+        except Exception as e:
+            logger.error(f"Validation error: {e}")
+            return True
+
     def run(self):
         start_input_monitor(self.stop_event)
         self.header_msg()
@@ -338,7 +393,18 @@ class StressTest:
                     self.exec_failclose_check()
                 else:
                     self.exec_browser_tabs()
+                    if self.config.enable_browser_tabs_open and self.urls:
+                        if not self.validate_tunneling("msedge.exe", self.urls[0]):
+                            break
+                        if not self.validate_tunneling("msedge.exe", self.urls[-1]):
+                            break
+
                     self.exec_curl_requests()
+                    if self.urls:
+                        if not self.validate_tunneling("curl.exe", self.urls[0]):
+                            break
+                        if not self.validate_tunneling("curl.exe", self.urls[-1]):
+                            break
 
                 if self.stop_event.is_set(): break
 
