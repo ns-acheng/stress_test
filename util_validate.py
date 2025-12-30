@@ -109,8 +109,8 @@ class NsClientLogValidator:
                 self.last_pos = 0
             
             if content:
-                preview_start = content[:100].replace('\n', '\\n')
-                preview_end = content[-100:].replace('\n', '\\n')
+                preview_start = content[:100].replace('\r', '\\r').replace('\n', '\\n')
+                preview_end = content[-100:].replace('\r', '\\r').replace('\n', '\\n')
                 logger.info(f"Log Reader: Read {len(content)} bytes. Start: '{preview_start}'")
                 logger.info(f"Log Reader: End: '{preview_end}'")
             

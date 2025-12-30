@@ -327,9 +327,10 @@ def run_high_concurrency_test(
 def open_browser_tabs(
     urls, tool_dir, max_tabs, max_mem, stop_event, log_dir, wait_sec
 ):
+    opened_urls = []
     if not urls:
         logger.warning("No URLs loaded to open.")
-        return
+        return opened_urls
 
     logger.info(
         f"Start tab loop. Max Mem: {max_mem}%, Max Tabs: {max_tabs}"
@@ -353,22 +354,16 @@ def open_browser_tabs(
         if count <= 0:
             break
 
-        # Ensure first and last URLs are included in the first batch
-        if batch_cnt == 0:
-            mandatory = {urls[0], urls[-1]}
-            pool = [u for u in urls if u not in mandatory]
-            needed = count - len(mandatory)
-            selected = list(mandatory)
-            if needed > 0 and pool:
-                selected.extend(random.sample(pool, min(len(pool), needed)))
-        else:
-            selected = random.sample(urls, count)
-
+        selected = random.sample(urls, count)
         logger.info(f"Opening batch {batch_cnt + 1} ({len(selected)} URLs)...")
+        for u in selected:
+            logger.info(f"  -> {u}")
 
         args = " ".join(selected)
         cmd = os.path.join(tool_dir, f"open_msedge_tabs.bat {args}")
         run_batch(cmd)
+        
+        opened_urls.extend(selected)
 
         total_tabs += count
         if smart_sleep(wait_sec, stop_event):
@@ -386,6 +381,8 @@ def open_browser_tabs(
 
     if batch_cnt >= batch_limit:
         logger.warning(f"Reached max batch limit ({batch_limit})")
+    
+    return opened_urls
 
 def curl_requests(urls, stop_event=None):
     if not urls:
@@ -410,9 +407,11 @@ def curl_requests(urls, stop_event=None):
         run_curl(url)
         logger.info(f"CURL with URL: {url}")
 
-def _curl_flood_worker(url, seq):
+def _curl_flood_worker(url, seq, logged_urls=None):
     if seq > 0 and seq % 100 == 0:
         logger.info(f"Req #{seq}: {url}")
+        if logged_urls is not None:
+            logged_urls.append(url)
     try:
         cmd = ["curl", "-s", "--max-time", "15", "-o", "NUL", url]
         subprocess.run(
@@ -428,9 +427,10 @@ def generate_curl_flood(
     concurrency=50, 
     stop_event=None
 ):
+    logged_urls = []
     if not urls:
         logger.warning("No URLs for CURL flood.")
-        return
+        return logged_urls
 
     msg = f"Start CURL Flood: {concurrency} workers"
     if duration > 0:
@@ -446,7 +446,7 @@ def generate_curl_flood(
             while time.time() < end_time:
                 if _is_stopped(stop_event): break
                 url = random.choice(urls)
-                _curl_flood_worker(url, 0)
+                _curl_flood_worker(url, 0, None) # No logging for duration mode yet
 
         with concurrent.futures.ThreadPoolExecutor(
             max_workers=concurrency
@@ -468,7 +468,7 @@ def generate_curl_flood(
                 if _is_stopped(stop_event):
                     break
                 url = random.choice(urls)
-                futures.append(exe.submit(_curl_flood_worker, url, i))
+                futures.append(exe.submit(_curl_flood_worker, url, i, logged_urls))
             
             for f in concurrent.futures.as_completed(futures):
                 if _is_stopped(stop_event):
@@ -481,6 +481,7 @@ def generate_curl_flood(
                     logger.info(f"CURL Flood progress: {pct}%")
     
     logger.info("CURL Flood finished.")
+    return logged_urls
 
 class VirtualFile(io.BytesIO):
     def __init__(self, size):

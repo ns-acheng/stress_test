@@ -223,8 +223,8 @@ class StressTest:
     
     def exec_browser_tabs(self):
         if not self.config.enable_browser_tabs_open:
-            return
-        util_traffic.open_browser_tabs(
+            return []
+        return util_traffic.open_browser_tabs(
             self.urls, self.tool_dir, self.config.browser_max_tabs,
             self.config.browser_max_memory, self.stop_event, current_log_dir,
             STD_SEC
@@ -258,18 +258,21 @@ class StressTest:
         except Exception:
             return False
 
-    def exec_validation_checks(self, process_list):
-        if not self.validation_enabled or not self.urls:
+    def exec_validation_checks(self, process_map):
+        # process_map: {"msedge.exe": [url1, url2], "curl.exe": [url3, url4]}
+        if not self.validation_enabled:
             return True
 
-        targets = [self.urls[0]]
-        if len(self.urls) > 1:
-            targets.append(self.urls[-1])
+        # Filter out empty target lists
+        active_map = {proc: urls for proc, urls in process_map.items() if urls}
+        if not active_map:
+            logger.info("No URLs to validate.")
+            return True
 
-        logger.info(f"Validating traffic for processes: {process_list} on {len(targets)} targets...")
+        logger.info(f"Validating traffic for processes: {list(active_map.keys())}")
         
         # Structure: pending[process_name][url] = found_boolean
-        pending = {proc: {url: False for url in targets} for proc in process_list}
+        pending = {proc: {url: False for url in urls} for proc, urls in active_map.items()}
         
         log_buffer = ""
         
@@ -279,8 +282,8 @@ class StressTest:
                 log_buffer += new_logs
             
             all_passed = True
-            for proc in process_list:
-                for url in targets:
+            for proc, urls in active_map.items():
+                for url in urls:
                     if not pending[proc][url]:
                         if self.check_tunneling_in_text(proc, url, log_buffer):
                             pending[proc][url] = True
@@ -296,9 +299,9 @@ class StressTest:
                     return False
 
         success = True
-        for proc in process_list:
-            for url, found in pending[proc].items():
-                if not found:
+        for proc, urls in active_map.items():
+            for url in urls:
+                if not pending[proc][url]:
                     logger.error(f"!!! validate FAILED for {url} ({proc}) !!!")
                     success = False
         
@@ -369,8 +372,9 @@ class StressTest:
                         self.config.ab_duration
                     )
 
+                curl_flood_urls = []
                 if self.config.curl_flood_enabled:
-                    util_traffic.generate_curl_flood(
+                    curl_flood_urls = util_traffic.generate_curl_flood(
                         self.urls, 
                         self.config.curl_flood_count,
                         self.config.curl_flood_duration,
@@ -422,17 +426,20 @@ class StressTest:
                 if self.cfg_mgr.is_false_close:
                     self.exec_failclose_check()
                 else:
-                    self.exec_browser_tabs()
+                    browser_urls = self.exec_browser_tabs()
                     if smart_sleep(2, self.stop_event): break
 
-                    self.exec_curl_requests()
-                    if smart_sleep(2, self.stop_event): break
 
                     logger.info("Waiting for logs to be flushed...")
                     if smart_sleep(10, self.stop_event): break
 
-                    # 3. Validate
-                    if not self.exec_validation_checks(["msedge.exe", "curl.exe"]):
+                    validation_map = {}
+                    if browser_urls:
+                        validation_map["msedge.exe"] = browser_urls
+                    if curl_flood_urls:
+                        validation_map["curl.exe"] = curl_flood_urls
+                    
+                    if not self.exec_validation_checks(validation_map):
                         break
 
                 if self.stop_event.is_set(): break
