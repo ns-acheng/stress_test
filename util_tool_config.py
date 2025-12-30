@@ -237,6 +237,7 @@ class ToolConfig:
             ab_enabled = ab.get('enable', 1)
             self.ab_concurrent = ab.get('concurrent_conn', self.ab_concurrent)
             self.ab_duration = ab.get('duration_sec', self.ab_duration)
+            self.ab_total_conn = ab.get('total_conn', self.ab_total_conn)
             
             if not ab_enabled:
                 self.ab_total_conn = 0
@@ -325,12 +326,13 @@ class ToolConfig:
     def _cap_duration_count(self, duration, count, name):
         new_duration = duration
         new_count = count
-        if new_duration > 60:
-            logger.warning(f"{name} duration {new_duration} > 60. Capping at 60.")
-            new_duration = 60
-        if new_count > 100000:
-            logger.warning(f"{name} count {new_count} > 100000. Capping at 100000.")
-            new_count = 100000
+        # Cap at 6 hours (21600 seconds)
+        if new_duration > 21600:
+            logger.warning(f"{name} duration {new_duration} > 21600. Capping at 21600.")
+            new_duration = 21600
+        if new_count > 2000000000:
+            logger.warning(f"{name} count {new_count} > 2000000000. Capping at 2000000000.")
+            new_count = 2000000000
         return new_duration, new_count
 
     def _cap_concurrency(self, concurrency, name):
