@@ -395,7 +395,7 @@ def _curl_flood_worker(url, seq):
     if seq > 0 and seq % 100 == 0:
         logger.info(f"Req #{seq}: {url}")
     try:
-        cmd = ["curl", "-s", "-o", "NUL", url]
+        cmd = ["curl", "-s", "--max-time", "15", "-o", "NUL", url]
         subprocess.run(
             cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
