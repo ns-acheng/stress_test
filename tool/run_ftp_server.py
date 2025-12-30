@@ -4,7 +4,11 @@ import logging
 import argparse
 import subprocess
 from pyftpdlib.authorizers import DummyAuthorizer
-from pyftpdlib.handlers import FTPHandler, TLS_FTPHandler
+from pyftpdlib.handlers import FTPHandler
+try:
+    from pyftpdlib.handlers import TLS_FTPHandler
+except ImportError:
+    TLS_FTPHandler = None
 from pyftpdlib.servers import ThreadedFTPServer
 from pyftpdlib.filesystems import AbstractedFS
 
@@ -55,6 +59,9 @@ def main():
     )
 
     if args.ftps:
+        if TLS_FTPHandler is None:
+            logger.error("FTPS not supported (TLS_FTPHandler not found). Install pyopenssl?")
+            sys.exit(1)
         cert_file = "cert.pem"
         key_file = "key.pem"
         generate_cert(cert_file, key_file)
