@@ -58,7 +58,7 @@ class StubServer(paramiko.ServerInterface):
 
     def check_auth_password(self, username, password):
         if username == self.user and password == self.password:
-            return paramiko.AUTH_SUCCESS
+            return paramiko.AUTH_SUCCESSFUL
         return paramiko.AUTH_FAILED
 
     def get_allowed_auths(self, username):

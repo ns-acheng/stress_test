@@ -28,6 +28,7 @@ def generate_cert(cert_path, key_path):
     if os.path.exists(cert_path) and os.path.exists(key_path):
         return
     try:
+        # Try using OpenSSL CLI first
         cmd = [
             "openssl", "req", "-new", "-x509", "-days", "365", "-nodes",
             "-out", cert_path, "-keyout", key_path,
@@ -36,10 +37,37 @@ def generate_cert(cert_path, key_path):
         subprocess.check_call(
             cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
-        logger.info(f"Generated cert: {cert_path}, key: {key_path}")
-    except Exception as e:
-        logger.error(f"Failed to generate cert: {e}")
-        sys.exit(1)
+        logger.info(f"Generated cert (CLI): {cert_path}, key: {key_path}")
+    except Exception:
+        # Fallback to pyopenssl if CLI fails
+        try:
+            from OpenSSL import crypto
+            k = crypto.PKey()
+            k.generate_key(crypto.TYPE_RSA, 2048)
+            cert = crypto.X509()
+            cert.get_subject().C = "US"
+            cert.get_subject().ST = "Test"
+            cert.get_subject().L = "Test"
+            cert.get_subject().O = "Test"
+            cert.get_subject().CN = "localhost"
+            cert.set_serial_number(1000)
+            cert.gmtime_adj_notBefore(0)
+            cert.gmtime_adj_notAfter(365*24*60*60)
+            cert.set_issuer(cert.get_subject())
+            cert.set_pubkey(k)
+            cert.sign(k, 'sha256')
+            
+            with open(cert_path, "wb") as f:
+                f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
+            with open(key_path, "wb") as f:
+                f.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, k))
+            logger.info(f"Generated cert (PyOpenSSL): {cert_path}, key: {key_path}")
+        except ImportError:
+            logger.error("OpenSSL CLI not found and pyopenssl not installed.")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"Failed to generate cert: {e}")
+            sys.exit(1)
 
 def main():
     parser = argparse.ArgumentParser()

@@ -35,10 +35,12 @@ If you plan to use the traffic generation features, set up the following targets
      ```
 
 4. **FTP/FTPS Server**:
-   ```cmd
-   python tool/run_ftp_server.py --port 21 --user test --password password
-   python tool/run_ftp_server.py --port 990 --ftps --user test --password password
-   ```
+   * Make `C:\Program Files\Git\mingw64\bin` in SYSTEM Path variable.
+   * Run:
+     ```cmd
+     python tool/run_ftp_server.py --port 21 --user test --password password
+     python tool/run_ftp_server.py --port 990 --ftps --user test --password password
+     ```
    * Supports "Blackhole" mode (discards uploads to save disk space).
    * FTPS mode auto-generates self-signed certificates.
 
