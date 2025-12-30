@@ -43,4 +43,8 @@ class LogSetup:
         logger.addHandler(file_handler)
         logger.addHandler(console_handler)
 
+        # to prevent password leakage
+        logging.getLogger("paramiko").setLevel(logging.WARNING)
+        logging.getLogger("urllib3").setLevel(logging.WARNING)
+
         return logger

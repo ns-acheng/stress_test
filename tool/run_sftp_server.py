@@ -14,6 +14,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
+logging.getLogger("paramiko").setLevel(logging.WARNING)
 logger = logging.getLogger()
 
 class StubSFTPServer(paramiko.SFTPServerInterface):
