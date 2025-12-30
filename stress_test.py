@@ -228,7 +228,7 @@ class StressTest:
         for count in range(1, self.config.loop_times + 1):
             if self.stop_event.is_set(): break
             try:
-                logger.info(f"== Iter {count} / {self.config.loop_times} ==")
+                logger.info(f"============ Iter {count} / {self.config.loop_times} ============")
                 
                 self.exec_start_service()
                 if self.stop_event.is_set(): break
