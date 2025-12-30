@@ -258,7 +258,7 @@ class StressTest:
         except Exception:
             return False
 
-    def exec_validation_step(self, process_name):
+    def exec_validation_checks(self, process_list):
         if not self.validation_enabled or not self.urls:
             return True
 
@@ -266,39 +266,41 @@ class StressTest:
         if len(self.urls) > 1:
             targets.append(self.urls[-1])
 
-        logger.info(f"Validating {process_name} traffic for {len(targets)} targets...")
+        logger.info(f"Validating traffic for processes: {process_list} on {len(targets)} targets...")
+        
+        # Structure: pending[process_name][url] = found_boolean
+        pending = {proc: {url: False for url in targets} for proc in process_list}
         
         log_buffer = ""
-        pending = {url: False for url in targets}
         
         for i in range(5):
             new_logs = util_validate.get_validator().read_new_logs()
             if new_logs:
                 log_buffer += new_logs
             
-            all_found = True
-            for url in targets:
-                if pending[url]:
-                    continue
-                
-                if self.check_tunneling_in_text(process_name, url, log_buffer):
-                    pending[url] = True
-                    logger.info(f"validate pass for {url} ({process_name})")
-                else:
-                    all_found = False
+            all_passed = True
+            for proc in process_list:
+                for url in targets:
+                    if not pending[proc][url]:
+                        if self.check_tunneling_in_text(proc, url, log_buffer):
+                            pending[proc][url] = True
+                            logger.info(f"validate pass for {url} ({proc})")
+                        else:
+                            all_passed = False
             
-            if all_found:
-                break
+            if all_passed:
+                return True
             
             if i < 4:
-                if smart_sleep(1, self.stop_event):
+                if smart_sleep(2, self.stop_event):
                     return False
 
         success = True
-        for url, found in pending.items():
-            if not found:
-                logger.error(f"!!! validate FAILED for {url} ({process_name}) !!!")
-                success = False
+        for proc in process_list:
+            for url, found in pending[proc].items():
+                if not found:
+                    logger.error(f"!!! validate FAILED for {url} ({proc}) !!!")
+                    success = False
         
         return success
 
@@ -427,11 +429,10 @@ class StressTest:
                     if smart_sleep(2, self.stop_event): break
 
                     logger.info("Waiting for logs to be flushed...")
-                    if smart_sleep(30, self.stop_event): break
+                    if smart_sleep(10, self.stop_event): break
 
-                    if not self.exec_validation_step("msedge.exe"):
-                        break
-                    if not self.exec_validation_step("curl.exe"):
+                    # 3. Validate
+                    if not self.exec_validation_checks(["msedge.exe", "curl.exe"]):
                         break
 
                 if self.stop_event.is_set(): break
