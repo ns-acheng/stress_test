@@ -353,8 +353,18 @@ def open_browser_tabs(
         if count <= 0:
             break
 
-        selected = random.sample(urls, count)
-        logger.info(f"Opening batch {batch_cnt + 1} ({count} URLs)...")
+        # Ensure first and last URLs are included in the first batch
+        if batch_cnt == 0:
+            mandatory = {urls[0], urls[-1]}
+            pool = [u for u in urls if u not in mandatory]
+            needed = count - len(mandatory)
+            selected = list(mandatory)
+            if needed > 0 and pool:
+                selected.extend(random.sample(pool, min(len(pool), needed)))
+        else:
+            selected = random.sample(urls, count)
+
+        logger.info(f"Opening batch {batch_cnt + 1} ({len(selected)} URLs)...")
 
         args = " ".join(selected)
         cmd = os.path.join(tool_dir, f"open_msedge_tabs.bat {args}")
@@ -381,9 +391,18 @@ def curl_requests(urls, stop_event=None):
     if not urls:
         return
 
+    # Ensure first and last URLs are always included
+    mandatory = {urls[0], urls[-1]}
+    pool = [u for u in urls if u not in mandatory]
+    
     count = min(len(urls), 10)
-    selected = random.sample(urls, count)
-    logger.info(f"Running CURL on {count} random URLs...")
+    needed = count - len(mandatory)
+    
+    selected = list(mandatory)
+    if needed > 0 and pool:
+        selected.extend(random.sample(pool, min(len(pool), needed)))
+
+    logger.info(f"Running CURL on {len(selected)} URLs (incl. first/last)...")
 
     for url in selected:
         if _is_stopped(stop_event):

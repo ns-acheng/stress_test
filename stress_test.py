@@ -241,10 +241,13 @@ class StressTest:
             parsed = urlparse(url)
             host = parsed.hostname
             if not host:
+                if "://" not in url:
+                    host = url.split("/")[0].split(":")[0]
+            
+            if not host:
+                logger.warning(f"Could not extract hostname from {url}")
                 return True
-            
-            # Tunneling flow from addr: x:y, process: curl.exe to host: some.com,"
-            
+
             pat = (
                 r"Tunneling flow from addr: .*, process: " + 
                 re.escape(process_name) + 
@@ -273,6 +276,21 @@ class StressTest:
         except Exception as e:
             logger.error(f"Validation error: {e}")
             return True
+
+    def exec_validation_step(self, process_name):
+        if not self.validation_enabled or not self.urls:
+            return True
+
+        targets = [self.urls[0]]
+        if len(self.urls) > 1:
+            targets.append(self.urls[-1])
+
+        for target_url in targets:
+            logger.info(f"Validating {process_name} traffic to {target_url}...")
+            if not self.validate_tunneling(process_name, target_url):
+                return False
+        
+        return True
 
     def run(self):
         start_input_monitor(self.stop_event)
@@ -393,18 +411,18 @@ class StressTest:
                     self.exec_failclose_check()
                 else:
                     self.exec_browser_tabs()
-                    if self.config.enable_browser_tabs_open and self.urls:
-                        if not self.validate_tunneling("msedge.exe", self.urls[0]):
-                            break
-                        if not self.validate_tunneling("msedge.exe", self.urls[-1]):
-                            break
+                    if smart_sleep(2, self.stop_event): break
 
                     self.exec_curl_requests()
-                    if self.urls:
-                        if not self.validate_tunneling("curl.exe", self.urls[0]):
-                            break
-                        if not self.validate_tunneling("curl.exe", self.urls[-1]):
-                            break
+                    if smart_sleep(2, self.stop_event): break
+
+                    logger.info("Waiting for logs to be flushed...")
+                    if smart_sleep(30, self.stop_event): break
+
+                    if not self.exec_validation_step("msedge.exe"):
+                        break
+                    if not self.exec_validation_step("curl.exe"):
+                        break
 
                 if self.stop_event.is_set(): break
 
