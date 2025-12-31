@@ -27,13 +27,16 @@
     "browser": {
       "enable": 1,
       "max_memory": 60,
-      "max_tabs": 20
+      "max_tabs": 20,
+      "log_validation": 1
     },
     "https": {
       "enable": 1,
       "duration_sec": 0,
       "count": 800,
-      "concurrent_conn": 50
+      "concurrent_conn": 50,
+      "log_validation": 1,
+      "log_validation_ratio": 5
     },
     "dns": {
       "enable": 1,

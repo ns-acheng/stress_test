@@ -373,14 +373,20 @@ class StressTest:
                     if smart_sleep(10, self.stop_event): break
 
                     validation_map = {}
-                    if browser_urls:
+                    if browser_urls and self.config.browser_log_validation:
                         validation_map["msedge.exe"] = browser_urls
-                    if curl_flood_urls:
-                        if len(curl_flood_urls) > 100:
-                            logger.info(f"Sampling 100 URLs from {len(curl_flood_urls)} for validation.")
-                            validation_map["curl.exe"] = random.sample(curl_flood_urls, 100)
-                        else:
-                            validation_map["curl.exe"] = curl_flood_urls
+                    
+                    if curl_flood_urls and self.config.curl_flood_log_validation:
+                        ratio = self.config.curl_flood_log_validation_ratio
+                        total = len(curl_flood_urls)
+                        sample_size = int(total * (ratio / 100.0))
+                        if sample_size < 1 and total > 0:
+                            sample_size = 1
+                        if sample_size > total:
+                            sample_size = total
+                            
+                        logger.info(f"Sampling {sample_size} URLs ({ratio}%) from {total} for validation.")
+                        validation_map["curl.exe"] = random.sample(curl_flood_urls, sample_size)
                     
                     if not self.exec_validation_checks(validation_map):
                         break

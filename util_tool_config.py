@@ -33,7 +33,9 @@ class ToolConfig:
             "fields": {
                 "count": "curl_flood_count",
                 "duration_sec": "curl_flood_duration",
-                "concurrent_conn": "curl_flood_concurrent"
+                "concurrent_conn": "curl_flood_concurrent",
+                "log_validation": "curl_flood_log_validation",
+                "log_validation_ratio": "curl_flood_log_validation_ratio"
             }
         },
         {
@@ -133,6 +135,7 @@ class ToolConfig:
         self.enable_browser_tabs_open = 1
         self.browser_max_memory = 85
         self.browser_max_tabs = 20
+        self.browser_log_validation = 0
 
         self.dns_enabled = False
         self.dns_count = 500
@@ -156,6 +159,8 @@ class ToolConfig:
         self.curl_flood_count = 1000
         self.curl_flood_duration = 0
         self.curl_flood_concurrent = 50
+        self.curl_flood_log_validation = 0
+        self.curl_flood_log_validation_ratio = 5
 
         self.ftp_enabled = False
         self.ftp_target_ip = "127.0.0.1"
@@ -221,6 +226,7 @@ class ToolConfig:
             tg = config.get('traffic_gen', {})
             browser = tg.get('browser', {})
             self.enable_browser_tabs_open = browser.get('enable', self.enable_browser_tabs_open)
+            self.browser_log_validation = browser.get('log_validation', self.browser_log_validation)
             self.browser_max_memory = browser.get('max_memory', self.browser_max_memory)
             self.browser_max_tabs = browser.get('max_tabs', self.browser_max_tabs)
 
