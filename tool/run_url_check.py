@@ -14,7 +14,8 @@ def load_urls(filepath):
     if not os.path.exists(filepath):
         return set()
     with open(filepath, 'r', encoding='utf-8') as f:
-        return set(line.strip() for line in f if line.strip())
+        # Strip whitespace and trailing slashes
+        return set(line.strip().rstrip('/') for line in f if line.strip())
 
 def main():
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -27,7 +28,7 @@ def main():
     raw_new_urls = []
     if os.path.exists(url_new_file):
         with open(url_new_file, 'r', encoding='utf-8') as f:
-            raw_new_urls = [line.strip() for line in f if line.strip()]
+            raw_new_urls = [line.strip().rstrip('/') for line in f if line.strip()]
     else:
         logger.error(f"{url_new_file} not found.")
         return
@@ -83,6 +84,8 @@ def main():
                 final_url = url
 
             if is_alive:
+                final_url = final_url.rstrip('/')
+
                 if final_url in existing_urls:
                     logger.info(f"[{completed_checks}/{total_to_check}] ALIVE (Duplicate in DB): {url} -> {final_url}")
                     continue

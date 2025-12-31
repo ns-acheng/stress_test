@@ -100,7 +100,7 @@ class StressTest:
                 return
             with open(self.url_file, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
-            self.urls = [line.strip() for line in lines if line.strip()]
+            self.urls = [line.strip().rstrip('/') for line in lines if line.strip()]
             logger.info(f"Loaded {len(self.urls)} URLs from {self.url_file}")
         except Exception as e:
             logger.error(f"Error loading URLs: {e}")
