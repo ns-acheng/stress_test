@@ -591,10 +591,8 @@ https://birdnet.cornell.edu
 https://birmingham.ac.uk
 https://bitbo.io
 https://bitbox.swiss
-https://bitbucket.org/
+https://bitbucket.org
 https://bitcoin.org
-https://bitcoin.org/
-https://bitcoin.org/bitcoin.pdf
 https://bitcoin.stackexchange.com
 https://bitcoincore.org
 https://bitcoinist.com
@@ -2524,8 +2522,6 @@ https://indexes.nasdaqomx.com/Index/Overview/NQUSM
 https://indexes.nasdaqomx.com/Index/Overview/NQUSS
 https://indexes.nasdaqomx.com/Index/Overview/QGREEN
 https://indexes.nasdaqomx.com/Index/Overview/QNET
-https://indexes.nasdaqomx.com/docs/Methodology_NQUS500LC.pdf
-https://indexes.nasdaqomx.com/docs/methodology_NQUS500LC.pdf
 https://indiamart.com
 https://indiana.edu
 https://indianexpress.com
@@ -3307,7 +3303,6 @@ https://mubi.com
 https://muckrack.com
 https://mullenmemory.com
 https://multicoin.capital
-https://mulucaves.org
 https://mumble.info
 https://murf.ai
 https://murrayscheese.com
@@ -3936,7 +3931,7 @@ https://publiclibrariesonline.org
 https://publishersmarketplace.com
 https://pubmed.ncbi.nlm.nih.gov
 https://pubs.geoscienceworld.org
-https://pubs.usgs.gov/myb/vol3/2020-21/myb3-2020-21-taiwan.pdf
+https://pubs.usgs.gov
 https://pubsonline.informs.org/
 https://pulitzercenter.org
 https://pulsar.apache.org
@@ -16354,7 +16349,6 @@ https://www.spglobal.com/marketintelligence/en/solutions/capital-iq-pro
 https://www.spglobal.com/marketintelligence/en/solutions/risk-management
 https://www.spglobal.com/platts
 https://www.spglobal.com/spdji
-https://www.spglobal.com/spdji/en/documents/methodologies/methodology-sp-us-indices.pdf
 https://www.spglobal.com/spdji/en/indices/equity/sp-100/
 https://www.spglobal.com/spdji/en/indices/equity/sp-500-communication-services-sector/
 https://www.spglobal.com/spdji/en/indices/equity/sp-500-consumer-discretionary-sector/
@@ -17819,7 +17813,6 @@ https://www.vanguard.com/etf/vug
 https://www.vanguard.com/etf/vym
 https://www.vanguard.com/index-funds
 https://www.vanguard.com/institutional/research
-https://www.vanguard.com/pdf/ISGIDX.pdf
 https://www.vanguard.com/research
 https://www.vanguard.com/strategic-investing
 https://www.vanguardinflatables.com
@@ -18602,8 +18595,6 @@ https://www.yanmar.com/global/marine
 https://www.yaoko-net.com/recipe
 https://www.yardbarker.com/nfl
 https://www.yardeni.com
-https://www.yardeni.com/pub/nasdaq100.pdf
-https://www.yardeni.com/pub/sp500.pdf
 https://www.yarn.com
 https://www.yarnspirations.com
 https://www.yasaka.se
