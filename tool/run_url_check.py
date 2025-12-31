@@ -60,9 +60,11 @@ def main():
         f.write("")
 
     total_to_check = len(urls_to_check)
-    logger.info(f"Starting check for {total_to_check} unique URLs with 20 threads...")
+    logger.info(f"Starting check for {total_to_check} unique URLs with 50 threads...")
+    
+    unique_alive_urls = set()
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
         future_to_url = {executor.submit(check_url_alive, url): url for url in urls_to_check}
         
         completed_checks = 0
@@ -72,15 +74,30 @@ def main():
             processed_count += 1 # This is actually skipped + checked
             
             try:
-                is_alive = future.result()
+                result = future.result()
+                is_alive = bool(result)
+                final_url = result if is_alive else url
             except Exception as exc:
                 logger.error(f"{url} generated an exception: {exc}")
                 is_alive = False
+                final_url = url
 
             if is_alive:
-                valid_urls.append(url)
+                if final_url in existing_urls:
+                    logger.info(f"[{completed_checks}/{total_to_check}] ALIVE (Duplicate in DB): {url} -> {final_url}")
+                    continue
+                
+                if final_url in unique_alive_urls:
+                    logger.info(f"[{completed_checks}/{total_to_check}] ALIVE (Duplicate in batch): {url} -> {final_url}")
+                    continue
+
+                unique_alive_urls.add(final_url)
+                valid_urls.append(final_url)
                 alive_count += 1
-                logger.info(f"[{completed_checks}/{total_to_check}] ALIVE: {url}")
+                msg = f"[{completed_checks}/{total_to_check}] ALIVE: {url}"
+                if final_url != url:
+                    msg += f" -> {final_url}"
+                logger.info(msg)
             else:
                 logger.info(f"[{completed_checks}/{total_to_check}] DEAD: {url}")
 

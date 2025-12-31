@@ -45,7 +45,9 @@ def check_url_alive(url):
         response = requests.head(
             url, timeout=5, allow_redirects=True, headers=headers
         )
-        return response.status_code < 400 or response.status_code == 403
+        if response.status_code < 400 or response.status_code == 403:
+            return response.url
+        return False
     except Exception:
         return False
 
@@ -66,18 +68,32 @@ def check_urls_and_write_status(urls):
     out_file = r'data\url_alive.txt'
     flush_interval = 50
     alive_count = 0
+    written_urls = set()
 
     with open(out_file, 'w', encoding='utf-8') as f:
         for index, url in enumerate(urls):
             if url in existing_urls:
                 continue
 
-            is_alive = check_url_alive(url)
+            final_url = check_url_alive(url)
+            is_alive = bool(final_url)
             status_text = "ALIVE" if is_alive else "DEAD"
+            
+            if is_alive and final_url != url:
+                status_text += f" (Redirect -> {final_url})"
+
             logger.info(f"[{index + 1}/{len(urls)}] {url} -> {status_text}")
             
             if is_alive:
-                f.write(f"{url}\n")
+                if final_url in existing_urls:
+                    logger.info(f"Skipping duplicate final URL (in DB): {final_url}")
+                    continue
+                if final_url in written_urls:
+                    logger.info(f"Skipping duplicate final URL (already written): {final_url}")
+                    continue
+
+                f.write(f"{final_url}\n")
+                written_urls.add(final_url)
                 alive_count += 1
                 if (index + 1) % flush_interval == 0:
                     f.flush()

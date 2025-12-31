@@ -133,8 +133,13 @@ class StressTest:
         logger.info(f"Checking {len(test_urls)} URLs for reachability...")
         for url in test_urls:
             if self.stop_event.is_set(): break
-            alive = util_traffic.check_url_alive(url)
-            status = "ALIVE" if alive else "DEAD (Blocked)"
+            alive_result = util_traffic.check_url_alive(url)
+            if alive_result:
+                status = "ALIVE"
+                if alive_result != url:
+                    status += f" (Redirect -> {alive_result})"
+            else:
+                status = "DEAD (Blocked)"
             logger.info(f"URL: {url} -> {status}")
             if smart_sleep(1, self.stop_event):
                 break
