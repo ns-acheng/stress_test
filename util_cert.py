@@ -13,8 +13,8 @@ def check_url_cert(url: str):
             hostname = hostname[8:]
         elif hostname.startswith("http://"):
             hostname = hostname[7:]
-            
-        hostname = hostname.rstrip('/')
+
+        hostname = hostname.split('/')[0]
 
         dst = (hostname, 443)
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
