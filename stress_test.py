@@ -67,13 +67,19 @@ class StressTest:
         
         # Check steering config for validation
         st_cfg = util_validate.get_steering_config()
-        fw_mode = st_cfg.get("firewall_traffic_mode", "")
-        if fw_mode == "all":
+        if not st_cfg:
+            logger.warning("Steering config empty/not found. Validation disabled.")
+
+        mode = st_cfg.get("firewall_traffic_mode")
+        if not mode:
+            mode = st_cfg.get("traffic_mode")
+
+        if mode == "all" or mode == "web":
             self.validation_enabled = True
-            logger.info(f"Validation Enabled. FW: {fw_mode}")
-            util_validate.get_validator().update_pos_to_end()
+            logger.info(f"Validation Enabled. Mode: {mode}")
+            util_validate.get_validator().update_pos_with_time_buffer(10)
         else:
-            logger.info(f"Validation Disabled. FW: {fw_mode}")
+            logger.info(f"Validation Disabled. Mode: '{mode}' (Requires 'all' or 'web')")
 
         if self.config.aoac_sleep_enabled:
             enable_wake_timers()
@@ -233,79 +239,12 @@ class StressTest:
     def exec_curl_requests(self):
         util_traffic.curl_requests(self.urls, self.stop_event)
 
-    def check_tunneling_in_text(self, process_name, url, text):
-        if not url or not text:
-            return False
-        try:
-            parsed = urlparse(url)
-            host = parsed.hostname
-            if not host:
-                if "://" not in url:
-                    host = url.split("/")[0].split(":")[0]
-            
-            if not host:
-                return True 
-
-            pat = (
-                r"Tunneling flow from addr: .*, process: " + 
-                re.escape(process_name) + 
-                r" to host: " + re.escape(host) + r","
-            )
-            
-            if re.search(pat, text):
-                return True
-            return False
-        except Exception:
-            return False
-
     def exec_validation_checks(self, process_map):
-        # process_map: {"msedge.exe": [url1, url2], "curl.exe": [url3, url4]}
         if not self.validation_enabled:
+            logger.info("Validation skipped (disabled by firewall_traffic_mode).")
             return True
-
-        # Filter out empty target lists
-        active_map = {proc: urls for proc, urls in process_map.items() if urls}
-        if not active_map:
-            logger.info("No URLs to validate.")
-            return True
-
-        logger.info(f"Validating traffic for processes: {list(active_map.keys())}")
-        
-        # Structure: pending[process_name][url] = found_boolean
-        pending = {proc: {url: False for url in urls} for proc, urls in active_map.items()}
-        
-        log_buffer = ""
-        
-        for i in range(5):
-            new_logs = util_validate.get_validator().read_new_logs()
-            if new_logs:
-                log_buffer += new_logs
             
-            all_passed = True
-            for proc, urls in active_map.items():
-                for url in urls:
-                    if not pending[proc][url]:
-                        if self.check_tunneling_in_text(proc, url, log_buffer):
-                            pending[proc][url] = True
-                            logger.info(f"validate pass for {url} ({proc})")
-                        else:
-                            all_passed = False
-            
-            if all_passed:
-                return True
-            
-            if i < 4:
-                if smart_sleep(2, self.stop_event):
-                    return False
-
-        success = True
-        for proc, urls in active_map.items():
-            for url in urls:
-                if not pending[proc][url]:
-                    logger.error(f"!!! validate FAILED for {url} ({proc}) !!!")
-                    success = False
-        
-        return success
+        return util_validate.validate_traffic_flow(process_map, self.stop_event)
 
     def run(self):
         start_input_monitor(self.stop_event)
