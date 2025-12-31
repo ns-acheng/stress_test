@@ -47,7 +47,7 @@ https://aaai.org
 https://3drerun.worldofo.com
 https://www.1mg.com
 https://www.ding-dong.com.tw
-https://corpredirect.intel.com/Redirector/404Redirector.aspx?404;https://01.org
+https://corpredirect.intel.com
 https://3dsky.org
 https://www.20minutes.fr
 https://academic.oup.com/aob
@@ -105,7 +105,6 @@ https://actualol.com/search
 https://adventofcode.com
 https://affinity.serif.com
 https://afrodad.org
-https://corpredirect.intel.com/Redirector/404Redirector.aspx?404;https://acpica.org
 https://aeraweb.org
 https://www.acs.org/events.html
 https://affinity.serif.com/designer
@@ -343,7 +342,6 @@ https://as.com
 https://artofdrink.com
 https://aseasuk.org
 https://arstechnica.com/science/2022/10
-https://corpredirect.intel.com/Redirector/404Redirector.aspx?404;https://ark.intel.com
 https://arstechnica.com/space
 https://ashoka.org
 https://artofmemory.com
@@ -15421,7 +15419,7 @@ https://www.str8compass.com
 https://www.stratasys.com
 https://www.straitstimes.com/global
 https://www.strava.com
-https://www.studyinkorea.go.kr/ko/main.do;jsessionid=QanOyRmpAMcG_YGFmGmJI8WVpysNsntzQ8WqGcCq.studyinkorea20
+https://www.studyinkorea.go.kr
 https://www.studentsagainstdepression.org
 https://www.streetleague.com
 https://www.strawberybanke.org
@@ -15439,9 +15437,7 @@ https://www.stroke.org
 https://blog.giallozafferano.it/studentiaifornelli
 https://www.stubhub.com/comedy-tickets/category/209
 https://stilo.it
-https://services.sso.statista.com/ip/authorize?login_hint=&response_type=code&redirect_uri=https%3A%2F%2Flogin.statista.com%2Flogin%2Fcallback&state=ZPANSe0Pk0vrtwIPXxGTAi4i38eFYPkV&client_id=9a7cf70e-1be6-40a1-ba02-6e6e6654b93d
-https://services.sso.statista.com/ip/authorize?login_hint=&response_type=code&redirect_uri=https%3A%2F%2Flogin.statista.com%2Flogin%2Fcallback&state=udeTm8OtNYS1sozdJ1MbQHPvAPvCTASG&client_id=9a7cf70e-1be6-40a1-ba02-6e6e6654b93d
-https://services.sso.statista.com/ip/authorize?login_hint=&response_type=code&redirect_uri=https%3A%2F%2Flogin.statista.com%2Flogin%2Fcallback&state=Okh52BDRr_Q6mtfEAblrRRyW7mgC870g&client_id=9a7cf70e-1be6-40a1-ba02-6e6e6654b93d
+https://services.sso.statista.com
 https://www.studiobinder.com
 https://www.studocu.com
 https://www.studyjapan.jp
@@ -16176,7 +16172,7 @@ https://blog.hootsuite.com/social-media-trends
 https://ignitestudentlife.com/heres-the-meme-that-defined-each-month-of-2021
 https://www.cheezburger.com
 https://later.com/blog/social-media-trends
-https://economictimes.indiatimes.com/news/new-updates/top-10-viral-moments-of-2025-that-took-the-internet-by-storm-and-captured-everyones-attention/articleshow/126184898.cms?from=mdr
+https://economictimes.indiatimes.com/news/new-updates/top-10-viral-moments-of-2025-that-took-the-internet-by-storm-and-captured-everyones-attention/articleshow/126184898.cms
 https://www.humaneworld.org/en
 https://www.esquire.com/entertainment/a38579011/best-memes-2022
 https://swisstriathlon.ch
@@ -16283,7 +16279,7 @@ https://www.ted.com
 https://www.ted.com/topics/storytelling
 https://www.teessport.com
 https://www.tauronliga.pl/strona-glowna.html
-https://www.baha.com/user/login?ReturnUrl=%2Fmarkets%2Foverview
+https://www.baha.com/user/login
 https://www.temdra.org.tw
 https://www.tefaf.com
 https://tergar.org
@@ -17291,7 +17287,7 @@ https://www.walesa.eu/pl
 https://www.walkingenglishman.com
 https://www.wavepoetry.com
 https://voluspa.com
-https://www.walmart.com/blocked?url=L2NwL2NocmlzdG1hcw==&uuid=b774e87b-e608-11f0-af24-fecea505a8e4&vid=&g=b
+https://www.walmart.com
 https://voleysur.org/v3
 https://www.warburg.sas.ac.uk
 https://www.wanikani.com
@@ -17421,7 +17417,7 @@ https://www.whatsonstage.com
 https://www.noaa.gov/jetstream
 https://www.wgsn.com:443/en/blog
 https://www.whatsonweibo.com
-https://passport.weibo.com/visitor/visitor?entry=miniblog&a=enter&url=https%3A%2F%2Fwww.weibo.com%2F&domain=weibo.com&ua=Mozilla%2F5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F142.0.0.0%20Safari%2F537.36&_rand=1767158570729&sudaref=
+https://passport.weibo.com/visitor/visitor?entry=miniblog
 https://www.whiskaffair.com
 https://www.theskimm.com
 https://www.whoscored.com
@@ -17482,7 +17478,7 @@ https://www.wilmott.com
 https://wildlife-international.org
 https://www.wildwalks.com
 https://www.wilshire.com
-https://signon.thomsonreuters.com?productid=CBT&lr=0&culture=en-US&returnto=https%3a%2f%2f1.next.westlaw.com%2fCosi%2fSignOn&tracetoken=1230252323300yuajbt_VXW7lPASX3_d2ffMdCeaHdlXnq8xSOj5vCFT34qeuhIz8crNTFN9vVhQS4gdaCK155pmhW1hiLQ9yrS3LPNapbRHuSG-A1R7IPLRAuXm8rh6hnedrFJOjHaRNoQeAWQ1zOfoeRiiFj3dQi0ZvDGjd-kBNVLYYuRM7M0rfAQN5cQdXCrN9Z6Qlt_W1VpPUZOgPB1cJecYGq7cAMl_7q2r-zuSexyMKVgx4B4bFHez1rIC8Lv7lrpKY7CiTuXWmkiQfhJ8iph9Us9mnE1ZFfl0k_fiQ-TDW8csROLpi10IQWkl6vFaMXojl_hqt7KRDr0cmd6967XpWos3M_7ilbe4rlCb44erCsB6cjBEYWIkw5RgexxJ63ItR1J1B
+https://signon.thomsonreuters.com
 https://www.wilson.com/en-us/softball
 https://www.wilson.com/en-us/volleyball
 https://www.wiley.law
