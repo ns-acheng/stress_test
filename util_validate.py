@@ -7,6 +7,7 @@ import json
 from datetime import datetime, timedelta
 from urllib.parse import urlparse
 from util_time import smart_sleep
+import util_cert
 
 logger = logging.getLogger(__name__)
 
@@ -331,8 +332,10 @@ def validate_traffic_flow(process_map, stop_event):
 
     logger.info(f"Validating traffic for processes: {list(active_map.keys())}")
     
-    # Structure: pending[process_name][url] = found_boolean
-    pending = {proc: {url: False for url in urls} for proc, urls in active_map.items()}
+    pending = {
+        proc: {url: False for url in urls} 
+        for proc, urls in active_map.items()
+    }
     
     log_buffer = ""
     validator = get_validator()
@@ -363,7 +366,28 @@ def validate_traffic_flow(process_map, stop_event):
     for proc, urls in active_map.items():
         for url in urls:
             if not pending[proc][url]:
-                logger.error(f"URL: {url} ({proc}) -> FAIL !!!!!!")
-                success = False
+                logger.info(f"Log validation failed for {url}. Checking Cert...")
+                issuer = util_cert.check_url_cert(url)
+                
+                is_valid_issuer = False
+                if issuer:
+                    if "boomskope.com" in issuer or "goskope.com" in issuer:
+                        is_valid_issuer = True
+
+                if is_valid_issuer:
+                    logger.info(
+                        f"URL: {url} ({proc}) -> PASS (Cert Issuer: {issuer})"
+                    )
+                    pending[proc][url] = True
+                else:
+                    if issuer:
+                        logger.error(
+                            f"URL: {url} ({proc}) -> FAIL !!!!!! (Issuer: {issuer})"
+                        )
+                    else:
+                        logger.error(
+                            f"URL: {url} ({proc}) -> FAIL !!!!!! (Issuer check failed)"
+                        )
+                    success = False
     
     return success

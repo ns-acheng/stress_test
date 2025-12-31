@@ -5,7 +5,7 @@ import logging
 
 logger = logging.getLogger()
 
-def check_browser_cert(url: str):
+def check_url_cert(url: str):
     try:
         dst = (url, 443)
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -23,7 +23,7 @@ def check_browser_cert(url: str):
         issuer_str = ", ".join(components)
         logger.info(f"Cert Issuer for {url}: {issuer_str}")
 
-        return issuer
+        return issuer_str
     except Exception as e:
         logger.error(f"Error checking cert for {url}: {e}")
         return None
