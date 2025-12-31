@@ -4,7 +4,6 @@ import os
 import socket
 import threading
 import sys
-import time
 import paramiko
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -14,6 +13,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
+logging.getLogger("paramiko").setLevel(logging.WARNING)
 logger = logging.getLogger()
 
 class StubSFTPServer(paramiko.SFTPServerInterface):
@@ -30,9 +30,11 @@ class StubSFTPServer(paramiko.SFTPServerInterface):
         return paramiko.SFTPAttributes.from_stat(os.stat("."))
 
     def open(self, path, flags, attr):
+        logger.info(f"Client opened file: {path}")
         return paramiko.SFTPHandle(flags)
 
     def remove(self, path):
+        logger.info(f"Client removed file: {path}")
         return paramiko.SFTP_OK
 
     def rename(self, oldpath, newpath):

@@ -24,8 +24,9 @@ If you plan to use the traffic generation features, set up the following targets
 
 2. **HTTP Server (Port 80)**:
    ```cmd
-   python -m http.server 80
+   python tool/run_http_server.py --port 80 --directory .
    ```
+   * Press **ESC** to stop the server gracefully.
 
 3. **UDP Server (Port 8080)**:
    * Download `nc64.exe` from https://github.com/int0x33/nc.exe
@@ -43,12 +44,14 @@ If you plan to use the traffic generation features, set up the following targets
      ```
    * Supports "Blackhole" mode (discards uploads to save disk space).
    * FTPS mode auto-generates self-signed certificates.
+   * Press **ESC** to stop the server gracefully.
 
 5. **SFTP Server**:
    ```cmd
    python tool/run_sftp_server.py --port 2222 --user test --password password
    ```
    * Uses `paramiko` to run a stub SFTP server.
+   * Press **ESC** to stop the server gracefully.
 
 ## Installation
 

@@ -27,13 +27,16 @@
     "browser": {
       "enable": 1,
       "max_memory": 60,
-      "max_tabs": 20
+      "max_tabs": 20,
+      "log_validation": 1
     },
     "https": {
       "enable": 1,
       "duration_sec": 0,
-      "count": 2000,
-      "concurrent_conn": 50
+      "count": 800,
+      "concurrent_conn": 50,
+      "log_validation": 1,
+      "log_validation_ratio": 5
     },
     "dns": {
       "enable": 1,
@@ -42,7 +45,7 @@
       "concurrent_conn": 50
     },
     "udp": {
-      "enable": 1,
+      "enable": 0,
       "duration_sec": 20,
       "count": 0,
       "concurrent_conn": 10,
@@ -51,7 +54,7 @@
       "target_port": 8080
     },
     "ab": {
-      "enable": 1,
+      "enable": 0,
       "duration_sec": 0,
       "total_conn": 10000,
       "concurrent_conn": 256,

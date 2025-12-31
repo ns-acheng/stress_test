@@ -45,7 +45,9 @@ def check_url_alive(url):
         response = requests.head(
             url, timeout=5, allow_redirects=True, headers=headers
         )
-        return response.status_code < 400 or response.status_code == 403
+        if response.status_code < 400 or response.status_code == 403:
+            return response.url
+        return False
     except Exception:
         return False
 
@@ -66,18 +68,32 @@ def check_urls_and_write_status(urls):
     out_file = r'data\url_alive.txt'
     flush_interval = 50
     alive_count = 0
+    written_urls = set()
 
     with open(out_file, 'w', encoding='utf-8') as f:
         for index, url in enumerate(urls):
             if url in existing_urls:
                 continue
 
-            is_alive = check_url_alive(url)
+            final_url = check_url_alive(url)
+            is_alive = bool(final_url)
             status_text = "ALIVE" if is_alive else "DEAD"
+            
+            if is_alive and final_url != url:
+                status_text += f" (Redirect -> {final_url})"
+
             logger.info(f"[{index + 1}/{len(urls)}] {url} -> {status_text}")
             
             if is_alive:
-                f.write(f"{url}\n")
+                if final_url in existing_urls:
+                    logger.info(f"Skipping duplicate final URL (in DB): {final_url}")
+                    continue
+                if final_url in written_urls:
+                    logger.info(f"Skipping duplicate final URL (already written): {final_url}")
+                    continue
+
+                f.write(f"{final_url}\n")
+                written_urls.add(final_url)
                 alive_count += 1
                 if (index + 1) % flush_interval == 0:
                     f.flush()
@@ -327,9 +343,10 @@ def run_high_concurrency_test(
 def open_browser_tabs(
     urls, tool_dir, max_tabs, max_mem, stop_event, log_dir, wait_sec
 ):
+    opened_urls = []
     if not urls:
         logger.warning("No URLs loaded to open.")
-        return
+        return opened_urls
 
     logger.info(
         f"Start tab loop. Max Mem: {max_mem}%, Max Tabs: {max_tabs}"
@@ -354,11 +371,15 @@ def open_browser_tabs(
             break
 
         selected = random.sample(urls, count)
-        logger.info(f"Opening batch {batch_cnt + 1} ({count} URLs)...")
+        logger.info(f"Opening batch {batch_cnt + 1} ({len(selected)} URLs)...")
+        for u in selected:
+            logger.info(f"  -> {u}")
 
         args = " ".join(selected)
         cmd = os.path.join(tool_dir, f"open_msedge_tabs.bat {args}")
         run_batch(cmd)
+        
+        opened_urls.extend(selected)
 
         total_tabs += count
         if smart_sleep(wait_sec, stop_event):
@@ -376,14 +397,25 @@ def open_browser_tabs(
 
     if batch_cnt >= batch_limit:
         logger.warning(f"Reached max batch limit ({batch_limit})")
+    
+    return opened_urls
 
 def curl_requests(urls, stop_event=None):
     if not urls:
         return
 
+    # Ensure first and last URLs are always included
+    mandatory = {urls[0], urls[-1]}
+    pool = [u for u in urls if u not in mandatory]
+    
     count = min(len(urls), 10)
-    selected = random.sample(urls, count)
-    logger.info(f"Running CURL on {count} random URLs...")
+    needed = count - len(mandatory)
+    
+    selected = list(mandatory)
+    if needed > 0 and pool:
+        selected.extend(random.sample(pool, min(len(pool), needed)))
+
+    logger.info(f"Running CURL on {len(selected)} URLs (incl. first/last)...")
 
     for url in selected:
         if _is_stopped(stop_event):
@@ -391,16 +423,15 @@ def curl_requests(urls, stop_event=None):
         run_curl(url)
         logger.info(f"CURL with URL: {url}")
 
-def _curl_flood_worker(url, seq):
-    if seq > 0 and seq % 100 == 0:
-        logger.info(f"Req #{seq}: {url}")
+def _curl_flood_worker(url):
     try:
-        cmd = ["curl", "-s", "-o", "NUL", url]
+        cmd = ["curl", "-s", "--max-time", "15", "-o", "NUL", url]
         subprocess.run(
             cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
     except Exception:
         pass
+    return url
 
 def generate_curl_flood(
     urls, 
@@ -409,9 +440,10 @@ def generate_curl_flood(
     concurrency=50, 
     stop_event=None
 ):
+    all_used_urls = []
     if not urls:
         logger.warning("No URLs for CURL flood.")
-        return
+        return all_used_urls
 
     msg = f"Start CURL Flood: {concurrency} workers"
     if duration > 0:
@@ -427,7 +459,7 @@ def generate_curl_flood(
             while time.time() < end_time:
                 if _is_stopped(stop_event): break
                 url = random.choice(urls)
-                _curl_flood_worker(url, 0)
+                _curl_flood_worker(url)
 
         with concurrent.futures.ThreadPoolExecutor(
             max_workers=concurrency
@@ -440,6 +472,7 @@ def generate_curl_flood(
     else:
         milestone = max(1, int(count * 0.2))
         completed = 0
+        log_buffer = []
         
         with concurrent.futures.ThreadPoolExecutor(
             max_workers=concurrency
@@ -449,19 +482,31 @@ def generate_curl_flood(
                 if _is_stopped(stop_event):
                     break
                 url = random.choice(urls)
-                futures.append(exe.submit(_curl_flood_worker, url, i))
+                futures.append(exe.submit(_curl_flood_worker, url))
             
             for f in concurrent.futures.as_completed(futures):
                 if _is_stopped(stop_event):
                     exe.shutdown(wait=False, cancel_futures=True)
                     break
                 
+                used_url = f.result()
+                all_used_urls.append(used_url)
+                log_buffer.append(used_url)
+                
+                if len(log_buffer) >= 100:
+                    logger.info("CURL Batch:\n" + "\n".join([f"  -> {u}" for u in log_buffer]))
+                    log_buffer = []
+
                 completed += 1
                 if completed % milestone == 0:
                     pct = int((completed / count) * 100)
                     logger.info(f"CURL Flood progress: {pct}%")
+        
+        if log_buffer:
+            logger.info("CURL Batch:\n" + "\n".join([f"  -> {u}" for u in log_buffer]))
     
     logger.info("CURL Flood finished.")
+    return all_used_urls
 
 class VirtualFile(io.BytesIO):
     def __init__(self, size):
@@ -508,10 +553,12 @@ def _ftp_worker(target, port, user, password, file_size_mb, is_ftps):
             ftp.prot_p()
 
         filename = f"upload_{random.randint(1000, 9999)}.bin"
+        logger.info(f"Generating virtual file {filename} ({file_size_mb} MB)")
         size_bytes = int(file_size_mb * 1024 * 1024)
         vfile = VirtualFile(size_bytes)
         
         ftp.storbinary(f"STOR {filename}", vfile)
+        logger.info(f"Uploaded {filename}")
         
         # Delete the file after upload to save disk space on server
         try:
@@ -595,10 +642,12 @@ def _sftp_worker(target, port, user, password, file_size_mb):
         sftp = paramiko.SFTPClient.from_transport(transport)
         
         filename = f"upload_{random.randint(1000, 9999)}.bin"
+        logger.info(f"Generating virtual file {filename} ({file_size_mb} MB)")
         size_bytes = int(file_size_mb * 1024 * 1024)
         vfile = VirtualFile(size_bytes)
         
         sftp.putfo(vfile, filename)
+        logger.info(f"Uploaded {filename}")
         
         # Delete the file after upload to save disk space on server
         try:

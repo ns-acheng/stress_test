@@ -27,8 +27,13 @@ logger = logging.getLogger()
 class BlackholeFS(AbstractedFS):
     def open(self, filename, mode):
         if 'w' in mode or 'a' in mode:
+            logger.info(f"Receiving file: {filename}")
             return open(os.devnull, 'wb')
         return super().open(filename, mode)
+
+    def remove(self, filename):
+        logger.info(f"Deleting file: {filename}")
+        return None
 
 def generate_cert(cert_path, key_path):
     if os.path.exists(cert_path) and os.path.exists(key_path):

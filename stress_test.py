@@ -21,6 +21,9 @@ from util_tool_config import ToolConfig
 from util_power import enter_s0_and_wake
 import util_traffic
 import util_client
+import util_validate
+from urllib.parse import urlparse
+import re
 
 TINY_SEC = 5
 SHORT_SEC = 15
@@ -51,6 +54,7 @@ class StressTest:
         self.manage_nic_script = os.path.join(self.tool_dir, "manage_nic.ps1")
         self.total_zero_dumps = 0
         self.client_thread = None
+        self.validation_enabled = False
 
     def setup(self):
         for priv in ["SeDebugPrivilege", "SeSystemtimePrivilege", "SeWakeAlarmPrivilege"]:
@@ -61,6 +65,22 @@ class StressTest:
         self.config.load()
         self.load_urls()
         
+        # Check steering config for validation
+        st_cfg = util_validate.get_steering_config()
+        if not st_cfg:
+            logger.warning("Steering config empty/not found. Validation disabled.")
+
+        mode = st_cfg.get("firewall_traffic_mode")
+        if not mode:
+            mode = st_cfg.get("traffic_mode")
+
+        if mode == "all" or mode == "web":
+            self.validation_enabled = True
+            logger.info(f"Validation Enabled. Mode: {mode}")
+            util_validate.get_validator().update_pos_with_time_buffer(10)
+        else:
+            logger.info(f"Validation Disabled. Mode: '{mode}' (Requires 'all' or 'web')")
+
         if self.config.aoac_sleep_enabled:
             enable_wake_timers()
 
@@ -80,7 +100,7 @@ class StressTest:
                 return
             with open(self.url_file, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
-            self.urls = [line.strip() for line in lines if line.strip()]
+            self.urls = [line.strip().rstrip('/') for line in lines if line.strip()]
             logger.info(f"Loaded {len(self.urls)} URLs from {self.url_file}")
         except Exception as e:
             logger.error(f"Error loading URLs: {e}")
@@ -113,8 +133,13 @@ class StressTest:
         logger.info(f"Checking {len(test_urls)} URLs for reachability...")
         for url in test_urls:
             if self.stop_event.is_set(): break
-            alive = util_traffic.check_url_alive(url)
-            status = "ALIVE" if alive else "DEAD (Blocked)"
+            alive_result = util_traffic.check_url_alive(url)
+            if alive_result:
+                status = "ALIVE"
+                if alive_result != url:
+                    status += f" (Redirect -> {alive_result})"
+            else:
+                status = "DEAD (Blocked)"
             logger.info(f"URL: {url} -> {status}")
             if smart_sleep(1, self.stop_event):
                 break
@@ -209,8 +234,8 @@ class StressTest:
     
     def exec_browser_tabs(self):
         if not self.config.enable_browser_tabs_open:
-            return
-        util_traffic.open_browser_tabs(
+            return []
+        return util_traffic.open_browser_tabs(
             self.urls, self.tool_dir, self.config.browser_max_tabs,
             self.config.browser_max_memory, self.stop_event, current_log_dir,
             STD_SEC
@@ -218,6 +243,13 @@ class StressTest:
 
     def exec_curl_requests(self):
         util_traffic.curl_requests(self.urls, self.stop_event)
+
+    def exec_validation_checks(self, process_map):
+        if not self.validation_enabled:
+            logger.info("Validation skipped (disabled by firewall_traffic_mode).")
+            return True
+            
+        return util_validate.validate_traffic_flow(process_map, self.stop_event)
 
     def run(self):
         start_input_monitor(self.stop_event)
@@ -228,7 +260,9 @@ class StressTest:
         for count in range(1, self.config.loop_times + 1):
             if self.stop_event.is_set(): break
             try:
-                logger.info(f"== Iter {count} / {self.config.loop_times} ==")
+                pct = count / self.config.loop_times * 100
+                msg = f" Iter {count}/{self.config.loop_times} ({pct:.1f}%) "
+                logger.info(msg.center(60, "="))
                 
                 self.exec_start_service()
                 if self.stop_event.is_set(): break
@@ -282,8 +316,9 @@ class StressTest:
                         self.config.ab_duration
                     )
 
+                curl_flood_urls = []
                 if self.config.curl_flood_enabled:
-                    util_traffic.generate_curl_flood(
+                    curl_flood_urls = util_traffic.generate_curl_flood(
                         self.urls, 
                         self.config.curl_flood_count,
                         self.config.curl_flood_duration,
@@ -335,8 +370,31 @@ class StressTest:
                 if self.cfg_mgr.is_false_close:
                     self.exec_failclose_check()
                 else:
-                    self.exec_browser_tabs()
-                    self.exec_curl_requests()
+                    browser_urls = self.exec_browser_tabs()
+                    if smart_sleep(2, self.stop_event): break
+
+
+                    logger.info("Waiting for logs to be flushed...")
+                    if smart_sleep(10, self.stop_event): break
+
+                    validation_map = {}
+                    if browser_urls and self.config.browser_log_validation:
+                        validation_map["msedge.exe"] = browser_urls
+                    
+                    if curl_flood_urls and self.config.curl_flood_log_validation:
+                        ratio = self.config.curl_flood_log_validation_ratio
+                        total = len(curl_flood_urls)
+                        sample_size = int(total * (ratio / 100.0))
+                        if sample_size < 1 and total > 0:
+                            sample_size = 1
+                        if sample_size > total:
+                            sample_size = total
+                            
+                        logger.info(f"Sampling {sample_size} URLs ({ratio}%) from {total} for validation.")
+                        validation_map["curl.exe"] = random.sample(curl_flood_urls, sample_size)
+                    
+                    if not self.exec_validation_checks(validation_map):
+                        break
 
                 if self.stop_event.is_set(): break
 
