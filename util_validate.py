@@ -44,7 +44,7 @@ class NsClientLogValidator:
                 except OSError:
                     self.last_pos = 0
 
-    def update_pos_with_time_buffer(self, seconds=10):
+    def update_pos_with_time_buffer(self, seconds=100):
         with self.lock:
             self.pending_reads = []
             target_time = datetime.now() - timedelta(seconds=seconds)
@@ -299,13 +299,21 @@ def check_tunneling_in_text(process_name, url, text):
         if not host:
             return True 
 
-        pat = (
+        # Pattern 1: Tunneling flow
+        pat_tunnel = (
             r"Tunneling flow from addr: .*, process: " + 
             re.escape(process_name) + 
-            r" to host: " + re.escape(host) + r","
+            r" to host: " + re.escape(host) + r"(,|:)"
         )
         
-        if re.search(pat, text):
+        # Pattern 2: Bypassing flow (exception host)
+        pat_bypass = (
+            r"bypassing flow to exception host: " + 
+            re.escape(host) + 
+            r", process: " + re.escape(process_name)
+        )
+
+        if re.search(pat_tunnel, text) or re.search(pat_bypass, text):
             return True
         return False
     except Exception:
