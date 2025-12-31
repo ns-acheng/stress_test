@@ -2,12 +2,21 @@ import OpenSSL.crypto as crypto
 import socket
 import ssl
 import logging
+from urllib.parse import urlparse
 
 logger = logging.getLogger()
 
 def check_url_cert(url: str):
     try:
-        dst = (url, 443)
+        hostname = url.strip()
+        if hostname.startswith("https://"):
+            hostname = hostname[8:]
+        elif hostname.startswith("http://"):
+            hostname = hostname[7:]
+            
+        hostname = hostname.rstrip('/')
+
+        dst = (hostname, 443)
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.settimeout(5)
         s.connect(dst)
@@ -21,7 +30,7 @@ def check_url_cert(url: str):
 
         components = [f"{k.decode()}={v.decode()}" for k, v in issuer.get_components()]
         issuer_str = ", ".join(components)
-        logger.info(f"Cert Issuer for {url}: {issuer_str}")
+        logger.info(f"Cert Issuer for {hostname}: {issuer_str}")
 
         return issuer_str
     except Exception as e:
