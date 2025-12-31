@@ -28,7 +28,11 @@ def main():
     raw_new_urls = []
     if os.path.exists(url_new_file):
         with open(url_new_file, 'r', encoding='utf-8') as f:
-            raw_new_urls = [line.strip().rstrip('/') for line in f if line.strip()]
+            raw_new_urls = [
+                line.strip().rstrip('/') 
+                for line in f 
+                if line.strip() and not line.strip().startswith('#')
+            ]
     else:
         logger.error(f"{url_new_file} not found.")
         return
