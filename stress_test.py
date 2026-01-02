@@ -52,6 +52,7 @@ class StressTest:
         self.stop_event = threading.Event()
         
         self.urls = []
+        self.url_cursor = 0
         self.manage_nic_script = os.path.join(self.tool_dir, "manage_nic.ps1")
         self.total_zero_dumps = 0
         self.client_thread = None
@@ -107,6 +108,7 @@ class StressTest:
             with open(self.url_file, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
             self.urls = [line.strip().rstrip('/') for line in lines if line.strip()]
+            random.shuffle(self.urls)
             logger.info(f"Loaded {len(self.urls)} URLs from {self.url_file}")
         except Exception as e:
             logger.error(f"Error loading URLs: {e}")
@@ -261,6 +263,34 @@ class StressTest:
             process_map, self.stop_event, self.cfg_mgr.url_in_nsexception
         )
 
+    def get_next_batch(self, batch_size):
+        if not self.urls:
+            return []
+        
+        if len(self.urls) <= batch_size:
+            batch = self.urls[:]
+            random.shuffle(self.urls)
+            return batch
+            
+        end_idx = self.url_cursor + batch_size
+        if end_idx <= len(self.urls):
+            batch = self.urls[self.url_cursor : end_idx]
+            self.url_cursor = end_idx
+            if self.url_cursor == len(self.urls):
+                 self.url_cursor = 0
+                 random.shuffle(self.urls)
+            return batch
+        else:
+            # Wrap around
+            batch = self.urls[self.url_cursor :]
+            random.shuffle(self.urls)
+            self.url_cursor = 0
+            needed = batch_size - len(batch)
+            if needed > 0:
+                batch.extend(self.urls[0:needed])
+                self.url_cursor = needed
+            return batch
+
     def run(self):
         start_input_monitor(self.stop_event)
         self.header_msg()
@@ -284,15 +314,9 @@ class StressTest:
 
                 if self.stop_event.is_set(): break
 
-                current_iter_urls = []
+                current_iter_urls = self.get_next_batch(BATCH_SIZE)
 
                 if self.config.dns_enabled:
-                    dns_batch_size = BATCH_SIZE
-                    if self.urls:
-                        current_iter_urls = random.sample(
-                            self.urls, min(len(self.urls), dns_batch_size)
-                        )
-                    
                     dns_domains = []
                     for u in current_iter_urls:
                         try:

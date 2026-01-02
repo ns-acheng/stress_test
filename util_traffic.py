@@ -11,6 +11,7 @@ import requests
 import ftplib
 import io
 import paramiko
+import itertools
 
 from util_subprocess import run_batch, run_curl
 from util_resources import get_system_memory_usage, log_resource_usage
@@ -475,6 +476,12 @@ def generate_curl_flood(
         completed = 0
         log_buffer = []
         
+        # Use round-robin to ensure even coverage of the batch
+        # Create a local copy to shuffle so we don't affect the caller
+        pool = list(urls)
+        random.shuffle(pool)
+        url_cycler = itertools.cycle(pool)
+
         with concurrent.futures.ThreadPoolExecutor(
             max_workers=concurrency
         ) as exe:
@@ -482,7 +489,7 @@ def generate_curl_flood(
             for i in range(1, count + 1):
                 if _is_stopped(stop_event):
                     break
-                url = random.choice(urls)
+                url = next(url_cycler)
                 futures.append(exe.submit(_curl_flood_worker, url))
             
             for f in concurrent.futures.as_completed(futures):
