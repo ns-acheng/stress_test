@@ -123,9 +123,6 @@ https://accessgear.net
 https://accesstoinsight.org
 https://accointing.com
 https://account.fxhome.com/login
-https://accounts.google.com/v3/signin/identifier?continue=https%3A%2F%2Fmail.google.com%2Fchat%2Fu%2F0%2F&dsh=S-987020565%3A1767156118762509&followup=https%3A%2F%2Fmail.google.com%2Fchat%2Fu%2F0%2F&ifkv=Ac2yZaUg87fzxYKQPWcqImDQLGhwtd3AREFJvF1t-6bvkwAKqA6brS1stQoia-SW6Da_GhZ3tBac9g&osid=1&passive=1209600&service=dynamite&flowName=GlifWebSignIn&flowEntry=ServiceLogin
-https://accounts.google.com/v3/signin/identifier?continue=https%3A%2F%2Fwww.blogger.com%2Fblogin%3Fu%3Dhttps%3A%2F%2Fmotls.blogspot.com%2F&dsh=S86367207%3A1767156302066805&followup=https%3A%2F%2Fwww.blogger.com%2Fblogin%3Fu%3Dhttps%3A%2F%2Fmotls.blogspot.com%2F&ifkv=Ac2yZaVHWLBA2AE851tV8Jpci31irXg-hc9426LM0_dTsuPWczzX9f4cUIYJQ2vV4M_bHClu5ivy&passive=1209600&flowName=GlifWebSignIn&flowEntry=ServiceLogin
-https://accounts.google.com/v3/signin/identifier?continue=https%3A%2F%2Fwww.blogger.com%2Fblogin%3Fu%3Dhttps%3A%2F%2Fwww.acropolismuseum.gr%2F&dsh=S-1257908003%3A1767156708513514&followup=https%3A%2F%2Fwww.blogger.com%2Fblogin%3Fu%3Dhttps%3A%2F%2Fwww.acropolismuseum.gr%2F&ifkv=Ac2yZaWlSyfaEVCZW2uO_JjdKIoD95H9vgo5gZbblzWPTlJaK7waMVxjK8jAnRmrbGbSq61p2-jyow&passive=1209600&flowName=GlifWebSignIn&flowEntry=ServiceLogin
 https://acda.org
 https://acinq.co
 https://acleddata.com
@@ -353,7 +350,7 @@ https://apnea.academy
 https://apnews.com
 https://apnews.com/hub/europe
 https://apopo.org/?v=255a5cac7685
-https://app.artflow.ai:443/actor-studio
+https://app.artflow.ai/actor-studio
 https://app.compology.com/login
 https://app.diffit.me
 https://app.pixverse.ai
@@ -424,7 +421,7 @@ https://artculinairemagazine.com
 https://artemis.apache.org/components/artemis
 https://artifacthub.io
 https://artistsandclimatechange.com
-https://artistworks.com:443
+https://artistworks.com
 https://artlist.io
 https://artofdrink.com
 https://artofmemory.com
@@ -499,7 +496,7 @@ https://australian.museum
 https://australian.museum/learn/animals/fishes
 https://australian.museum/learn/animals/mammals
 https://australian.museum/learn/dinosaurs
-https://australian.museum:443
+https://australian.museum
 https://australian.physio
 https://australianbartender.com.au
 https://australianhiker.com.au
@@ -532,7 +529,7 @@ https://aws.amazon.com/sagemaker
 https://aws.amazon.com/security
 https://aws.amazon.com/sqs
 https://aws.amazon.com/what-is/hybrid-cloud
-https://aws.amazon.com:443/government-education/nonprofits
+https://aws.amazon.com/government-education/nonprofits
 https://axebat.com
 https://axieinfinity.com
 https://axiom.ai
@@ -595,7 +592,7 @@ https://baseballexpress.com
 https://baseballhall.org
 https://baseballking.jp
 https://baseballsavant.mlb.com
-https://basi.org.uk:443
+https://basi.org.uk
 https://battles.warp.net
 https://bbar.org
 https://bboydojo.com
@@ -863,7 +860,7 @@ https://californiadesert.org
 https://californiatansandiego.com/faq
 https://calrecycle.ca.gov
 https://caltopo.com/map.html
-https://caltopo.com:443
+https://caltopo.com
 https://calvin.edu/meeter-center
 https://cambriancavingcouncil.org.uk
 https://camelid.org/index.php/es
@@ -992,7 +989,7 @@ https://chathamhouse.org/topics/cyber-security
 https://chaucer.fas.harvard.edu
 https://chaucer.org.uk
 https://checkers.fandom.com/wiki/Checkers_%26_Draughts_Wiki
-https://checkersandrallys.com:443
+https://checkersandrallys.com
 https://checkmarx.com
 https://cheerbrandz.com
 https://cheercanada.ca
@@ -1138,7 +1135,7 @@ https://cloud.google.com/pubsub
 https://cloud.google.com/security/consulting/mandiant-services
 https://cloud.google.com/vertex-ai
 https://cltc.berkeley.edu
-https://clublocker.com:443/login
+https://clublocker.com/login
 https://clusterbusters.org
 https://cm.asiae.co.kr/en/article/2024112111130004317
 https://cmll.com
@@ -1178,7 +1175,7 @@ https://coinjournal.net
 https://coinledger.io
 https://coinmarketcal.com
 https://coinmarketcap.com
-https://coinmarketcap.com:443
+https://coinmarketcap.com
 https://coinmetrics.io
 https://coinstats.app
 https://cointelegraph.com
@@ -1278,13 +1275,13 @@ https://corinth.net
 https://cornercoffeestore.com
 https://cornish-language.org
 https://coros.com
-https://corp.mizuno.com:443/en
+https://corp.mizuno.com/en
 https://corporate.asmodee.com
 https://corporate.bwfbadminton.com
 https://corporate.exxonmobil.com
 https://corporatefinanceinstitute.com
 https://corporatefinanceinstitute.com/resources/equities/capitalization-weighted-index
-https://corporategift.com:443
+https://corporategift.com
 https://corporateknights.com
 https://corpredirect.intel.com
 https://coschedule.com/headline-analyzer
@@ -1553,7 +1550,7 @@ https://diptera.info/news.php
 https://direct.mit.edu/rest
 https://directorsnotes.com
 https://dirtfish.com
-https://disarmament.unoda.org:443/en
+https://disarmament.unoda.org/en
 https://disc.gsfc.nasa.gov
 https://discord.com
 https://discord.com/blog/how-discord-stores-trillions-of-messages
@@ -1829,7 +1826,7 @@ https://envirofit.org
 https://environment.govt.nz
 https://environment.leeds.ac.uk/see
 https://eos.com/industries/agriculture
-https://eowilsonfoundation.org:443
+https://eowilsonfoundation.org
 https://epic.org
 https://epic.org/privacy
 https://epicured.com
@@ -1919,7 +1916,7 @@ https://extinctionrebellion.uk
 https://extra.com.br
 https://extrainningsoftball.com
 https://f1-insider.com
-https://f1experiences.com:443
+https://f1experiences.com
 https://f1i.com
 https://f1store.formula1.com
 https://fable.co
@@ -1971,7 +1968,7 @@ https://fespb.org
 https://festival-avignon.com
 https://festoolownersgroup.com
 https://fever-tree.com/en-gb
-https://fews.net:443
+https://fews.net
 https://feynmanlectures.caltech.edu
 https://ffms.pt/pt-pt
 https://ffspeleo.fr
@@ -2051,7 +2048,7 @@ https://folklore.org
 https://folksy.com
 https://folkways.si.edu
 https://followthemoney.eu/en-gb
-https://fondoambiente.it:443
+https://fondoambiente.it
 https://fontawesome.com
 https://fonts.adobe.com
 https://fonts.google.com
@@ -2386,7 +2383,7 @@ https://greatwalksofaustralia.com.au
 https://gree.jp
 https://greenbackd.com
 https://greenbankobservatory.org
-https://greenlight.com:443
+https://greenlight.com
 https://greenronin.com
 https://greentortoise.com
 https://greetabl.com
@@ -2414,7 +2411,7 @@ https://guide.michelin.com/tw/zh_TW
 https://guides.loc.gov/sb.php?subject_id=162830
 https://guidetojapanese.org/learn
 https://guild.xyz
-https://guitartuna.com:443
+https://guitartuna.com
 https://guittard.com
 https://guix.gnu.org
 https://gumi-cryptos.com
@@ -2480,7 +2477,7 @@ https://headwear-usa.com
 https://healingwaters.org
 https://health-ade.com
 https://healthify.nz/apps/m/migraine-buddy-app
-https://healthunlocked.com:443/cure-parkinsons
+https://healthunlocked.com/cure-parkinsons
 https://healthy.kaiserpermanente.org/front-door
 https://healx.ai
 https://hearthstone.blizzard.com/en-us
@@ -2508,7 +2505,7 @@ https://herosports.com/fcs-football-2017-nfl-combine-full-list-participants
 https://herpetologistsleague.org
 https://hexagon.com
 https://hexagon.com/company/divisions/manufacturing-intelligence?utm_easyredir=www.hexagonmi.com
-https://hexaware.com:443
+https://hexaware.com
 https://heysentrail.asn.au
 https://hhh.com.tw/hhh_index.html
 https://hiberworld.com
@@ -2567,7 +2564,7 @@ https://hostap.epitest.fi
 https://hosteling.us
 https://hotpot.ai
 https://house.udn.com/house/index
-https://housefoods.jp:443/recipe
+https://housefoods.jp/recipe
 https://houseofamandachristensen.com
 https://houseofkringle.com
 https://howecaverns.com
@@ -2583,7 +2580,7 @@ https://hufworldwide.com
 https://huggingface.co
 https://huggingface.co/papers/trending
 https://huggingface.co/spaces
-https://huggingface.co:443
+https://huggingface.co
 https://humanaigc.github.io/animate-anyone
 https://humano3d.com
 https://humanorigins.si.edu
@@ -2729,7 +2726,7 @@ https://indexes.nasdaqomx.com/Index/Overview/QNET
 https://indiahikes.com
 https://indianexpress.com
 https://indiatravel.com
-https://ine.com:443/security
+https://ine.com/security
 https://inequality.stanford.edu
 https://inferkit.com
 https://infinitytools.com
@@ -2791,7 +2788,7 @@ https://intothegloss.com
 https://intrepidmuseum.org
 https://intrinio.com
 https://inuyamajo.jp
-https://investinglive.com:443
+https://investinglive.com
 https://investor.vanguard.com/corporate-portal
 https://investor.vanguard.com/investment-products/etfs/profile/vgt
 https://invideo.io
@@ -3378,7 +3375,7 @@ https://mausam.imd.gov.in
 https://maydayparade.com
 https://maymobility.com
 https://mayukitchen.com
-https://mazamas.org:443
+https://mazamas.org
 https://mcc.org
 https://mcdonaldobservatory.org
 https://mcphy.com/fr
@@ -3486,7 +3483,7 @@ https://mint.intuit.com
 https://miovision.com
 https://miovision.com/adaptive
 https://miro.com
-https://miro.com:443
+https://miro.com
 https://mirrixlooms.com
 https://mirror.xyz/x2y2.eth/85DG2KcKmJd1AiyXU7BU2yATys1hgxWWXju_pmESwYI
 https://missedapexpodcast.com
@@ -3498,7 +3495,7 @@ https://mistral.ai
 https://mitchelstowncave.com
 https://mixedinkey.com
 https://mixi.co.jp
-https://mixi.jp:443
+https://mixi.jp
 https://mixmag.net
 https://mixology.eu
 https://mixpanel.com/home
@@ -3596,13 +3593,13 @@ https://mxlinux.org
 https://my.clevelandclinic.org
 https://my.sportsrecruits.com/athlete/sport/softball
 https://myanimelist.net
-https://myanimelist.net:443
+https://myanimelist.net
 https://myfoodiedays.com
 https://myfoodstory.com
 https://myfwc.com
 https://myheartbeets.com
 https://mymerrychristmas.com/x
-https://mymhealth.com:443/myasthma
+https://mymhealth.com/myasthma
 https://myparkinsons.org
 https://myplantin.com
 https://myplantum.com
@@ -3733,7 +3730,7 @@ https://noel.strasbourg.eu
 https://noelmontreal.ca
 https://nofilmschool.com
 https://noirlab.edu/public
-https://nol.interpark.com:443
+https://nol.interpark.com
 https://nomads.com
 https://nomadsworld.com
 https://noobcook.com/category/cuisine/chinese
@@ -4146,10 +4143,10 @@ https://pls.com
 https://plumvillage.org
 https://plus.ai
 https://plus.maths.org/content
-https://plusunemiette.com:443
+https://plusunemiette.com
 https://pmc.ncbi.nlm.nih.gov/articles/PMC6627623%20(Scientific%20study%20on%20GF%20flours)
-https://pnsn.org:443
-https://pnsn.org:443/volcanoes
+https://pnsn.org
+https://pnsn.org/volcanoes
 https://pocketguard.com
 https://podcast.adobe.com
 https://podcastle.ai
@@ -4229,7 +4226,7 @@ https://problogger.com
 https://problogger.com/jobs
 https://probreakingtour.com
 https://procreate.com
-https://procreate.com:443
+https://procreate.com
 https://prodibio.com
 https://profile-design.com
 https://profmattstrassler.com
@@ -4274,7 +4271,7 @@ https://punchbowl.news
 https://purdue.edu
 https://pure-j.jp
 https://puri.sm
-https://puzzlemaker.discoveryeducation.com:443
+https://puzzlemaker.discoveryeducation.com
 https://puzzling.stackexchange.com
 https://pwca.events
 https://pypi.org
@@ -4417,7 +4414,7 @@ https://reims.fr
 https://reisen-kuba.net
 https://relaytx.com
 https://relevanceai.com
-https://reliefweb.int:443
+https://reliefweb.int
 https://religiousstudies.yale.edu
 https://remake.world
 https://remini.ai
@@ -4469,7 +4466,7 @@ https://ridder.com
 https://ridecell.com
 https://ridedott.com
 https://ridewithvia.com
-https://ridewithvia.com:443/solutions/remix
+https://ridewithvia.com/solutions/remix
 https://riflepaperco.com
 https://ringmagazine.com/en
 https://ringsdb.com
@@ -4480,7 +4477,7 @@ https://riscv.org
 https://riseagainsthunger.org
 https://risilience.com
 https://ritholtz.com
-https://river.com:443/learn
+https://river.com/learn
 https://riveractionuk.com
 https://rivercottage.net
 https://riverside.com
@@ -4685,7 +4682,7 @@ https://scifimoviepage.com
 https://scikit-learn.org
 https://scipost.org
 https://scispace.com
-https://scispace.com:443
+https://scispace.com
 https://scite.ai
 https://scor-int.org
 https://scoreclub.net
@@ -4727,7 +4724,7 @@ https://secretcaverns.com
 https://secretsanta.com
 https://sectorallyfinland.fi
 https://secure.birds.cornell.edu/cassso/login?service=https%3A%2F%2Febird.org%2Flogin%2Fcas%3Fportal%3Debird&locale=en_US
-https://secure.chase.com:443/web/auth/?treatment=zagat&navKey=zagatSurvey
+https://secure.chase.com/web/auth/?treatment=zagat&navKey=zagatSurvey
 https://securityonionsolutions.com
 https://sedo.com/search/details/?domain=www.therise.eu&campaignId=329145&origin=sales_lander_15
 https://seds.org
@@ -4824,7 +4821,7 @@ https://signon.thomsonreuters.com
 https://siiaonline.org
 https://sillok.history.go.kr
 https://silvasweden.com
-https://silverbackbboyevents.com:443
+https://silverbackbboyevents.com
 https://silverfernrally.co.nz
 https://silvertaxgroup.com
 https://simpleicons.org
@@ -5112,7 +5109,7 @@ https://stripe.com/resources/more/saas-pricing-models-101
 https://stripe.com/use-cases/crypto
 https://strobist.blogspot.com
 https://stroma.com
-https://studentenwerke.de:443/login_up.php
+https://studentenwerke.de/login_up.php
 https://studio-mcgee.com
 https://studio-mcgee.com/read
 https://studio.glassnode.com/home
@@ -5135,7 +5132,7 @@ https://sugarandcharm.com/category/holidays/christmas
 https://sugarandcloth.com
 https://sugarandcloth.com/category/food-drink/recipes/christmas
 https://sugarandsparrow.com
-https://sugarwish.com:443
+https://sugarwish.com
 https://suhakam.org.my
 https://suiis.com/recipe
 https://sullygnome.com
@@ -5267,7 +5264,7 @@ https://telegram.org
 https://telepathy.com
 https://telljp.com
 https://tempest.earth
-https://tempest.earth:443
+https://tempest.earth
 https://temporal.io
 https://tenki.jp
 https://tensor.art
@@ -5402,7 +5399,7 @@ https://tibhar.info
 https://tickeron.com
 https://ticket.com.tw/application/utk01/utk0101_.aspx
 https://tickets.formula1.com
-https://tickets.formula1.com:443/en/pc-paddock-club
+https://tickets.formula1.com/en/pc-paddock-club
 https://tickets.udnfunlife.com/application/utk01/utk0101_.aspx
 https://tidesandcurrents.noaa.gov
 https://tieba.baidu.com/f?kw=%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BD
@@ -5508,7 +5505,7 @@ https://trf1.jus.br/trf1/home
 https://trf3.jus.br
 https://tri-mag.de
 https://trialmatch.alz.org
-https://triathlon.org:443
+https://triathlon.org
 https://trickleup.org
 https://trilliontrees.org
 https://trinetx.com
@@ -5752,7 +5749,7 @@ https://visegradinsight.eu
 https://visit-gem.com/en
 https://visitandorra.com/en
 https://visitbulgaria.com
-https://visitestonia.com:443/en
+https://visitestonia.com/en
 https://visitgreenland.com
 https://visitjordan.com
 https://visitsweden.com
@@ -5980,7 +5977,7 @@ https://worldsteakchallenge.com/live/en/page/home
 https://worldsummit.ai
 https://worldsushicup.com
 https://worldview.earthdata.nasa.gov
-https://worldview.stratfor.com:443
+https://worldview.stratfor.com
 https://worldwidetelescope.org
 https://worth.rawlings.com
 https://wos.org
@@ -6075,16 +6072,16 @@ https://www.aarome.org
 https://www.aarp.org/caregiving
 https://www.aasianst.org
 https://www.aasld.org
-https://www.ab-in-den-urlaub.de:443
+https://www.ab-in-den-urlaub.de
 https://www.aba.org
 https://www.abb.com/global/en/areas/robotics
-https://www.abc-cooking.co.jp:443/plus
+https://www.abc-cooking.co.jp/plus
 https://www.abc.es/recetasderechupete
 https://www.abc.es/recetasderechupete/recetas-de-navidad
 https://www.abc.net.au
 https://www.abcmouse.com/abc/?8a08850bc2=T1950536275.1767156687.0598
 https://www.abebooks.com
-https://www.abendblatt.de:443
+https://www.abendblatt.de
 https://www.abf.com.au
 https://www.abhayagiri.org
 https://www.abitare.it/it
@@ -6149,7 +6146,7 @@ https://www.activecampaign.com
 https://www.activehistory.co.uk
 https://www.activewild.com
 https://www.activision.com
-https://www.activism.net:443/cypherpunk
+https://www.activism.net/cypherpunk
 https://www.activityvillage.co.uk/mazes
 https://www.activtrades.com/en
 https://www.actorawards.org
@@ -6581,12 +6578,12 @@ https://www.appm.hn
 https://www.apptio.com/products/cloudability
 https://www.apptio.com/products/kubecost/?src=kc-com
 https://www.apraamcos.com.au
-https://www.aps.org:443
-https://www.aps.org:443/meetings
-https://www.aps.org:443/meetings/march
-https://www.aps.org:443/meetings/march/calendar
-https://www.aps.org:443/publications/apsnews/200404/backpage.cfm
-https://www.aps.org:443/research/quantum-entanglement
+https://www.aps.org
+https://www.aps.org/meetings
+https://www.aps.org/meetings/march
+https://www.aps.org/meetings/march/calendar
+https://www.aps.org/publications/apsnews/200404/backpage.cfm
+https://www.aps.org/research/quantum-entanglement
 https://www.apt2b.com
 https://www.apta.org
 https://www.aptaacutecare.org
@@ -6882,7 +6879,7 @@ https://www.axis.com
 https://www.axminstertools.com
 https://www.axs.com
 https://www.axspace.com
-https://www.axure.com:443
+https://www.axure.com
 https://www.aza.org/amphibian-conservation
 https://www.azbilliards.com
 https://www.azlyrics.com
@@ -6937,7 +6934,7 @@ https://www.badwater.com
 https://www.badzine.net
 https://www.bafta.org/awards
 https://www.baha.com/user/login
-https://www.bahn.de:443
+https://www.bahn.de
 https://www.bahraingp.com
 https://www.baidu.com
 https://www.bailliegifford.com/en/global/all-users
@@ -7151,7 +7148,7 @@ https://www.beyondpesticides.org
 https://www.bezosearthfund.org
 https://www.bezzymigraine.com
 https://www.bfi.org.uk
-https://www.bfmtv.com:443
+https://www.bfmtv.com
 https://www.bfxr.net
 https://www.bg.s.u-tokyo.ac.jp
 https://www.bgblitz.com
@@ -7204,7 +7201,7 @@ https://www.bimcommunity.com
 https://www.binance.com
 https://www.binance.com/en/futures
 https://www.binance.com/en/pool
-https://www.bing.com:443/?toWww=1&redig=7621099221A24EC4B987F4B2139F6744
+https://www.bing.com/?toWww=1&redig=7621099221A24EC4B987F4B2139F6744
 https://www.bio.org
 https://www.biocatch.com
 https://www.biocoop.fr/recettes
@@ -7436,7 +7433,7 @@ https://www.brancusi.com
 https://www.brandonsanderson.com
 https://www.brandywine.org
 https://www.brassstages.com
-https://www.braunschweiger-zeitung.de:443
+https://www.braunschweiger-zeitung.de
 https://www.bravopokerlive.com/venues
 https://www.brazil.com
 https://www.brazil.org.za
@@ -7496,7 +7493,7 @@ https://www.britannica.com/science/wave-particle-duality
 https://www.britannica.com/topic/Christmas
 https://www.britannica.com/topic/candy-food
 https://www.britannica.com/topic/the-Beatles
-https://www.britannica.com:443
+https://www.britannica.com
 https://www.british-history.ac.uk
 https://www.britishamericanfootball.org
 https://www.britishecologicalsociety.org
@@ -7643,7 +7640,7 @@ https://www.c2n.universite-paris-saclay.fr/en
 https://www.c40.org
 https://www.c40knowledgehub.org/s/?language=en_US
 https://www.c4isrnet.com
-https://www.c6bank.com.br:443
+https://www.c6bank.com.br
 https://www.ca.gov
 https://www.cabelas.com
 https://www.cabi.org
@@ -7657,7 +7654,7 @@ https://www.cadnav.com
 https://www.caesars.com
 https://www.cafepress.com/christmas
 https://www.caffeine.tv
-https://www.cafmobility.com:443
+https://www.cafmobility.com
 https://www.cafod.org.uk
 https://www.cai.it
 https://www.caixa.gov.br/Paginas/home-caixa.aspx
@@ -7756,7 +7753,7 @@ https://www.carbonneutral.com
 https://www.carbontax.org
 https://www.carc.ox.ac.uk/carc/Home
 https://www.carcanet.co.uk
-https://www.cardekho.com:443
+https://www.cardekho.com
 https://www.cardiff.ac.uk/welsh-language-governance
 https://www.cardmarket.com
 https://www.cardplayer.com
@@ -7931,7 +7928,7 @@ https://www.chairish.com/blog
 https://www.chalco.com.cn
 https://www.chalicecentre.net
 https://www.challenge-roth.com/de
-https://www.challenges.fr:443
+https://www.challenges.fr
 https://www.chalmers.se/en/centres/wacqt
 https://www.chambery.fr
 https://www.champagne.fr/fr
@@ -8338,7 +8335,7 @@ https://www.comparethemarket.com
 https://www.compete2020.gov.pt
 https://www.complex.com
 https://www.complex.com/pop-culture/a/yasmeenhamadeh/best-memes-2023
-https://www.complex.com:443
+https://www.complex.com
 https://www.compost.org
 https://www.comptia.org/en-us
 https://www.comptia.org/en-us/certifications/network
@@ -8438,7 +8435,7 @@ https://www.corti.ai
 https://www.cortlandreview.com
 https://www.cosdna.com
 https://www.cosme.net
-https://www.cosme.net.tw:443
+https://www.cosme.net.tw
 https://www.cosmeticsandskin.com
 https://www.cosmeticsbusiness.com
 https://www.cosmeticsdesign.com
@@ -8671,7 +8668,7 @@ https://www.dairymarkets.com
 https://www.dairynetwork.com
 https://www.dairynz.co.nz
 https://www.dairyreporter.com
-https://www.dairyreporter.com:443
+https://www.dairyreporter.com
 https://www.daisetsuzan.or.jp
 https://www.daiwa.com/global
 https://www.dakar.com/en
@@ -8715,7 +8712,7 @@ https://www.datarobot.com/solutions/healthcare
 https://www.dataroma.com/m/home.php
 https://www.datatilsynet.no
 https://www.datpiff.com
-https://www.daucy.fr:443/je-cuisine/nos-recettes
+https://www.daucy.fr/je-cuisine/nos-recettes
 https://www.dav.org/about-dav/history
 https://www.davidlebovitz.com
 https://www.davidrumsey.com
@@ -8732,7 +8729,7 @@ https://www.dazeddigital.com
 https://www.dazn.com
 https://www.db.com
 https://www.db.com/media/index?language_id=1&kid=newsroom-w.redirect-en.shortcut
-https://www.db.yugioh-card.com:443/yugiohdb/?request_locale=ja
+https://www.db.yugioh-card.com/yugiohdb/?request_locale=ja
 https://www.dbsalliance.org
 https://www.dc.com
 https://www.dcaf.ch
@@ -8783,7 +8780,7 @@ https://www.defined.fi/tokens/discover
 https://www.definitivehc.com
 https://www.defipulse.com
 https://www.degasperi.net
-https://www.degruyterbrill.com:443/journal/key/bejeap/html
+https://www.degruyterbrill.com/journal/key/bejeap/html
 https://www.dekra.de/de/startseite
 https://www.deliaonline.com
 https://www.delicious.com.au/recipes/collections/christmas-recipes
@@ -8817,7 +8814,7 @@ https://www.dentsgloves.com
 https://www.department56.com
 https://www.department56.com/collections/santa
 https://www.depop.com
-https://www.depression.org.nz:443
+https://www.depression.org.nz
 https://www.depression.org.tw
 https://www.deribit.com
 https://www.dermstore.com
@@ -9103,7 +9100,7 @@ https://www.dwr.com
 https://www.dws.com
 https://www.dxomark.com
 https://www.dydx.xyz
-https://www.dynamed.com:443/specialty/gastroenterology
+https://www.dynamed.com/specialty/gastroenterology
 https://www.dynatrace.com
 https://www.e-architect.com
 https://www.e-fi.de
@@ -9351,7 +9348,7 @@ https://www.eni.com/it-IT/home.html
 https://www.enisa.europa.eu
 https://www.enn.com
 https://www.ennonline.net
-https://www.enprc.emory.edu:443
+https://www.enprc.emory.edu
 https://www.enricarocca.com
 https://www.ens.psl.eu
 https://www.ensomovement.com
@@ -9507,7 +9504,7 @@ https://www.europanostra.org
 https://www.europarl.europa.eu
 https://www.europarl.europa.eu/committees/en/econ/home/highlights
 https://www.europarl.europa.eu/thinktank/en/home
-https://www.europe1.fr:443
+https://www.europe1.fr
 https://www.european-bioplastics.org
 https://www.europeana.eu
 https://www.europeana.eu/en/collections/topic/14-world-war-i
@@ -9521,7 +9518,7 @@ https://www.europeremembers.com/en
 https://www.europol.europa.eu
 https://www.europol.europa.eu/crime-areas/cyber-attacks
 https://www.europowerlifting.org
-https://www.eurosport.fr:443
+https://www.eurosport.fr
 https://www.eurowings.com
 https://www.euskaltzaindia.eus
 https://www.euspa.europa.eu
@@ -9731,7 +9728,7 @@ https://www.fidelity.com/learning-center/trading-investing/markets-sectors/nasda
 https://www.fidelity.com/learning-center/trading-investing/markets-sectors/stock-market-indexes
 https://www.fidelity.com/mutual-funds/investing-ideas/index-funds
 https://www.fidelity.com/research
-https://www.fidelity.com:443
+https://www.fidelity.com
 https://www.fidh.org/fr
 https://www.fieldandstream.com
 https://www.fielddoctor.co.uk
@@ -9830,7 +9827,7 @@ https://www.flickr.com
 https://www.flightglobal.com
 https://www.flintrehab.com
 https://www.flipkart.com
-https://www.flipkart.com:443/account/login
+https://www.flipkart.com/account/login
 https://www.flocheer.com
 https://www.flocksafety.com
 https://www.flograppling.com
@@ -9891,7 +9888,7 @@ https://www.foodnetwork.com/holidays-and-parties/christmas
 https://www.foodnetwork.com/recipes/packages/baking-guide/fusion-baking-recipes
 https://www.foodnetwork.com/recipes/packages/global-flavors/chinese
 https://www.foodnetwork.com/recipes/packages/global-flavors/italian
-https://www.foodnetwork.com:443
+https://www.foodnetwork.com
 https://www.foodpantries.org
 https://www.foodsafetynews.com
 https://www.foodsecurity.ac.uk
@@ -9932,7 +9929,7 @@ https://www.forexpeacearmy.com
 https://www.formaggiokitchen.com
 https://www.formaticum.com
 https://www.formula1.com
-https://www.formula1.com:443
+https://www.formula1.com
 https://www.forrester.com/unauthorized
 https://www.forsvarsmakten.se/en/about/organisation/amphibious-regiment
 https://www.forter.com
@@ -10096,7 +10093,7 @@ https://www.galp.com/es
 https://www.galtung-institut.de/en
 https://www.gamaya.com
 https://www.gamberorosso.it
-https://www.gambleaware.org:443
+https://www.gambleaware.org
 https://www.gamblingcommission.gov.uk
 https://www.gamblinginsider.com
 https://www.gamcare.org.uk
@@ -10215,8 +10212,8 @@ https://www.geothermal.org
 https://www.gerdhelp.com
 https://www.germanicmythology.com
 https://www.germany.travel/en/home.html
-https://www.germany.travel:443/en/campaign/christmas-markets/christmas-markets.html
-https://www.germany.travel:443/en/events
+https://www.germany.travel/en/campaign/christmas-markets/christmas-markets.html
+https://www.germany.travel/en/events
 https://www.geron.org
 https://www.gesa.org.au
 https://www.gestaltu.com
@@ -10379,7 +10376,7 @@ https://www.godox.com
 https://www.goes.noaa.gov
 https://www.goethe.de/de/index.html
 https://www.gofundme.com
-https://www.gofundme.com:443/c/crowdrise
+https://www.gofundme.com/c/crowdrise
 https://www.gog.com/en
 https://www.gohenry.com
 https://www.goingzerowaste.com
@@ -10394,7 +10391,7 @@ https://www.goldmedalsquared.com
 https://www.goldstandard.org
 https://www.goldwind.com/cn
 https://www.goldwind.com/en
-https://www.golem.de/sonstiges/zustimmung/auswahl.html?from=https%3A%2F%2Fwww.golem.de%2F
+https://www.golem.de/sonstiges/zustimmung/auswahl.html
 https://www.gonbops.com
 https://www.gong.io
 https://www.goodfoodguide.co.uk
@@ -10429,7 +10426,7 @@ https://www.gourmetdash.com/cheese
 https://www.gourmettraveller.com.au
 https://www.gov.br/agricultura/pt-br/assuntos/inmet
 https://www.gov.br/cvm
-https://www.gov.br:443/saude
+https://www.gov.br/saude
 https://www.gov.hk
 https://www.gov.mb.ca/nrnd/fish-wildlife/pubs/fish_wildlife/coexistence-of-apiaries.pdf
 https://www.gov.mt/en/Life/Culture
@@ -10514,7 +10511,7 @@ https://www.groundsforsculpture.org
 https://www.groupon.com
 https://www.grubstreet.com
 https://www.gruyere.com/accueil
-https://www.gsa.org.au/SharedContent/ContactManagement/Sign_In.aspx?LoginRedirect=true&returnurl=%2f
+https://www.gsa.org.au/SharedContent/ContactManagement/Sign_In.aspx
 https://www.gsi.de/start/aktuelles
 https://www.gsi.gov.in/webcenter/portal/OCBIS
 https://www.gsi.ie/en-ie/Pages/default.aspx
@@ -10674,7 +10671,7 @@ https://www.healthline.com/health/high-blood-pressure-hypertension
 https://www.healthline.com/health/insomnia
 https://www.healthline.com/health/irritable-bowel-syndrome
 https://www.healthline.com/health/nausea-and-vomiting
-https://www.healthline.com:443/diabetesmine
+https://www.healthline.com/diabetesmine
 https://www.healthychildren.org/English/health-issues/conditions/allergies-asthma/Pages/default.aspx
 https://www.healyou.io
 https://www.heart.org
@@ -10719,7 +10716,7 @@ https://www.heraldry.ws
 https://www.herbsociety.org
 https://www.herculaneum.uk
 https://www.here.com
-https://www.here.com:443
+https://www.here.com
 https://www.hereandabove.com/maze
 https://www.heritage-history.com
 https://www.heritage.org
@@ -10890,7 +10887,7 @@ https://www.hopkinsmedicine.org/psychiatry/specialty_areas/memory_center
 https://www.horchow.com
 https://www.horizonquantum.com
 https://www.hormelfoods.com/global-impact
-https://www.hormelfoodservice.com/brand/fontanini/?utm_source=Fontanini_com&utm_medium=Search_Redirect&utm_campaign=Fontanini_Domain_Redirect&utm_content=Tracking_old_domain_visits
+https://www.hormelfoodservice.com/k12/
 https://www.hornsociety.org
 https://www.horseracingnation.com
 https://www.hostelworld.com
@@ -10904,7 +10901,7 @@ https://www.hotnewhiphop.com
 https://www.hotpepper.jp
 https://www.hotwatercomedy.co.uk
 https://www.houdinimuseum.net
-https://www.house.gov:443
+https://www.house.gov
 https://www.housebeautiful.com
 https://www.housebeautiful.com/uk
 https://www.houseofdrumming.com/phpbb3/viewforum.php?f=2
@@ -10925,7 +10922,7 @@ https://www.hrelp.org
 https://www.hrhcbiloxi.com
 https://www.hri.ie
 https://www.hrp.org.uk
-https://www.hrs.de:443
+https://www.hrs.de
 https://www.hrw.org
 https://www.hrw.org/europe/central-asia
 https://www.hsbc.co.uk
@@ -11080,7 +11077,7 @@ https://www.idea.int
 https://www.idealhome.co.uk
 https://www.idealist.org/en
 https://www.idealist.org/volunteermatch
-https://www.idealo.de:443
+https://www.idealo.de
 https://www.idealwine.com/fr
 https://www.identitagolose.it
 https://www.ideo.com
@@ -11254,7 +11251,7 @@ https://www.inll.lu/fr
 https://www.inman.com
 https://www.inmarsat.com
 https://www.innermountainoutfitters.com
-https://www.innisfree.com:443/kr/ko
+https://www.innisfree.com/kr/ko
 https://www.innovamarketinsights.com/trends/snack-trends-2025
 https://www.innovasjonnorge.no
 https://www.innovatoretfs.com
@@ -11520,7 +11517,7 @@ https://www.jancisrobinson.com
 https://www.jandonline.org
 https://www.janegoodall.org.uk
 https://www.janes.com
-https://www.janestreet.com:443/puzzles
+https://www.janestreet.com/puzzles
 https://www.janetfletcher.com
 https://www.janney.com/insights
 https://www.janushenderson.com/en-us/investor/insights
@@ -11657,7 +11654,7 @@ https://www.jungalow.com
 https://www.jungfrau-marathon.ch/de
 https://www.junglemarathon.com
 https://www.juniper.net
-https://www.juniper.net:443
+https://www.juniper.net
 https://www.junobeach.org
 https://www.jupiterintel.com
 https://www.just-drinks.com
@@ -11832,7 +11829,7 @@ https://www.knowdiabetesbyheart.org
 https://www.knt.co.jp
 https://www.ko-fi.com
 https://www.koalas.org
-https://www.kobaltmusic.com:443
+https://www.kobaltmusic.com
 https://www.kobo.com/writinglife
 https://www.kodaiji.com
 https://www.kodansha.co.jp
@@ -11952,7 +11949,7 @@ https://www.langchain.com
 https://www.langflow.org
 https://www.lanl.gov
 https://www.lanl.gov/history
-https://www.lanl.gov:443
+https://www.lanl.gov
 https://www.laostourism.org
 https://www.laplandletters.com
 https://www.lappgroup.com
@@ -11986,7 +11983,7 @@ https://www.lbjlibrary.org
 https://www.lbl.gov
 https://www.lboro.ac.uk
 https://www.lcar.ups-tlse.fr
-https://www.lcl.fr:443
+https://www.lcl.fr
 https://www.lcsliving.com/lcs
 https://www.ldh.co.jp
 https://www.le-journal-catalan.com/en/matcha-tiramisu-kyoto-inspired-fusion-dessert-in-just-20-minutes
@@ -12039,7 +12036,7 @@ https://www.lensrentals.com/blog
 https://www.leo.org/englisch-deutsch
 https://www.leonardodavinci.net
 https://www.leopold.iastate.edu
-https://www.leparisien.fr:443
+https://www.leparisien.fr
 https://www.lequipe.fr
 https://www.lesechos.fr
 https://www.lesnumeriques.com
@@ -12060,7 +12057,7 @@ https://www.lexisnexis.com/en-us/products/lexis-plus-ai.page
 https://www.lexisnexis.com/en-us/products/nexis-diligence-plus.page
 https://www.lezhin.com/ko
 https://www.lfa.mx
-https://www.li.me:443
+https://www.li.me
 https://www.lib.cuhk.edu.hk
 https://www.libbs.com.br
 https://www.libec-global.com/chn/index.php?act=on
@@ -12069,7 +12066,7 @@ https://www.liberationroute.com/en
 https://www.liberiachimpanzeerescue.org
 https://www.libertylondon.com/uk/department/gifts
 https://www.libertymutual.com
-https://www.libraryjournal.com:443
+https://www.libraryjournal.com
 https://www.librarything.com
 https://www.libro.fm/gift
 https://www.libyabodycount.org
@@ -12330,7 +12327,7 @@ https://www.maizena.fr/recettes
 https://www.majorleaguefishing.com
 https://www.make.com/en
 https://www.makemytrip.com
-https://www.makemytrip.com:443
+https://www.makemytrip.com
 https://www.makersmercantile.com
 https://www.makesushi.com
 https://www.malaghan.org.nz
@@ -12417,7 +12414,7 @@ https://www.maru-sin.co.jp/recipe
 https://www.maruccisports.com
 https://www.maruetsu.co.jp/recipe
 https://www.maruha-nichiro.co.jp/recipe/index
-https://www.marukome.co.jp:443/recipe
+https://www.marukome.co.jp/recipe
 https://www.marukyu.com
 https://www.marutomo.co.jp/brand-list/dashinochikara/recipe
 https://www.marvel.com
@@ -12495,7 +12492,7 @@ https://www.mbmg.mtech.edu
 https://www.mbrsc.ae
 https://www.mca-marines.org
 https://www.mcafee.com
-https://www.mcafee.com:443
+https://www.mcafee.com
 https://www.mccormick.com/blogs/recipes/tagged/holiday
 https://www.mccormickcorporation.com/en/responsibility
 https://www.mccourtfoundation.org/event/los-angeles-marathon
@@ -12559,7 +12556,7 @@ https://www.medscape.com/today
 https://www.medtronicdiabetes.com
 https://www.mee.gov.cn
 https://www.meeplemountain.com
-https://www.meesho.com:443
+https://www.meesho.com
 https://www.meetcleo.com
 https://www.meetup.com/taiwan-data-science-meetup
 https://www.meetup.com/topics/bookclub
@@ -12615,7 +12612,7 @@ https://www.mercyships.org
 https://www.merida-bikes.com/en
 https://www.merkur.de
 https://www.mermaid-liveaboards.com
-https://www.merriam-webster.com:443
+https://www.merriam-webster.com
 https://www.meshy.ai
 https://www.met.gov.fj
 https://www.met.gov.my
@@ -12699,7 +12696,7 @@ https://www.midwestvolleyball.com
 https://www.mightyeighth.org
 https://www.migpolgroup.com
 https://www.migraineagain.com
-https://www.migraineagain.com:443
+https://www.migraineagain.com
 https://www.migrainedisorders.org
 https://www.migrainestrong.com
 https://www.migrationpolicy.org/programs/mpi-europe
@@ -12744,7 +12741,7 @@ https://www.mirantis.com/blog/blog
 https://www.miraterrasoil.com/trace
 https://www.mirror.co.uk
 https://www.mis.mpg.de
-https://www.misfitsmarket.com:443
+https://www.misfitsmarket.com
 https://www.missionpossiblepartnership.org
 https://www.missouribotanicalgarden.org
 https://www.missouribotanicalgarden.org/plant-science/plant-science/about-science-conservation
@@ -12860,7 +12857,7 @@ https://www.morganstanley.com/im/en-us/individual-investor/products/mutual-funds
 https://www.morganstanley.com/im/en-us/institutional-investor/insights/all-insights.html
 https://www.morganstanley.com/insights
 https://www.morganstanley.com/what-we-do/wealth-management
-https://www.morgenpost.de:443
+https://www.morgenpost.de
 https://www.mori.art.museum/jp
 https://www.morinaga.co.jp/recipe
 https://www.morningstar.com
@@ -12879,7 +12876,7 @@ https://www.mos.org
 https://www.mos.org/leonardo
 https://www.motivewave.com
 https://www.motleyfool.com
-https://www.motogp.com:443
+https://www.motogp.com
 https://www.motorradonline.de
 https://www.motorsport.com
 https://www.motorsport.com/wrc
@@ -13436,7 +13433,7 @@ https://www.nationaljewish.org/conditions/asthma
 https://www.nationaljewish.org/conditions/insomnia
 https://www.nationalmuseum.af.mil
 https://www.nationalparks.org
-https://www.nationalrail.co.uk:443
+https://www.nationalrail.co.uk
 https://www.nationaltheatre.org.uk/home
 https://www.nationaltrail.co.uk
 https://www.nationaltrust.org.uk
@@ -14158,7 +14155,7 @@ https://www.papillesetpupilles.fr
 https://www.para2000.org
 https://www.paradigm.xyz
 https://www.paradox.ai
-https://www.paradoxinteractive.com:443/games/world-of-darkness/about
+https://www.paradoxinteractive.com/games/world-of-darkness/about
 https://www.paradromics.com
 https://www.paraglidingearth.com
 https://www.paranormal-encyclopedia.com
@@ -14195,7 +14192,7 @@ https://www.particle.io
 https://www.partycity.com/christmas
 https://www.partypoker.com/en/poker
 https://www.pasa.org
-https://www.pasconet.co.jp:443/recipes
+https://www.pasconet.co.jp/recipes
 https://www.passionforbaking.com
 https://www.passionforbaking.com/blog/category/christmas
 https://www.passmark.com
@@ -14262,7 +14259,7 @@ https://www.pefc.org
 https://www.pegasusarchive.org
 https://www.pen-online.jp
 https://www.pendle.finance
-https://www.pendo.io:443
+https://www.pendo.io
 https://www.penguinmagic.com
 https://www.penguinrandomhouse.com/books/book-clubs
 https://www.penguinworld.com
@@ -14306,7 +14303,7 @@ https://www.peterharrington.co.uk
 https://www.petfinder.com
 https://www.petitchef.it
 https://www.petiteknit.com
-https://www.petz.com.br:443
+https://www.petz.com.br
 https://www.petzl.com/INT/en/Sport/Caving
 https://www.pew.org/en
 https://www.pew.org/en/projects/protecting-ocean-life-on-the-high-seas
@@ -14319,7 +14316,7 @@ https://www.pggm.nl
 https://www.pgim.com/content/pgimcampaignCountry/en/institutional.html
 https://www.phasecraft.io
 https://www.phdportal.com
-https://www.phenom.com:443
+https://www.phenom.com
 https://www.phfscience.nz
 https://www.philanthropy.com
 https://www.philips-hue.com/zh-tw
@@ -14377,7 +14374,7 @@ https://www.plaisirsdhiver.be
 https://www.plaisirsdhiver.be/en
 https://www.planb.net
 https://www.planet.com
-https://www.planet.com:443
+https://www.planet.com
 https://www.planet4589.org
 https://www.planetary.org
 https://www.planetbee.org
@@ -14407,7 +14404,7 @@ https://www.plenty.ag
 https://www.plex.tv
 https://www.ploetzblog.de
 https://www.plot-generator.org.uk
-https://www.plugandplaytechcenter.com:443
+https://www.plugandplaytechcenter.com
 https://www.plugpower.com
 https://www.pluralsight.com
 https://www.plus500.com
@@ -14435,7 +14432,7 @@ https://www.poemhunter.com
 https://www.poetryeast.org
 https://www.poetryflash.org
 https://www.poetryfoundation.org
-https://www.poetryfoundation.org:443
+https://www.poetryfoundation.org
 https://www.poetryinternational.com/en
 https://www.poetryintranslation.com
 https://www.poetryireland.ie
@@ -14600,7 +14597,7 @@ https://www.projects-abroad.org
 https://www.projectseagrass.org
 https://www.projet-voltaire.fr
 https://www.proko.com
-https://www.prometeia.com:443/it/home
+https://www.prometeia.com/it/home
 https://www.promperu.gob.pe
 https://www.proofpoint.com/us/tessian-is-now-proofpoint
 https://www.propdog.co.uk
@@ -14638,7 +14635,7 @@ https://www.psiquantum.com
 https://www.psl.eu
 https://www.pspp.ca
 https://www.psu.edu
-https://www.psu.edu:443
+https://www.psu.edu
 https://www.psychiatry.org
 https://www.psychiatry.org/patients-families/sleep-disorders
 https://www.psychoanalysis.org.tw/zh-Hant/home
@@ -14742,7 +14739,7 @@ https://www.qwertee.com
 https://www.r-bloggers.com
 https://www.r-project.org
 https://www.r-toolbox.jp
-https://www.r7.com:443
+https://www.r7.com
 https://www.rabbit.tech/rabbit-r1
 https://www.rabbitmq.com
 https://www.rabobank.com/en/about-rabobank/food-agribusiness
@@ -15126,7 +15123,7 @@ https://www.roji.co.jp
 https://www.roka.com
 https://www.rokmc.mil.kr
 https://www.rokoko.com
-https://www.roku.com/intl?next=/&source=www.roku.com
+https://www.roku.com
 https://www.roland.com/global/categories/drums_percussion/?lang=en-JM
 https://www.rollingstone.com
 https://www.rom.on.ca
@@ -15285,7 +15282,7 @@ https://www.salzburg.info/en/salzburg/advent
 https://www.samaritans.org
 https://www.samfunnsforskning.no
 https://www.samhsa.gov
-https://www.samhsa.gov:443/mental-health
+https://www.samhsa.gov/mental-health
 https://www.samsara.com
 https://www.samsongroup.com/de
 https://www.samsung.com/semiconductor
@@ -15589,7 +15586,7 @@ https://www.service-public.gouv.fr
 https://www.ses.com
 https://www.sesac.com
 https://www.sescoops.com
-https://www.sescsp.org.br:443
+https://www.sescsp.org.br
 https://www.set.or.th/en
 https://www.set.or.th/en/market/index/set/overview
 https://www.seti.org
@@ -15680,7 +15677,7 @@ https://www.shutterfly.com
 https://www.shutterfly.com/t/christmas-cards
 https://www.shutterstock.com
 https://www.shutterstock.com/video
-https://www.shutterstock.com:443
+https://www.shutterstock.com
 https://www.shutupandsitdown.com
 https://www.si.com
 https://www.si.com/nfl
@@ -15724,7 +15721,7 @@ https://www.sign-sport.cz
 https://www.sign.ac.uk
 https://www.signes.es
 https://www.signifyd.com
-https://www.signifyd.com:443
+https://www.signifyd.com
 https://www.signum.capital
 https://www.silhouetteamerica.com
 https://www.siliconallee.com
@@ -15770,7 +15767,6 @@ https://www.sitra.fi
 https://www.sitra.fi/en
 https://www.six-group.com/en/home.html
 https://www.six-group.com/en/products-services/the-swiss-stock-exchange.html
-https://www.six-group.com/en/products-services/the-swiss-stock-exchange.html?id=CH0009980894
 https://www.sixnationsrugby.com/en
 https://www.sixteenthcentury.org
 https://www.sixthfinch.com
@@ -15816,7 +15812,7 @@ https://www.skydio.com
 https://www.skymark.co.jp/ja
 https://www.skyparksv.com
 https://www.skyrim.com
-https://www.skyscanner.com.tw/sttc/px/captcha-v2/index.html?url=Lz9hYmdyb3VwPTYwMDI1NzUyJnVzZXJTZXNzaW9uRGF0YUlkPWUwOGY0MTQzLTNmZjItNDJiZC04ZDJiLWQwNTI2OWEwMjg1NiZwcmV2aW91c0N1bHR1cmVTb3VyY2U9R0VPX0xPQ0FUSU9OJnJlZGlyZWN0ZWRGcm9tPXd3dy5za3lzY2FubmVyLm5ldA==&uuid=f019fb23-e603-11f0-b663-e21c8e4d9e0b&vid=
+https://www.skyscanner.com.tw/sttc/px/captcha-v2/index.html?url=Lz8=&uuid=f019fb23-e603-11f0-b663-e21c8e4d9e0b&vid=05e14733-e7c5-11f0-a26f-b5b706f73fb5
 https://www.skysports.com
 https://www.skysports.com/boxing
 https://www.skysports.com/cricket
@@ -15859,7 +15855,7 @@ https://www.smartcitiesdive.com
 https://www.smartcitiesworld.net
 https://www.smartgrowthamerica.org
 https://www.smartparking.com/uk
-https://www.smartwool.com/on/demandware.store/Sites-swl-us-Site/en_US/PX-Show?url=aHR0cHM6Ly93d3cuc21hcnR3b29sLmNvbS9vbi9kZW1hbmR3YXJlLnN0b3JlL1NpdGVzLXN3bC11cy1TaXRl&frame=1767158269537
+https://www.smartwool.com
 https://www.smashingmagazine.com
 https://www.smashwords.com
 https://www.smb.museum/en/museums-institutions/antikensammlung/home
@@ -15886,7 +15882,7 @@ https://www.smule.com
 https://www.snackandbakery.com
 https://www.snakeeducation.com
 https://www.snappy.com
-https://www.sncf-connect.com:443
+https://www.sncf-connect.com
 https://www.snfge.org
 https://www.sno-drift.org
 https://www.snooker.org
@@ -16155,7 +16151,7 @@ https://www.statskog.no
 https://www.stayatbase.com
 https://www.stblaw.com
 https://www.steamship.com
-https://www.steelcase.com:443
+https://www.steelcase.com
 https://www.steezy.co
 https://www.steinberg.net/cubase
 https://www.steinberg.net/dorico
@@ -16216,7 +16212,7 @@ https://www.strasbourg.aeroport.fr
 https://www.strasbourg.eu
 https://www.stratasys.com
 https://www.stratcom.mil
-https://www.strategic-risk-global.com:443
+https://www.strategic-risk-global.com
 https://www.strategypage.com/default.aspx
 https://www.stratfordfestival.ca
 https://www.strathmoreartist.com/blog
@@ -16259,7 +16255,7 @@ https://www.sudaonline.org
 https://www.sudoku.academy
 https://www.sudoku.org.uk
 https://www.sudokukingdom.com
-https://www.sudouest.fr:443
+https://www.sudouest.fr
 https://www.sueddeutsche.de
 https://www.sui.io
 https://www.suki.ai
@@ -16267,7 +16263,7 @@ https://www.sulkapallo.fi
 https://www.sullcrom.com
 https://www.sulzer.com
 https://www.sumitomolife.co.jp
-https://www.summerdanceforever.com:443
+https://www.summerdanceforever.com
 https://www.summitpost.org
 https://www.summitstore.co.jp/recipe
 https://www.sumo.or.jp/En
@@ -16306,7 +16302,7 @@ https://www.surfline.com
 https://www.surfline.com/?referral=msw
 https://www.surfrider.org
 https://www.surlatable.com/recipes
-https://www.surlatable.com:443
+https://www.surlatable.com
 https://www.surrey.ac.uk
 https://www.survivalinternational.org
 https://www.suse.com
@@ -16405,7 +16401,7 @@ https://www.tado.com/en
 https://www.taekwondodata.com
 https://www.taetechnologies.com
 https://www.tagesgeldvergleich.net
-https://www.tagesschau.de:443
+https://www.tagesschau.de
 https://www.tahiti.com
 https://www.taichichuan.co.uk
 https://www.tailorbrands.com
@@ -16419,7 +16415,7 @@ https://www.taiwanopenofsurfing.org
 https://www.taiwansurftaitung.com
 https://www.taiwantourism.org/th
 https://www.takadu.com
-https://www.take2games.com:443
+https://www.take2games.com
 https://www.takemefishing.org
 https://www.talkiatry.com
 https://www.talkingrugbyunion.co.uk
@@ -16427,9 +16423,9 @@ https://www.talkspace.com
 https://www.talktofrank.com
 https://www.tally.xyz
 https://www.tama.com
-https://www.tamron.com:443/global
+https://www.tamron.com/global
 https://www.tamu.edu
-https://www.tamu.edu:443
+https://www.tamu.edu
 https://www.tandemdiabetes.com
 https://www.tandfonline.com/journals/rfae20
 https://www.tandfonline.com/toc/ghbi20/current
@@ -16451,7 +16447,7 @@ https://www.target.com
 https://www.tarladalal.com
 https://www.tase.co.il/en
 https://www.taskade.com
-https://www.taskrabbit.com:443
+https://www.taskrabbit.com
 https://www.taste.com.au
 https://www.taste.com.au/recipes/collections/chinese-recipes
 https://www.taste.com.au/recipes/collections/christmas-recipes
@@ -16606,7 +16602,7 @@ https://www.theatlantic.com/category/food
 https://www.theatlantic.com/world
 https://www.theatlasofbeauty.com
 https://www.theatricalrights.com
-https://www.thebalancemoney.com:443
+https://www.thebalancemoney.com
 https://www.thebanmappingproject.com
 https://www.thebash.com
 https://www.thebash.com/santa-claus
@@ -16897,7 +16893,7 @@ https://www.transitionsabroad.com
 https://www.transparency.org
 https://www.transport.govt.nz
 https://www.transportenvironment.org
-https://www.travelchinaguide.com:443/tour/food/chinese-cooking
+https://www.travelchinaguide.com/tour/food/chinese-cooking
 https://www.travelers.com
 https://www.traveloka.com/en-en
 https://www.traveloka.com/en-th/hotel/japan
@@ -16974,7 +16970,7 @@ https://www.tsinghua.edu.cn/en
 https://www.tsmc.com
 https://www.tsn.ca/nhl
 https://www.tsnn.com
-https://www.tst.jus.br:443
+https://www.tst.jus.br
 https://www.tsukumo.co.jp
 https://www.tsukurioki.jp
 https://www.tsunagujapan.com
@@ -17002,7 +16998,7 @@ https://www.tumblr.com
 https://www.tunecore.com
 https://www.tunze.com/en.html
 https://www.turbosquid.com
-https://www.turbosquid.com:443
+https://www.turbosquid.com
 https://www.turck.com/en
 https://www.turf-times.de
 https://www.turfclub.com.sg
@@ -17041,7 +17037,7 @@ https://www.ualberta.ca/en/index.html
 https://www.uawire.org
 https://www.ub.edu/cusc
 https://www.ubc.ca
-https://www.ubc.ca:443
+https://www.ubc.ca
 https://www.ubisoft.com/zh-tw
 https://www.ubs.com
 https://www.ubs.com/global/en/our-firm/what-we-do/research.html
@@ -17051,7 +17047,7 @@ https://www.ubu.com
 https://www.ucalgary.ca
 https://www.ucar.edu
 https://www.ucbcomedy.com
-https://www.ucd.ie:443/classics
+https://www.ucd.ie/classics
 https://www.ucdavis.edu
 https://www.uchicago.edu
 https://www.uci.edu
@@ -17061,7 +17057,7 @@ https://www.ucl.ac.uk/mathematical-physical-sciences/earth-sciences
 https://www.ucl.ac.uk/mathematical-physical-sciences/quantum
 https://www.ucl.ac.uk/museums-collections
 https://www.ucla.edu
-https://www.ucla.edu:443
+https://www.ucla.edu
 https://www.uclahealth.org
 https://www.uclahealth.org/medical-services/gastro/ibs
 https://www.uclahealth.org/medical-services/sleep-medicine
@@ -17081,7 +17077,7 @@ https://www.udio.com
 https://www.udostreetdance.com
 https://www.uea.ac.uk
 https://www.uea.ac.uk/environmental-sciences
-https://www.uea.ac.uk:443
+https://www.uea.ac.uk
 https://www.ufactory.cc
 https://www.ufc.com
 https://www.uffizi.it
@@ -17215,7 +17211,7 @@ https://www.univ-grenoble-alpes.fr
 https://www.univ-lille.fr
 https://www.univ-lyon1.fr
 https://www.univ-montp3.fr
-https://www.univ-montp3.fr:443
+https://www.univ-montp3.fr
 https://www.univ-nantes.fr
 https://www.univ-rennes.fr
 https://www.univ-toulouse.fr
@@ -17233,7 +17229,7 @@ https://www.unpri.org
 https://www.unrealengine.com
 https://www.unrealengine.com/en-US/metahuman
 https://www.unrealengine.com/marketplace
-https://www.unrealengine.com:443
+https://www.unrealengine.com
 https://www.unrv.com
 https://www.unsw.edu.au
 https://www.unv.org
@@ -17445,7 +17441,7 @@ https://www.vfw.org/history
 https://www.viagogo.com
 https://www.viavisolutions.com/en-us
 https://www.vibrvncy.com
-https://www.vic.ai:443
+https://www.vic.ai
 https://www.vice.com/en/tag/cryptocurrency
 https://www.vice.com/en/tag/memes
 https://www.victorianweb.org
@@ -17632,7 +17628,7 @@ https://www.wavepoetry.com
 https://www.wavesforwater.org
 https://www.wavespartnership.org
 https://www.waybeyond.io
-https://www.waz.de:443
+https://www.waz.de
 https://www.wbaboxing.com
 https://www.wbcboxing.com
 https://www.wbcmuaythai.com
@@ -17691,8 +17687,8 @@ https://www.weforum.org/projects/digital-currency-governance-consortium
 https://www.weforum.org/regions/asia
 https://www.weforum.org/reports/global-risks-report-2023
 https://www.weforum.org/topics/circular-economy
-https://www.weforum.org:443/topics/blockchain
-https://www.weforum.org:443/topics/cybersecurity
+https://www.weforum.org/topics/blockchain
+https://www.weforum.org/topics/cybersecurity
 https://www.weg.net
 https://www.wegweiser-demenz.de
 https://www.weihnachtsdorf.at
@@ -17702,7 +17698,7 @@ https://www.wellington.com/en
 https://www.wellsfargo.com
 https://www.wellsfargo.com/cib/insights/economics/?utm_medium=www-redirect&utm_source=economics
 https://www.wellsfargoadvisors.com
-https://www.welt.de:443
+https://www.welt.de
 https://www.wemeanbusinesscoalition.org
 https://www.wendt-kuehn.de
 https://www.wepowder.com
@@ -17731,7 +17727,7 @@ https://www.wfp.org
 https://www.wfpa.org/forest-management-2/sustainable-forestry/animal-damage
 https://www.wga.hu
 https://www.wgi.org
-https://www.wgsn.com:443/en/blog
+https://www.wgsn.com/en/blog
 https://www.wgtn.ac.nz
 https://www.wgtn.ac.nz/sgees
 https://www.whatsminer.com
@@ -17972,7 +17968,7 @@ https://www.worldwildlife.org/habitats/forests
 https://www.worldwildlife.org/threats/climate-change
 https://www.wosa.co.za/home
 https://www.wowow.co.jp
-https://www.wp.de:443
+https://www.wp.de
 https://www.wpc.ncep.noaa.gov
 https://www.wphna.org
 https://www.wqxr.org
@@ -18045,7 +18041,7 @@ https://www.xterraplanet.com
 https://www.xtriworldtour.com
 https://www.xxlmag.com
 https://www.yachtingworld.com
-https://www.yahoo.co.jp:443
+https://www.yahoo.co.jp
 https://www.yahoo.com
 https://www.yakult-swallows.co.jp
 https://www.yakushiji.or.jp
@@ -18194,8 +18190,7 @@ https://www.zdnet.com/topic/quantum-computing
 https://www.zdnet.fr
 https://www.zeagle.com
 https://www.zeiss.com/metrology/en/home.html
-https://www.zeiss.com/metrology/en/home.html?vaURL=www.zeiss.com/metrology
-https://www.zeiss.com/photonics-and-optics/en/nature-observation.html?vaURL=www.zeiss.com/nature
+https://www.zeiss.com/metrology/en/software/zeiss-calypso.html
 https://www.zeit.de/campus/index
 https://www.zeit.de/english/index
 https://www.zeit.de/index
@@ -18222,12 +18217,12 @@ https://www.zksync.io
 https://www.zmangames.com
 https://www.znkr.or.jp
 https://www.zojoji.or.jp
-https://www.zomato.com:443
+https://www.zomato.com
 https://www.zone-turf.fr
 https://www.zoom.com
 https://www.zoom.com.br
 https://www.zoominfo.com
-https://www.zoopla.co.uk:443
+https://www.zoopla.co.uk
 https://www.zoosociety.org
 https://www.zotac.com
 https://www.zotero.org
@@ -18272,7 +18267,7 @@ https://yagyu-shinkage-ryu.jp
 https://yakuzatokazoku.com
 https://yalebooks.yale.edu
 https://yaleclimateconnections.org
-https://yamaha-motor.com:443/marine
+https://yamaha-motor.com/marine
 https://yardeni.com
 https://yasakatabletennis.com
 https://ycharts.com
@@ -18504,7 +18499,8 @@ https://www.greens.org.nz
 https://www.fdp.de
 https://www.governo.it/it
 https://olaf-scholz.spd.de/start
-https://my.gov.au/en/services?redirectFrom=australia.gov.au
+https://my.gov.au/en/services
+https://australia.gov.au
 https://www.quirinale.it
 https://www.camera.it
 https://www.senato.it/home
@@ -18570,7 +18566,7 @@ https://www.duolingo.com/course/fr/en/Learn-French
 https://www.online-latin-dictionary.com
 https://www.hexcel.com
 https://studyspanish.com
-https://archives.nd.edu:443/words.html
+https://archives.nd.edu/words.html
 https://comprehensibleantiquity.com
 https://cnnespanol.cnn.com
 https://starlink.com
@@ -18699,7 +18695,7 @@ https://www.bhg.com/homekeeping
 https://www.home-storage-solutions-101.com
 https://kids.nationalgeographic.com
 https://www.easypeasyandfun.com
-https://teamtreehouse.com:443
+https://teamtreehouse.com
 https://www.highlightskids.com
 https://wellnessmama.com/natural-home/cleaning-checklist
 https://beta.flylady.net
