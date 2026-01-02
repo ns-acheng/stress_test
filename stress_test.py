@@ -56,6 +56,8 @@ class StressTest:
         self.total_zero_dumps = 0
         self.client_thread = None
         self.validation_enabled = False
+        self.client_enabled_event = threading.Event()
+        self.client_enabled_event.set()
 
     def setup(self):
         for priv in ["SeDebugPrivilege", "SeSystemtimePrivilege", "SeWakeAlarmPrivilege"]:
@@ -116,7 +118,8 @@ class StressTest:
                     self.cfg_mgr.is_64bit,
                     self.config.client_enable_min,
                     self.config.client_enable_max,
-                    self.config.client_disable_ratio
+                    self.config.client_disable_ratio,
+                    self.client_enabled_event
                 ),
                 daemon=True
             )
@@ -246,6 +249,10 @@ class StressTest:
         if not self.validation_enabled:
             logger.info("Validation skipped (disabled by firewall_traffic_mode).")
             return True
+        
+        if self.config.client_disabling_enabled and not self.client_enabled_event.is_set():
+             logger.info("Validation skipped (Client is disabled).")
+             return True
             
         return util_validate.validate_traffic_flow(process_map, self.stop_event)
 
