@@ -320,9 +320,8 @@ def check_tunneling_in_text(process_name, url, text) -> bool:
     except Exception:
         return False
 
-def validate_traffic_flow(process_map, stop_event) -> bool:
+def validate_traffic_flow(process_map, stop_event, exception_checker=None) -> bool:
     # process_map: {"msedge.exe": [url1, url2], "curl.exe": [url3, url4]}
-    
     # Filter out empty target lists
     active_map = {proc: urls for proc, urls in process_map.items() if urls}
     
@@ -366,6 +365,11 @@ def validate_traffic_flow(process_map, stop_event) -> bool:
     for proc, urls in active_map.items():
         for url in urls:
             if not pending[proc][url]:
+                if exception_checker and exception_checker(url):
+                    logger.info(f"URL: {url} ({proc}) -> PASS (In NSClient Exception List)")
+                    pending[proc][url] = True
+                    continue
+
                 logger.info(f"Log validation failed for {url}. Checking Cert...")
                 issuer = util_cert.check_url_cert(url)
                 

@@ -705,3 +705,18 @@ def generate_sftp_traffic(
                     completed += 1
 
     logger.info(f"SFTP finished. Completed uploads: {completed}")
+
+
+def get_hostname_from_url(url: str) -> str:
+    try:
+        hostname = url.strip()
+        if hostname.lower().startswith("https://"):
+            hostname = hostname[8:]
+        elif hostname.lower().startswith("http://"):
+            hostname = hostname[7:]
+        
+        hostname = hostname.split('/')[0]
+        hostname = hostname.split(':')[0]
+        return hostname
+    except Exception:
+        return ""

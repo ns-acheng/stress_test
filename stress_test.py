@@ -257,7 +257,9 @@ class StressTest:
              logger.info("Validation skipped (Client is disabled).")
              return True
             
-        return util_validate.validate_traffic_flow(process_map, self.stop_event)
+        return util_validate.validate_traffic_flow(
+            process_map, self.stop_event, self.cfg_mgr.url_in_nsexception
+        )
 
     def run(self):
         start_input_monitor(self.stop_event)
