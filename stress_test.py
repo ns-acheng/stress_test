@@ -326,12 +326,16 @@ class StressTest:
                 ):
                     idx = count % len(self.config.ab_target_urls)
                     current_ab_url = self.config.ab_target_urls[idx]
-                    util_traffic.run_high_concurrency_test(
-                        current_ab_url, self.config.ab_total_conn, 
-                        self.config.ab_concurrent, self.tool_dir,
-                        self.stop_event,
-                        self.config.ab_duration
-                    )
+                    
+                    if util_traffic.check_url_alive(current_ab_url):
+                        util_traffic.run_high_concurrency_test(
+                            current_ab_url, self.config.ab_total_conn, 
+                            self.config.ab_concurrent, self.tool_dir,
+                            self.stop_event,
+                            self.config.ab_duration
+                        )
+                    else:
+                        logger.warning(f"AB Test skipped. URL not alive: {current_ab_url}")
 
                 curl_flood_urls = []
                 if self.config.curl_flood_enabled:
