@@ -2,11 +2,10 @@ import OpenSSL.crypto as crypto
 import socket
 import ssl
 import logging
-from urllib.parse import urlparse
 
 logger = logging.getLogger()
 
-def check_url_cert(url: str):
+def check_url_cert(url: str) -> str:
     try:
         hostname = url.strip()
         if hostname.startswith("https://"):
@@ -35,4 +34,4 @@ def check_url_cert(url: str):
         return issuer_str
     except Exception as e:
         logger.error(f"Error checking cert for {url}: {e}")
-        return None
+        return ""

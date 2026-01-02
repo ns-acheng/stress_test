@@ -93,7 +93,7 @@ class TOKEN_PRIVILEGES(ctypes.Structure):
         ("Privileges", LUID_AND_ATTRIBUTES * 1),
     ]
 
-def enable_privilege(privilege_name):
+def enable_privilege(privilege_name) -> int:
     k32 = ctypes.windll.kernel32
     advapi32 = ctypes.windll.advapi32
     
@@ -130,15 +130,15 @@ def enable_privilege(privilege_name):
     k32.CloseHandle(hToken)
     return err
 
-def _filetime_to_int(ft):
+def _filetime_to_int(ft) -> int:
     return (ft.dwHighDateTime << 32) + ft.dwLowDateTime
 
-def _get_num_processors():
+def _get_num_processors() -> int:
     sys_info = SYSTEM_INFO()
     ctypes.windll.kernel32.GetSystemInfo(ctypes.byref(sys_info))
     return sys_info.dwNumberOfProcessors
 
-def get_system_memory_usage():
+def get_system_memory_usage() -> float:
     mem_status = MEMORYSTATUSEX()
     mem_status.dwLength = ctypes.sizeof(MEMORYSTATUSEX)
     ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(mem_status))
@@ -287,7 +287,7 @@ def get_process_cpu_usage(pid: int, interval: float = 0.5) -> float:
 def log_resource_usage(
     process_name: str,
     log_dir="log"
-):
+) -> bool:
     pid = get_pid_by_name(process_name)
     if pid == 0:
         return False

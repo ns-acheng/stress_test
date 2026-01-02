@@ -23,12 +23,12 @@ headers = {
                   '(KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'
 }
 
-def _is_stopped(stop_event):
+def _is_stopped(stop_event) -> bool:
     if stop_event is None:
         return False
     return stop_event.is_set()
 
-def read_urls_from_file(filename):
+def read_urls_from_file(filename) -> list[str] | None:
     urls = []
     try:
         with open(filename, 'r', encoding='utf-8') as f:
@@ -40,18 +40,21 @@ def read_urls_from_file(filename):
         logger.error(f"Error: The file '{filename}' was not found.")
         return None
 
-def check_url_alive(url):
+def check_url_alive(url) -> str:
     try:
         response = requests.head(
             url, timeout=5, allow_redirects=True, headers=headers
         )
         if response.status_code < 400 or response.status_code == 403:
+            if response.url != url:
+                logger.info(f"Redirect detected: {url} -> {response.url}")
+            
             return response.url
-        return False
+        return ""
     except Exception:
-        return False
+        return ""
 
-def check_urls_and_write_status(urls):
+def check_urls_and_write_status(urls) -> None:
     if not urls:
         return
 
@@ -75,13 +78,11 @@ def check_urls_and_write_status(urls):
             if url in existing_urls:
                 continue
 
-            final_url = check_url_alive(url)
-            is_alive = bool(final_url)
+            alive_url = check_url_alive(url)
+            is_alive = bool(alive_url)
+            final_url = alive_url if is_alive else url
             status_text = "ALIVE" if is_alive else "DEAD"
             
-            if is_alive and final_url != url:
-                status_text += f" (Redirect -> {final_url})"
-
             logger.info(f"[{index + 1}/{len(urls)}] {url} -> {status_text}")
             
             if is_alive:
@@ -100,7 +101,7 @@ def check_urls_and_write_status(urls):
 
     logger.info(f"Complete. Wrote {alive_count} ALIVE URLs to '{out_file}'.")
 
-def _dns_worker(domain):
+def _dns_worker(domain) -> None:
     try:
         chars = string.ascii_lowercase + string.digits
         rand_sub = ''.join(random.choices(chars, k=8))
@@ -115,7 +116,7 @@ def generate_dns_flood(
     duration: float = 0, 
     concurrency: int = 20,
     stop_event: threading.Event = None
-):
+) -> None:
     if not domains:
         return
 
@@ -166,7 +167,7 @@ def generate_dns_flood(
                     pct = int((completed / count) * 100)
                     logger.info(f"DNS Flood progress: {pct}%")
 
-def _udp_worker(target, port, duration, count, stop_event, family):
+def _udp_worker(target, port, duration, count, stop_event, family) -> None:
     sock = socket.socket(family, socket.SOCK_DGRAM)
     payload = os.urandom(1024)
     
@@ -207,7 +208,7 @@ def generate_udp_flood(
     concurrency: int = 1,
     stop_event: threading.Event = None, 
     ipv6: bool = False
-):
+) -> None:
     msg = f"UDP flood -> {target}:{port}"
     if duration > 0:
         msg += f" for {duration}s"
@@ -241,7 +242,7 @@ def run_high_concurrency_test(
     tool_dir: str,
     stop_event: threading.Event = None,
     duration: float = 0
-):
+) -> None:
     ab_path = os.path.join(tool_dir, "ab", "ab.exe")
     if not os.path.exists(ab_path):
         logger.warning(f"AB not found at {ab_path}. Skipping.")
@@ -342,7 +343,7 @@ def run_high_concurrency_test(
 
 def open_browser_tabs(
     urls, tool_dir, max_tabs, max_mem, stop_event, log_dir, wait_sec
-):
+) -> list[str]:
     opened_urls = []
     if not urls:
         logger.warning("No URLs loaded to open.")
@@ -400,7 +401,7 @@ def open_browser_tabs(
     
     return opened_urls
 
-def curl_requests(urls, stop_event=None):
+def curl_requests(urls, stop_event=None) -> None:
     if not urls:
         return
 
@@ -423,7 +424,7 @@ def curl_requests(urls, stop_event=None):
         run_curl(url)
         logger.info(f"CURL with URL: {url}")
 
-def _curl_flood_worker(url):
+def _curl_flood_worker(url) -> str:
     try:
         cmd = ["curl", "-s", "--max-time", "15", "-o", "NUL", url]
         subprocess.run(
@@ -439,7 +440,7 @@ def generate_curl_flood(
     duration=0, 
     concurrency=50, 
     stop_event=None
-):
+) -> list[str]:
     all_used_urls = []
     if not urls:
         logger.warning("No URLs for CURL flood.")
@@ -538,7 +539,7 @@ class VirtualFile(io.BytesIO):
     def tell(self):
         return self._pos
 
-def _ftp_worker(target, port, user, password, file_size_mb, is_ftps):
+def _ftp_worker(target, port, user, password, file_size_mb, is_ftps) -> bool:
     ftp = None
     try:
         if is_ftps:
@@ -580,7 +581,7 @@ def _ftp_worker(target, port, user, password, file_size_mb, is_ftps):
 def generate_ftp_traffic(
     target, port, user, password, file_size_mb, 
     count, duration, concurrency, stop_event, is_ftps=False
-):
+) -> None:
     protocol = "FTPS" if is_ftps else "FTP"
     msg = f"{protocol} Traffic: {target}:{port}, Size: {file_size_mb}MB"
     if duration > 0:
@@ -627,13 +628,13 @@ def generate_ftp_traffic(
 def generate_ftps_traffic(
     target, port, user, password, file_size_mb, 
     count, duration, concurrency, stop_event
-):
+) -> None:
     generate_ftp_traffic(
         target, port, user, password, file_size_mb, 
         count, duration, concurrency, stop_event, is_ftps=True
     )
 
-def _sftp_worker(target, port, user, password, file_size_mb):
+def _sftp_worker(target, port, user, password, file_size_mb) -> bool:
     transport = None
     sftp = None
     try:
@@ -665,7 +666,7 @@ def _sftp_worker(target, port, user, password, file_size_mb):
 def generate_sftp_traffic(
     target, port, user, password, file_size_mb, 
     count, duration, concurrency, stop_event
-):
+) -> None:
     msg = f"SFTP Traffic: {target}:{port}, Size: {file_size_mb}MB"
     if duration > 0:
         msg += f", duration {duration}s"

@@ -6,7 +6,7 @@ from util_time import smart_sleep
 
 logger = logging.getLogger()
 
-def _wait_interval(duration, stop_event):
+def _wait_interval(duration, stop_event) -> bool:
     steps = int(duration // 2)
     remainder = duration % 2
     for _ in range(steps):
@@ -22,7 +22,7 @@ def client_toggler_loop(
     enable_min, 
     enable_max, 
     disable_ratio
-):
+) -> None:
     logger.info("Client Toggle Thread Started.")
     while not stop_event.is_set():
         run_time = random.randint(enable_min, enable_max)

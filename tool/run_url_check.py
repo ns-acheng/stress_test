@@ -76,12 +76,16 @@ def main():
         for future in concurrent.futures.as_completed(future_to_url):
             url = future_to_url[future]
             completed_checks += 1
-            processed_count += 1 # This is actually skipped + checked
+            processed_count += 1
             
             try:
                 result = future.result()
-                is_alive = bool(result)
-                final_url = result if is_alive else url
+                if result:
+                    is_alive = True
+                    final_url = result
+                else:
+                    is_alive = False
+                    final_url = url
             except Exception as exc:
                 logger.error(f"{url} generated an exception: {exc}")
                 is_alive = False

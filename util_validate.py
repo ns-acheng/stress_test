@@ -269,25 +269,25 @@ class NsClientLogValidator:
 _validator = None
 _validator_lock = threading.Lock()
 
-def get_validator():
+def get_validator() -> object:
     global _validator
     with _validator_lock:
         if _validator is None:
             _validator = NsClientLogValidator()
     return _validator
 
-def get_steering_config():
+def get_steering_config() -> dict:
     return get_validator().get_steering_config()
 
-def check_nsclient_log(pattern):
+def check_nsclient_log(pattern) -> bool:
     validator = get_validator()
     return validator.check_log(pattern, is_regex=False)
 
-def check_nsclient_log_regex(pattern, flags=0):
+def check_nsclient_log_regex(pattern, flags=0) -> bool:
     validator = get_validator()
     return validator.check_log(pattern, flags=flags, is_regex=True)
 
-def check_tunneling_in_text(process_name, url, text):
+def check_tunneling_in_text(process_name, url, text) -> bool:
     if not url or not text:
         return False
     try:
@@ -320,7 +320,7 @@ def check_tunneling_in_text(process_name, url, text):
     except Exception:
         return False
 
-def validate_traffic_flow(process_map, stop_event):
+def validate_traffic_flow(process_map, stop_event) -> bool:
     # process_map: {"msedge.exe": [url1, url2], "curl.exe": [url3, url4]}
     
     # Filter out empty target lists
