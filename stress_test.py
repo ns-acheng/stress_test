@@ -29,6 +29,7 @@ TINY_SEC = 5
 SHORT_SEC = 15
 STD_SEC = 30
 LONG_SEC = 60
+BATCH_SIZE = 50
 
 try:
     log_helper = LogSetup()
@@ -229,11 +230,11 @@ class StressTest:
         if smart_sleep(TINY_SEC, self.stop_event): 
             return
     
-    def exec_browser_tabs(self):
+    def exec_browser_tabs(self, urls):
         if not self.config.enable_browser_tabs_open:
             return []
         return util_traffic.open_browser_tabs(
-            self.urls, self.tool_dir, self.config.browser_max_tabs,
+            urls, self.tool_dir, self.config.browser_max_tabs,
             self.config.browser_max_memory, self.stop_event, current_log_dir,
             STD_SEC
         )
@@ -271,9 +272,28 @@ class StressTest:
 
                 if self.stop_event.is_set(): break
 
+                current_iter_urls = []
+
                 if self.config.dns_enabled:
+                    dns_batch_size = BATCH_SIZE
+                    if self.urls:
+                        current_iter_urls = random.sample(
+                            self.urls, min(len(self.urls), dns_batch_size)
+                        )
+                    
+                    dns_domains = []
+                    for u in current_iter_urls:
+                        try:
+                            parsed = urlparse(u)
+                            if parsed.netloc:
+                                dns_domains.append(parsed.netloc)
+                            else:
+                                dns_domains.append(u.split('/')[0])
+                        except Exception:
+                            pass
+
                     util_traffic.generate_dns_flood(
-                        self.urls, 
+                        dns_domains, 
                         self.config.dns_count,
                         self.config.dns_duration,
                         self.config.dns_concurrent,
@@ -315,8 +335,20 @@ class StressTest:
 
                 curl_flood_urls = []
                 if self.config.curl_flood_enabled:
+                    curl_targets = current_iter_urls[:]
+                    target_count = BATCH_SIZE
+                    
+                    if len(curl_targets) < target_count and self.urls:
+                        existing_set = set(curl_targets)
+                        pool = [u for u in self.urls if u not in existing_set]
+                        needed = target_count - len(curl_targets)
+                        if pool:
+                            added = random.sample(pool, min(len(pool), needed))
+                            curl_targets.extend(added)
+                            current_iter_urls.extend(added)
+
                     curl_flood_urls = util_traffic.generate_curl_flood(
-                        self.urls, 
+                        curl_targets, 
                         self.config.curl_flood_count,
                         self.config.curl_flood_duration,
                         self.config.curl_flood_concurrent, 
@@ -367,7 +399,18 @@ class StressTest:
                 if self.cfg_mgr.is_false_close:
                     self.exec_failclose_check()
                 else:
-                    browser_urls = self.exec_browser_tabs()
+                    browser_targets = current_iter_urls[:]
+                    needed = self.config.browser_max_tabs
+                    if len(browser_targets) < needed and self.urls:
+                        existing_set = set(browser_targets)
+                        pool = [u for u in self.urls if u not in existing_set]
+                        missing = needed - len(browser_targets)
+                        if pool:
+                            added = random.sample(pool, min(len(pool), missing))
+                            browser_targets.extend(added)
+                            current_iter_urls.extend(added)
+
+                    browser_urls = self.exec_browser_tabs(browser_targets)
                     if smart_sleep(2, self.stop_event): break
 
 
