@@ -2,18 +2,22 @@ import OpenSSL.crypto as crypto
 import socket
 import ssl
 import logging
+from urllib.parse import urlparse
 
 logger = logging.getLogger()
 
 def check_url_cert(url: str) -> str:
     try:
-        hostname = url.strip()
-        if hostname.startswith("https://"):
-            hostname = hostname[8:]
-        elif hostname.startswith("http://"):
-            hostname = hostname[7:]
-
-        hostname = hostname.split('/')[0]
+        target_url = url.strip()
+        if not target_url.startswith(('http://', 'https://')):
+            target_url = 'https://' + target_url
+            
+        parsed = urlparse(target_url)
+        hostname = parsed.hostname
+        
+        if not hostname:
+            logger.error(f"Could not extract hostname from {url}")
+            return ""
 
         dst = (hostname, 443)
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
