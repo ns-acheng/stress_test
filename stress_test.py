@@ -90,6 +90,9 @@ class StressTest:
         self.cfg_mgr.setup_environment()
         self.cfg_mgr.restore_config(remove_only=True)
 
+        logger.info("Setup: Ensuring Client is Enabled...")
+        nsdiag_enable_client(True, self.cfg_mgr.is_64bit)
+
     def tear_down(self):
         self.cfg_mgr.restore_config()
         if os.path.exists(self.manage_nic_script):
