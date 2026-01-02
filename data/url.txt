@@ -1699,7 +1699,7 @@ https://ebird.org/ebird/home
 https://ebpf.io
 https://ec.europa.eu/clima
 https://ec.europa.eu/eurostat
-https://ec.gc.ca/Error%20404.html
+https://www.canada.ca/en/environment-climate-change.html
 https://ecas.org
 https://ecco-ibd.eu
 https://ecfr.eu
@@ -1806,6 +1806,7 @@ https://en.wikipedia.org/wiki/The_Beatles
 https://en.wikipedia.org/wiki/World_Sudoku_Championship
 https://encyclopedia.1914-1918-online.net
 https://encyclopediaofmath.org/wiki/Main_Page
+https://domeinenbank.nl/en/about-us/
 https://endeavouros.com
 https://endel.io
 https://endnote.com/zh
@@ -1841,7 +1842,6 @@ https://equs.org
 https://erecipe.woman.excite.co.jp
 https://erefdn.org
 https://erj.ersjournals.com
-https://error.alibaba.com/error404.htm
 https://ersa.org
 https://escentual.com
 https://eseb.org
@@ -2921,7 +2921,6 @@ https://journeywithparkinsons.com
 https://jovian.com
 https://joybird.com
 https://joylandpublishing.com
-https://joyofbaking.com/404.html
 https://joyofbaking.com/ChristmasBaking.html
 https://jppuzzles.com
 https://jrocknews.com
@@ -3622,7 +3621,6 @@ https://nakamotoinstitute.org
 https://namelix.com
 https://nanog.org
 https://nanoleaf.me
-https://nanoleaf.me:443
 https://narashikanko.or.jp
 https://narf.org
 https://nargs.org
@@ -3631,7 +3629,7 @@ https://naruto-official.com
 https://nasjonalforeningen.no/demens
 https://natal.rn.gov.br
 https://natalie.mu/music
-https://natasha.co.jp/404.html
+https://natasha.co.jp/news.html
 https://natashadenona.com
 https://nationalceliac.org
 https://nationalchefoftheyear.co.uk/2025/en/page/home
@@ -6594,9 +6592,7 @@ https://www.apta.org
 https://www.aptaacutecare.org
 https://www.aqara.com/en
 https://www.aqr.com
-https://www.aqr.com/404
 https://www.aqr.com/Insights
-https://www.aqr.com/insights
 https://www.aqt.eu
 https://www.aquafence.com
 https://www.aquariandrumheads.com
@@ -7710,7 +7706,6 @@ https://www.canada.ca/en/department-national-defence.html
 https://www.canada.ca/en/polar-knowledge.html
 https://www.canada.ca/en/revenue-agency.html?utm_campaign=not-applicable&utm_medium=redirect&utm_source=cra-arc.gc.ca_redirect
 https://www.canada.ca/en/revenue-agency/services/tax/technical-information/income-tax/income-tax-folios-index/series-3-property-investments-savings-plans/series-3-property-investments-savings-plans-folio-9-miscellaneous-payments-receipts/income-tax-folio-s3-f9-c1-lottery-winnings-miscellaneous-receipts-income-losses-crime.html
-https://www.canada.ca/errors/404.html
 https://www.canadapost-postescanada.ca/cpc/en/our-company/write-letter-to-santa.page
 https://www.canadiangeographic.ca
 https://www.canalplus.com
@@ -8925,7 +8920,7 @@ https://www.diis.dk
 https://www.dijon.fr
 https://www.dillards.com/c/home-holiday-trimmings
 https://www.dimensional.com
-https://www.dimensional.com?p=404ACC37C6E64F38BF86EDE7F6DACA95
+https://www.dimensional.com/dk-en/financial-professionals
 https://www.ding-dong.com.tw
 https://www.dinneratthezoo.com/category/holiday/christmas
 https://www.dinobase.org
@@ -10216,7 +10211,6 @@ https://www.georgetown.edu
 https://www.geosci.uchicago.edu
 https://www.geoscience.gov.au
 https://www.geosociety.org/GSA/_iCore/Contacts/Sign_In.aspx?LoginRedirect=true&returnurl=%2f
-https://www.geosociety.org/GSA/_iCore/Contacts/Sign_In.aspx?LoginRedirect=true&returnurl=%2f404.aspx%3faspxerrorpath%3d%2fgsa%2fscience%2fclimate%2fhome.aspx%26aspxerrorhost%3dhttps%3a%2f%2fwww.geosociety.org%26aspxerroropid%3db962f53e87b05dc7659ab445bcd71054
 https://www.geothermal.org
 https://www.gerdhelp.com
 https://www.germanicmythology.com
@@ -10401,7 +10395,6 @@ https://www.goldstandard.org
 https://www.goldwind.com/cn
 https://www.goldwind.com/en
 https://www.golem.de/sonstiges/zustimmung/auswahl.html?from=https%3A%2F%2Fwww.golem.de%2F
-https://www.gomio.com/404.html
 https://www.gonbops.com
 https://www.gong.io
 https://www.goodfoodguide.co.uk
@@ -12358,7 +12351,6 @@ https://www.manar-al-athar.ox.ac.uk
 https://www.manaus.am.gov.br
 https://www.manchego-cheese.com
 https://www.manchester.ac.uk
-https://www.manchester.ac.uk/search/404
 https://www.manduka.com
 https://www.mandy.com
 https://www.mangotv.com
@@ -12616,7 +12608,6 @@ https://www.merckmanuals.com
 https://www.mercotte.fr
 https://www.mercurymarine.com/an/en
 https://www.mercurynews.com
-https://www.mercy.com/404?item=%2fhealth-care-services%2fdigestive-health%2fconditions%2fgallstones&user=extranet%5cAnonymous&site=website
 https://www.mercycorps.org
 https://www.mercycorps.org/what-we-do/food-security-nutrition
 https://www.mercycorps.org/what-we-do/peace-conflict
@@ -12881,7 +12872,6 @@ https://www.morphmarket.com
 https://www.morphobank.org
 https://www.morphonix.com
 https://www.morrisarboretum.org
-https://www.morrisons.com/help/404
 https://www.morrowbatteries.com
 https://www.mortgagenewsdaily.com
 https://www.mortiseandtenonmag.com
@@ -13420,7 +13410,8 @@ https://www.nasdaq.com/market-activity/stocks/zts
 https://www.nasdaq.com/solutions/fintech/who-we-serve/digital-assets-carbon-markets
 https://www.nasdaq.com/solutions/global-indexes/data/giw
 https://www.nasdaq.com/solutions/global-indexes/nasdaq-100
-https://www.nasdaqtrader.com/Trader.aspx?id=http404
+https://www.nasdaqtrader.com
+https://www.nasdaq.com/solutions/phlx-sector-based-index-options
 https://www.nasonline.org
 https://www.nasw.org
 https://www.natap.org
@@ -13846,7 +13837,6 @@ https://www.nutrition.org.tw
 https://www.nutrition.org.uk
 https://www.nutritionix.com
 https://www.nuveen.com/global
-https://www.nuveen.com/global/errors/404?item=%2finsights&user=extranet%5cAnonymous&site=website
 https://www.nuyorican.org
 https://www.nvge.nl
 https://www.nvidia.cn
@@ -14671,7 +14661,7 @@ https://www.puckpedia.com
 https://www.pulumi.com
 https://www.punchline.com
 https://www.punok.com
-https://www.punters.com.au/remote/check_cookie.html?url=https%3A%2F%2Fwww.punters.com.au%2F
+https://www.punters.com.au/tracks/randwick_27/results/
 https://www.puppyarn.com
 https://www.puratos.com
 https://www.puravidabybrandt.com/contact
@@ -14757,7 +14747,7 @@ https://www.rabbit.tech/rabbit-r1
 https://www.rabbitmq.com
 https://www.rabobank.com/en/about-rabobank/food-agribusiness
 https://www.racefans.net
-https://www.racenet.com.au/remote/check_cookie.html?url=https%3A%2F%2Fwww.racenet.com.au%2F
+https://www.racenet.com.au/nocookies?a=A.flavipes
 https://www.racing-reference.info
 https://www.racing.com
 https://www.racingnsw.com.au
@@ -14844,7 +14834,6 @@ https://www.rcseng.ac.uk
 https://www.readcube.com
 https://www.reading.ac.uk
 https://www.reading.ac.uk/meteorology
-https://www.reading.ac.uk/search/404.htm
 https://www.readwrite.com
 https://www.ready.gov
 https://www.ready.gov/earthquakes
@@ -15000,7 +14989,7 @@ https://www.reptileevolution.com
 https://www.reptileforums.net
 https://www.rescue.org
 https://www.rescue.org/eu
-https://www.rescue.org/outcome/health?ms=fundraisers_fy22_eoy_app_vac_equity_usa_phil_nov&initialms=fundraisers_fy22_eoy_app_vac_equity_usa_phil_nov
+https://www.rescue.org/country/germany
 https://www.researchaffiliates.com/home
 https://www.researchgate.net
 https://www.researchgate.net/topic/History
