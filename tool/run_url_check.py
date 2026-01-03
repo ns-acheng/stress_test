@@ -78,6 +78,14 @@ def clean_session_url(url: str) -> str:
             
     return url
 
+def is_unwanted_redirect(url: str) -> bool:
+    url_lower = url.lower()
+    if "accounts.google.com" in url_lower:
+        return True
+    if "google.com/accounts" in url_lower:
+        return True
+    return False
+
 def process_candidate(raw_line: str) -> str | None:
     parts = raw_line.strip().split(',')
     domain = parts[-1].strip() 
@@ -104,6 +112,9 @@ def process_candidate(raw_line: str) -> str | None:
         final_url = check_url_alive(url)
 
     if final_url:
+        if is_unwanted_redirect(final_url):
+            logger.warning(f"Blocked unwanted redirect: {final_url}")
+            return None
         return clean_session_url(final_url)
 
     return None
