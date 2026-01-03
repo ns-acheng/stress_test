@@ -24,6 +24,12 @@
     }
   },
   "traffic_gen": {
+    "dns": {
+      "enable": 1,
+      "duration_sec": 0,
+      "count": 500,
+      "concurrent_conn": 25
+    },
     "browser": {
       "enable": 1,
       "max_memory": 60,
@@ -37,12 +43,6 @@
       "concurrent_conn": 50,
       "log_validation": 1,
       "log_validation_ratio": 5
-    },
-    "dns": {
-      "enable": 1,
-      "duration_sec": 0,
-      "count": 2000,
-      "concurrent_conn": 50
     },
     "udp": {
       "enable": 0,

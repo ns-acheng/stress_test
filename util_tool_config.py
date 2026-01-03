@@ -91,7 +91,8 @@ class ToolConfig:
         ("browser_max_tabs", 1, 300, 20),
         ("aoac_sleep_duration", 10, 600, 60),
         ("long_idle_time_min", 300, 7200, 300),
-        ("long_idle_time_max", 300, 7200, 300)
+        ("long_idle_time_max", 300, 7200, 300),
+        ("dns_count", 10, 10000, 50)
     ]
 
     # Traffic Validation: (Name, DurationAttr, CountAttr, ConcurrencyAttr, EnabledAttr)
@@ -138,7 +139,7 @@ class ToolConfig:
         self.browser_log_validation = 0
 
         self.dns_enabled = False
-        self.dns_count = 500
+        self.dns_count = 50
         self.dns_duration = 0
         self.dns_concurrent = 20
 

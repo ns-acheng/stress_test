@@ -2,6 +2,8 @@ import os
 import shutil
 import json
 import logging
+import fnmatch
+from util_traffic import get_hostname_from_url
 
 logger = logging.getLogger()
 
@@ -19,6 +21,47 @@ class AgentConfigManager:
         self.is_64bit = False
         self.is_local_cfg = False
         self.is_false_close = False
+        
+        self.exception_path = os.path.join(
+            self.stagent_root, "data", "nsexception.json"
+        )
+        self.exception_names = []
+        self.load_nsexception()
+
+    def load_nsexception(self):
+        self.exception_names = []
+        if not os.path.exists(self.exception_path):
+            return
+
+        try:
+            with open(self.exception_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            if isinstance(data, list):
+                for rule in data:
+                    names = rule.get("names", [])
+                    if isinstance(names, list):
+                        self.exception_names.extend(names)
+            
+            logger.info(
+                f"Loaded {len(self.exception_names)} exception patterns "
+                f"from {self.exception_path}"
+            )
+        except Exception as e:
+            logger.error(f"Failed to load nsexception.json: {e}")
+
+    def url_in_nsexception(self, url: str) -> bool:
+        try:
+            host = get_hostname_from_url(url)
+            if not host:
+                return False
+
+            for pattern in self.exception_names:
+                if fnmatch.fnmatch(host, pattern):
+                    return True
+            return False
+        except Exception:
+            return False
 
     def setup_environment(self):
         check_path = r"C:\Program Files\Netskope\STAgent\stAgentSvc.exe"

@@ -20,7 +20,7 @@ class LARGE_INTEGER(ctypes.Structure):
     _fields_ = [("LowPart", wintypes.DWORD),
                 ("HighPart", wintypes.LONG)]
 
-def enter_s0_and_wake(duration_seconds: int):
+def enter_s0_and_wake(duration_seconds: int) -> None:
     handle = kernel32.CreateWaitableTimerW(None, True, None)
     if not handle:
         logger.error(

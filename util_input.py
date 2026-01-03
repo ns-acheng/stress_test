@@ -5,7 +5,7 @@ import logging
 
 logger = logging.getLogger()
 
-def start_input_monitor(stop_event: threading.Event):
+def start_input_monitor(stop_event: threading.Event) -> None:
     def _monitor():
         logger.info("Input monitor started. Press ESC or Ctrl+C to stop.")
         while not stop_event.is_set():

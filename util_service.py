@@ -7,7 +7,7 @@ from util_subprocess import nsdiag_collect_log
 
 logger = logging.getLogger()
 
-def get_service_status(service_name):
+def get_service_status(service_name) -> str:
     try:
         status = subprocess.check_output(
             ["sc", "query", service_name], 
@@ -26,7 +26,7 @@ def get_service_status(service_name):
     except subprocess.CalledProcessError:
         return "NOT_FOUND"
 
-def start_service(service_name):
+def start_service(service_name) -> bool:
     try:
         logger.info(f"Starting service '{service_name}'...")
         subprocess.run(["sc", "start", service_name], check=True)
@@ -35,7 +35,7 @@ def start_service(service_name):
         logger.error(f"Failed to start {service_name}: {e}")
         return False
 
-def stop_service(service_name, timeout=30):
+def stop_service(service_name, timeout=30) -> bool:
     try:
         logger.info(f"Stopping service '{service_name}'...")
         subprocess.run(["sc", "stop", service_name], check=False)
@@ -56,13 +56,13 @@ def stop_service(service_name, timeout=30):
         logger.error(f"Exception stopping {service_name}: {e}")
         return False
 
-def _get_pid_by_name(process_name):
+def _get_pid_by_name(process_name) -> int | None:
     for proc in psutil.process_iter(['pid', 'name']):
         if proc.info['name'] and proc.info['name'].lower() == process_name.lower():
             return proc.info['pid']
     return None
 
-def handle_non_stop(service_name, is_64bit, log_dir):
+def handle_non_stop(service_name, is_64bit, log_dir) -> None:
     logger.warning(f"Handling non-stop for '{service_name}'. Waiting extra 60s...")
     for i in range(60):
         status = get_service_status(service_name)

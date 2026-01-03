@@ -4,13 +4,13 @@ import logging
 
 logger = logging.getLogger()
 
-def run_batch(batch_file: str):
+def run_batch(batch_file: str) -> None:
     try:
         subprocess.Popen(["cmd", "/c", batch_file])
     except Exception as e:
         logger.error(f"Failed to run batch file {batch_file}: {e}")
 
-def run_powershell(script_path, args=None):
+def run_powershell(script_path, args=None) -> None:
     command = [
         "powershell.exe",
         "-ExecutionPolicy", "Bypass",
@@ -47,7 +47,7 @@ def run_powershell(script_path, args=None):
     except FileNotFoundError:
         logger.error("PowerShell.exe not found in PATH.")
 
-def run_curl(url: str):
+def run_curl(url: str) -> None:
     try:
         subprocess.Popen(
             ["curl", "-v", url],
@@ -85,7 +85,7 @@ def _run_nsdiag_generic(nsdiag_path: str, args: list, desc: str) -> bool:
         logger.error(f"Details: {err}")
         return False
 
-def nsdiag_collect_log(timestamp: str, is_64bit: bool, output_dir: str):
+def nsdiag_collect_log(timestamp: str, is_64bit: bool, output_dir: str) -> None:
     nsdiag_path = _get_nsdiag_path(is_64bit)
     
     if not os.path.exists(output_dir):
@@ -98,16 +98,16 @@ def nsdiag_collect_log(timestamp: str, is_64bit: bool, output_dir: str):
     if success:
         logger.info(f"Log bundle created: {output_file}")
 
-def nsdiag_update_config(is_64bit: bool = True):
+def nsdiag_update_config(is_64bit: bool = True) -> None:
     nsdiag_path = _get_nsdiag_path(is_64bit)
     _run_nsdiag_generic(nsdiag_path, ["-u"], "config update")
 
-def nsdiag_enable_client(enable: bool, is_64bit: bool = True):
+def nsdiag_enable_client(enable: bool, is_64bit: bool = True) -> None:
     nsdiag_path = _get_nsdiag_path(is_64bit)
     action = "enable" if enable else "disable"
     _run_nsdiag_generic(nsdiag_path, ["-t", action], f"client {action}")
 
-def enable_wake_timers():
+def enable_wake_timers() -> bool:
     subgroup = "238C9FA8-0AAD-41ED-83F4-97BE242C8F20" 
     setting  = "BD3B718A-0680-4D9D-8AB2-E1D2B4EF806D"
     val = "1"

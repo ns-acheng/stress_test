@@ -29,6 +29,7 @@ TINY_SEC = 5
 SHORT_SEC = 15
 STD_SEC = 30
 LONG_SEC = 60
+BATCH_SIZE = 50
 
 try:
     log_helper = LogSetup()
@@ -51,10 +52,13 @@ class StressTest:
         self.stop_event = threading.Event()
         
         self.urls = []
+        self.url_cursor = 0
         self.manage_nic_script = os.path.join(self.tool_dir, "manage_nic.ps1")
         self.total_zero_dumps = 0
         self.client_thread = None
         self.validation_enabled = False
+        self.client_enabled_event = threading.Event()
+        self.client_enabled_event.set()
 
     def setup(self):
         for priv in ["SeDebugPrivilege", "SeSystemtimePrivilege", "SeWakeAlarmPrivilege"]:
@@ -87,6 +91,9 @@ class StressTest:
         self.cfg_mgr.setup_environment()
         self.cfg_mgr.restore_config(remove_only=True)
 
+        logger.info("Setup: Ensuring Client is Enabled...")
+        nsdiag_enable_client(True, self.cfg_mgr.is_64bit)
+
     def tear_down(self):
         self.cfg_mgr.restore_config()
         if os.path.exists(self.manage_nic_script):
@@ -101,6 +108,7 @@ class StressTest:
             with open(self.url_file, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
             self.urls = [line.strip().rstrip('/') for line in lines if line.strip()]
+            random.shuffle(self.urls)
             logger.info(f"Loaded {len(self.urls)} URLs from {self.url_file}")
         except Exception as e:
             logger.error(f"Error loading URLs: {e}")
@@ -115,7 +123,8 @@ class StressTest:
                     self.cfg_mgr.is_64bit,
                     self.config.client_enable_min,
                     self.config.client_enable_max,
-                    self.config.client_disable_ratio
+                    self.config.client_disable_ratio,
+                    self.client_enabled_event
                 ),
                 daemon=True
             )
@@ -133,11 +142,8 @@ class StressTest:
         logger.info(f"Checking {len(test_urls)} URLs for reachability...")
         for url in test_urls:
             if self.stop_event.is_set(): break
-            alive_result = util_traffic.check_url_alive(url)
-            if alive_result:
+            if util_traffic.check_url_alive(url):
                 status = "ALIVE"
-                if alive_result != url:
-                    status += f" (Redirect -> {alive_result})"
             else:
                 status = "DEAD (Blocked)"
             logger.info(f"URL: {url} -> {status}")
@@ -232,11 +238,11 @@ class StressTest:
         if smart_sleep(TINY_SEC, self.stop_event): 
             return
     
-    def exec_browser_tabs(self):
+    def exec_browser_tabs(self, urls):
         if not self.config.enable_browser_tabs_open:
             return []
         return util_traffic.open_browser_tabs(
-            self.urls, self.tool_dir, self.config.browser_max_tabs,
+            urls, self.tool_dir, self.config.browser_max_tabs,
             self.config.browser_max_memory, self.stop_event, current_log_dir,
             STD_SEC
         )
@@ -248,8 +254,42 @@ class StressTest:
         if not self.validation_enabled:
             logger.info("Validation skipped (disabled by firewall_traffic_mode).")
             return True
+        
+        if self.config.client_disabling_enabled and not self.client_enabled_event.is_set():
+             logger.info("Validation skipped (Client is disabled).")
+             return True
             
-        return util_validate.validate_traffic_flow(process_map, self.stop_event)
+        return util_validate.validate_traffic_flow(
+            process_map, self.stop_event, self.cfg_mgr.url_in_nsexception
+        )
+
+    def get_next_batch(self, batch_size):
+        if not self.urls:
+            return []
+        
+        if len(self.urls) <= batch_size:
+            batch = self.urls[:]
+            random.shuffle(self.urls)
+            return batch
+            
+        end_idx = self.url_cursor + batch_size
+        if end_idx <= len(self.urls):
+            batch = self.urls[self.url_cursor : end_idx]
+            self.url_cursor = end_idx
+            if self.url_cursor == len(self.urls):
+                 self.url_cursor = 0
+                 random.shuffle(self.urls)
+            return batch
+        else:
+            # Wrap around
+            batch = self.urls[self.url_cursor :]
+            random.shuffle(self.urls)
+            self.url_cursor = 0
+            needed = batch_size - len(batch)
+            if needed > 0:
+                batch.extend(self.urls[0:needed])
+                self.url_cursor = needed
+            return batch
 
     def run(self):
         start_input_monitor(self.stop_event)
@@ -274,9 +314,22 @@ class StressTest:
 
                 if self.stop_event.is_set(): break
 
+                current_iter_urls = self.get_next_batch(BATCH_SIZE)
+
                 if self.config.dns_enabled:
+                    dns_domains = []
+                    for u in current_iter_urls:
+                        try:
+                            parsed = urlparse(u)
+                            if parsed.netloc:
+                                dns_domains.append(parsed.netloc)
+                            else:
+                                dns_domains.append(u.split('/')[0])
+                        except Exception:
+                            pass
+
                     util_traffic.generate_dns_flood(
-                        self.urls, 
+                        dns_domains, 
                         self.config.dns_count,
                         self.config.dns_duration,
                         self.config.dns_concurrent,
@@ -309,17 +362,33 @@ class StressTest:
                 ):
                     idx = count % len(self.config.ab_target_urls)
                     current_ab_url = self.config.ab_target_urls[idx]
-                    util_traffic.run_high_concurrency_test(
-                        current_ab_url, self.config.ab_total_conn, 
-                        self.config.ab_concurrent, self.tool_dir,
-                        self.stop_event,
-                        self.config.ab_duration
-                    )
+                    
+                    if util_traffic.check_url_alive(current_ab_url):
+                        util_traffic.run_high_concurrency_test(
+                            current_ab_url, self.config.ab_total_conn, 
+                            self.config.ab_concurrent, self.tool_dir,
+                            self.stop_event,
+                            self.config.ab_duration
+                        )
+                    else:
+                        logger.warning(f"AB Test skipped. URL not alive: {current_ab_url}")
 
                 curl_flood_urls = []
                 if self.config.curl_flood_enabled:
+                    curl_targets = current_iter_urls[:]
+                    target_count = BATCH_SIZE
+                    
+                    if len(curl_targets) < target_count and self.urls:
+                        existing_set = set(curl_targets)
+                        pool = [u for u in self.urls if u not in existing_set]
+                        needed = target_count - len(curl_targets)
+                        if pool:
+                            added = random.sample(pool, min(len(pool), needed))
+                            curl_targets.extend(added)
+                            current_iter_urls.extend(added)
+
                     curl_flood_urls = util_traffic.generate_curl_flood(
-                        self.urls, 
+                        curl_targets, 
                         self.config.curl_flood_count,
                         self.config.curl_flood_duration,
                         self.config.curl_flood_concurrent, 
@@ -370,7 +439,18 @@ class StressTest:
                 if self.cfg_mgr.is_false_close:
                     self.exec_failclose_check()
                 else:
-                    browser_urls = self.exec_browser_tabs()
+                    browser_targets = current_iter_urls[:]
+                    needed = self.config.browser_max_tabs
+                    if len(browser_targets) < needed and self.urls:
+                        existing_set = set(browser_targets)
+                        pool = [u for u in self.urls if u not in existing_set]
+                        missing = needed - len(browser_targets)
+                        if pool:
+                            added = random.sample(pool, min(len(pool), missing))
+                            browser_targets.extend(added)
+                            current_iter_urls.extend(added)
+
+                    browser_urls = self.exec_browser_tabs(browser_targets)
                     if smart_sleep(2, self.stop_event): break
 
 
