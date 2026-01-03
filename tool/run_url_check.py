@@ -121,7 +121,7 @@ def main():
 
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     url_file = os.path.join(base_dir, "data", "url.txt")
-    url_new_file = os.path.join(base_dir, "data", "urlnew.txt")
+    url_new_file = os.path.join(base_dir, "data", "url_new.txt")
     url_alive_file = os.path.join(base_dir, "data", "url_alive.txt")
     
     stop_event = threading.Event()
