@@ -178,7 +178,7 @@ def main():
         
         alive_in_batch = []
         
-        with concurrent.futures.ThreadPoolExecutor(max_workers=70) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=30) as executor:
             future_to_url = {executor.submit(process_candidate, url): url for url in batch}
             
             for future in concurrent.futures.as_completed(future_to_url):
