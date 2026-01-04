@@ -37,7 +37,11 @@ class AgentConfigManager:
             with open(self.exception_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             
-            if isinstance(data, list):
+            if isinstance(data, dict):
+                if "names" in data and isinstance(data["names"], list):
+                    self.exception_names.extend(data["names"])
+
+            elif isinstance(data, list):
                 for rule in data:
                     names = rule.get("names", [])
                     if isinstance(names, list):
