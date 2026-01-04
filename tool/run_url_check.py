@@ -16,7 +16,7 @@ log_helper = LogSetup()
 logger = log_helper.setup_logging()
 
 BLOCKED_KEYWORDS = [
-    "porn", "sex", "xxx", "adult", "hentai", "nude", "erotic", "escort", 
+    "porn", "sex", "xxx", "adult", "hentai", "nude", "erotic", "escort",
     "cam", "tube", "fuck", "dick", "pussy", "vagina", "penis", "incest",
     "taboo", "fetish", "kink", "bdsm", "gambling", "casino", "bet", "xvideos",
     "xnxx", "brazzers", "bangbros", "redtube", "youjizz", "youporn", "spankbang",
@@ -44,20 +44,20 @@ def is_safe_dns(domain: str) -> bool:
     try:
         cmd = ["nslookup", "-timeout=2", domain, "1.1.1.3"]
         result = subprocess.run(
-            cmd, 
-            stdout=subprocess.PIPE, 
-            stderr=subprocess.PIPE, 
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
             encoding='utf-8',
             errors='ignore'
         )
-        
+
         output = result.stdout
         if "0.0.0.0" in output:
             return False
 
         return True
-        
+
     except Exception:
         return False
 
@@ -66,16 +66,16 @@ def clean_session_url(url: str) -> str:
         return url
 
     query_part = url.split('?', 1)[1].lower()
-    
+
     SESSION_INDICATORS = [
-        "session", "sid", "phpsessid", "jsessionid", "token", 
+        "session", "sid", "phpsessid", "jsessionid", "token",
         "auth", "login", "user", "id=", "utm_", "gclid", "_ga"
     ]
-    
+
     for indicator in SESSION_INDICATORS:
         if indicator in query_part:
             return url.split('?', 1)[0]
-            
+
     return url
 
 def is_unwanted_redirect(url: str) -> bool:
@@ -88,8 +88,8 @@ def is_unwanted_redirect(url: str) -> bool:
 
 def process_candidate(raw_line: str) -> str | None:
     parts = raw_line.strip().split(',')
-    domain = parts[-1].strip() 
-    
+    domain = parts[-1].strip()
+
     if not domain:
         return None
 
@@ -106,7 +106,7 @@ def process_candidate(raw_line: str) -> str | None:
 
     url = f"https://{domain}"
     final_url = check_url_alive(url)
-    
+
     if not final_url:
         url = f"http://{domain}"
         final_url = check_url_alive(url)
@@ -134,7 +134,7 @@ def main():
     url_file = os.path.join(base_dir, "data", "url.txt")
     url_new_file = os.path.join(base_dir, "data", "url_new.txt")
     url_alive_file = os.path.join(base_dir, "data", "url_alive.txt")
-    
+
     stop_event = threading.Event()
     start_input_monitor(stop_event)
 
@@ -150,7 +150,7 @@ def main():
         all_candidates = [line.strip().rstrip('/') for line in f if line.strip()]
 
     logger.info(f"Found {len(all_candidates)} URLs in {url_new_file} to process.")
-    
+
     # Ensure url_alive.txt exists
     if not os.path.exists(url_alive_file):
         with open(url_alive_file, 'w', encoding='utf-8') as f:
@@ -161,7 +161,7 @@ def main():
     limit = min(args.limit, len(all_candidates))
     candidates_to_process = all_candidates[:limit]
     remaining_candidates = all_candidates[limit:]
-    
+
     logger.info(f"Will process {limit} URLs (Limit: {args.limit})")
 
     batch_size = 100
@@ -175,12 +175,12 @@ def main():
 
         batch = candidates_to_process[i : i + batch_size]
         logger.info(f"Processing batch {i // batch_size + 1} ({len(batch)} URLs)...")
-        
+
         alive_in_batch = []
-        
+
         with concurrent.futures.ThreadPoolExecutor(max_workers=30) as executor:
             future_to_url = {executor.submit(process_candidate, url): url for url in batch}
-            
+
             for future in concurrent.futures.as_completed(future_to_url):
                 if stop_event.is_set():
                     executor.shutdown(wait=False, cancel_futures=True)
@@ -191,11 +191,11 @@ def main():
                     result = future.result()
                     if result:
                         final_url = result.rstrip('/')
-                        
+
                         if final_url in existing_urls:
                             logger.info(f"Duplicate in DB: {final_url}")
                             continue
-                        
+
                         if final_url in unique_alive_urls:
                             logger.info(f"Duplicate in session: {final_url}")
                             continue
@@ -211,7 +211,7 @@ def main():
                 for v_url in alive_in_batch:
                     f.write(v_url + "\n")
             logger.info(f"Flushed {len(alive_in_batch)} alive URLs to {url_alive_file}")
-        
+
         processed_count += len(batch)
 
     # Update url_new.txt (remove processed batch)
@@ -219,7 +219,7 @@ def main():
     with open(url_new_file, 'w', encoding='utf-8') as f:
         for url in remaining_candidates:
             f.write(url + "\n")
-            
+
     logger.info(f"Done. Processed {processed_count} URLs. Remaining: {len(remaining_candidates)}")
 
 if __name__ == "__main__":

@@ -14,14 +14,14 @@ class AgentConfigManager:
         self.target_devconfig = os.path.join(self.stagent_root, "devconfig.json")
         self.backup_path = os.path.join("data", "nsconfig-bk.json")
         self.source_devconfig = os.path.join("data", "devconfig.json")
-        
+
         self.hosts_path = r"C:\Windows\System32\drivers\etc\hosts"
         self.hosts_bk = os.path.join("data", "hosts-bk")
-        
+
         self.is_64bit = False
         self.is_local_cfg = False
         self.is_false_close = False
-        
+
         self.exception_path = os.path.join(
             self.stagent_root, "data", "nsexception.json"
         )
@@ -36,7 +36,7 @@ class AgentConfigManager:
         try:
             with open(self.exception_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-            
+
             if isinstance(data, dict):
                 if "names" in data and isinstance(data["names"], list):
                     self.exception_names.extend(data["names"])
@@ -46,7 +46,7 @@ class AgentConfigManager:
                     names = rule.get("names", [])
                     if isinstance(names, list):
                         self.exception_names.extend(names)
-            
+
             logger.info(
                 f"Loaded {len(self.exception_names)} exception patterns "
                 f"from {self.exception_path}"
@@ -131,7 +131,7 @@ class AgentConfigManager:
             if os.path.exists(self.target_nsconfig):
                 with open(self.target_nsconfig, 'r', encoding='utf-8') as f:
                     ns_data = json.load(f)
-                
+
                 fc_sec = ns_data.get("failClose", {})
                 curr_val = fc_sec.get("fail_close", "false")
 

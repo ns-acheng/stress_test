@@ -9,7 +9,7 @@ logger = logging.getLogger()
 def check_url_cert(url: str) -> str:
     try:
         hostname = get_hostname_from_url(url)
-        
+
         if not hostname:
             logger.error(f"Could not extract hostname from {url}")
             return ""

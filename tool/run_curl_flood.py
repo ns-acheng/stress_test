@@ -14,20 +14,20 @@ def main():
 
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     url_file = os.path.join(base_dir, "data", "url.txt")
-    
+
     if not os.path.exists(url_file):
         logging.error(f"{url_file} not found.")
         return
 
     urls = util_traffic.read_urls_from_file(url_file)
-    
+
     if not urls:
         logging.error("No URLs loaded. Please check data/url.txt")
         return
 
     stop_event = threading.Event()
     logging.info("Starting Standalone CURL Flood. Press Ctrl+C to stop.")
-    
+
     try:
         util_traffic.generate_curl_flood(urls, 10000, 50, stop_event)
     except KeyboardInterrupt:

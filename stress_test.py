@@ -8,7 +8,7 @@ from util_service import (
 from util_log import LogSetup
 from util_time import smart_sleep
 from util_subprocess import (
-    run_powershell, nsdiag_update_config, enable_wake_timers, 
+    run_powershell, nsdiag_update_config, enable_wake_timers,
     nsdiag_enable_client
 )
 from util_resources import (
@@ -46,11 +46,11 @@ class StressTest:
         self.drv_name = "stadrv"
         self.url_file = r"data\url.txt"
         self.tool_dir = "tool"
-        
+
         self.cfg_mgr = AgentConfigManager()
         self.config = ToolConfig(r"data\config.json")
         self.stop_event = threading.Event()
-        
+
         self.urls = []
         self.url_cursor = 0
         self.manage_nic_script = os.path.join(self.tool_dir, "manage_nic.ps1")
@@ -68,7 +68,7 @@ class StressTest:
 
         self.config.load()
         self.load_urls()
-        
+
         # Check steering config for validation
         st_cfg = util_validate.get_steering_config()
         if not st_cfg:
@@ -118,8 +118,8 @@ class StressTest:
             self.client_thread = threading.Thread(
                 target=util_client.client_toggler_loop,
                 args=(
-                    self.stop_event, 
-                    self.service_name, 
+                    self.stop_event,
+                    self.service_name,
                     self.cfg_mgr.is_64bit,
                     self.config.client_enable_min,
                     self.config.client_enable_max,
@@ -190,9 +190,9 @@ class StressTest:
         if status != "RUNNING":
             start_service(self.service_name)
             logger.info(f"Waiting for {STD_SEC} seconds")
-            if smart_sleep(STD_SEC, self.stop_event): 
+            if smart_sleep(STD_SEC, self.stop_event):
                 return
-            
+
             if self.config.client_disabling_enabled:
                 logger.info("Service Started. Ensuring Client Enabled.")
                 nsdiag_enable_client(True, self.cfg_mgr.is_64bit)
@@ -212,32 +212,32 @@ class StressTest:
             if not stopped:
                 logger.error(f"{self.service_name} failed to stop.")
                 handle_non_stop(
-                    self.service_name, 
-                    self.cfg_mgr.is_64bit, 
+                    self.service_name,
+                    self.cfg_mgr.is_64bit,
                     current_log_dir
                 )
                 self.stop_event.set()
                 return
             self.cur_svc_status = get_service_status(self.service_name)
             logger.info(f"Current status: {self.cur_svc_status}")
-            if smart_sleep(TINY_SEC, self.stop_event): 
+            if smart_sleep(TINY_SEC, self.stop_event):
                 return
 
     def exec_restart_driver(self):
         if get_service_status(self.drv_name) == "NOT_FOUND":
             logger.error(f"Driver {self.drv_name} NOT FOUND.")
             self.stop_event.set()
-            return  
+            return
         logger.info(f"To STOP and START driver 'stadrv'")
         stop_service(self.drv_name)
         status = get_service_status(self.service_name)
         logger.info(f"Current status: {status}")
-        if smart_sleep(SHORT_SEC, self.stop_event): 
+        if smart_sleep(SHORT_SEC, self.stop_event):
             return
         start_service(self.drv_name)
-        if smart_sleep(TINY_SEC, self.stop_event): 
+        if smart_sleep(TINY_SEC, self.stop_event):
             return
-    
+
     def exec_browser_tabs(self, urls):
         if not self.config.enable_browser_tabs_open:
             return []
@@ -254,11 +254,11 @@ class StressTest:
         if not self.validation_enabled:
             logger.info("Validation skipped (disabled by firewall_traffic_mode).")
             return True
-        
+
         if self.config.client_disabling_enabled and not self.client_enabled_event.is_set():
              logger.info("Validation skipped (Client is disabled).")
              return True
-            
+
         return util_validate.validate_traffic_flow(
             process_map, self.stop_event, self.cfg_mgr.url_in_nsexception
         )
@@ -266,12 +266,12 @@ class StressTest:
     def get_next_batch(self, batch_size):
         if not self.urls:
             return []
-        
+
         if len(self.urls) <= batch_size:
             batch = self.urls[:]
             random.shuffle(self.urls)
             return batch
-            
+
         end_idx = self.url_cursor + batch_size
         if end_idx <= len(self.urls):
             batch = self.urls[self.url_cursor : end_idx]
@@ -303,7 +303,7 @@ class StressTest:
                 pct = count / self.config.loop_times * 100
                 msg = f" Iter {count}/{self.config.loop_times} ({pct:.1f}%) "
                 logger.info(msg.center(60, "="))
-                
+
                 self.exec_start_service()
                 if self.stop_event.is_set(): break
 
@@ -329,13 +329,13 @@ class StressTest:
                             pass
 
                     util_traffic.generate_dns_flood(
-                        dns_domains, 
+                        dns_domains,
                         self.config.dns_count,
                         self.config.dns_duration,
                         self.config.dns_concurrent,
                         self.stop_event
                     )
-                
+
                 if self.config.udp_enabled:
                     current_target = self.config.udp_target_ip
                     use_ipv6 = False
@@ -346,26 +346,26 @@ class StressTest:
                         else:
                             current_target = self.config.udp_target_ip
                     util_traffic.generate_udp_flood(
-                        current_target, 
+                        current_target,
                         self.config.udp_target_port,
                         self.config.udp_count,
-                        float(self.config.udp_duration), 
+                        float(self.config.udp_duration),
                         self.config.udp_concurrent,
-                        self.stop_event, 
+                        self.stop_event,
                         use_ipv6
                     )
-                
+
                 if (
-                    (self.config.ab_total_conn > 0 or self.config.ab_duration > 0) and 
-                    self.config.ab_concurrent > 0 and 
+                    (self.config.ab_total_conn > 0 or self.config.ab_duration > 0) and
+                    self.config.ab_concurrent > 0 and
                     self.config.ab_target_urls
                 ):
                     idx = count % len(self.config.ab_target_urls)
                     current_ab_url = self.config.ab_target_urls[idx]
-                    
+
                     if util_traffic.check_url_alive(current_ab_url):
                         util_traffic.run_high_concurrency_test(
-                            current_ab_url, self.config.ab_total_conn, 
+                            current_ab_url, self.config.ab_total_conn,
                             self.config.ab_concurrent, self.tool_dir,
                             self.stop_event,
                             self.config.ab_duration
@@ -377,7 +377,7 @@ class StressTest:
                 if self.config.curl_flood_enabled:
                     curl_targets = current_iter_urls[:]
                     target_count = BATCH_SIZE
-                    
+
                     if len(curl_targets) < target_count and self.urls:
                         existing_set = set(curl_targets)
                         pool = [u for u in self.urls if u not in existing_set]
@@ -388,10 +388,10 @@ class StressTest:
                             current_iter_urls.extend(added)
 
                     curl_flood_urls = util_traffic.generate_curl_flood(
-                        curl_targets, 
+                        curl_targets,
                         self.config.curl_flood_count,
                         self.config.curl_flood_duration,
-                        self.config.curl_flood_concurrent, 
+                        self.config.curl_flood_concurrent,
                         self.stop_event
                     )
 
@@ -460,7 +460,7 @@ class StressTest:
                     validation_map = {}
                     if browser_urls and self.config.browser_log_validation:
                         validation_map["msedge.exe"] = browser_urls
-                    
+
                     if curl_flood_urls and self.config.curl_flood_log_validation:
                         ratio = self.config.curl_flood_log_validation_ratio
                         total = len(curl_flood_urls)
@@ -469,10 +469,10 @@ class StressTest:
                             sample_size = 1
                         if sample_size > total:
                             sample_size = total
-                            
+
                         logger.info(f"Sampling {sample_size} URLs ({ratio}%) from {total} for validation.")
                         validation_map["curl.exe"] = random.sample(curl_flood_urls, sample_size)
-                    
+
                     if not self.exec_validation_checks(validation_map):
                         break
 
@@ -509,7 +509,7 @@ class StressTest:
                 if self.config.long_idle_interval > 0:
                     if count % self.config.long_idle_interval == 0:
                         sleep_dur = random.randint(
-                            self.config.long_idle_time_min, 
+                            self.config.long_idle_time_min,
                             self.config.long_idle_time_max
                         )
                         logger.info(f"Long Idle triggered. {sleep_dur}s...")
@@ -528,7 +528,7 @@ class StressTest:
                 if crash_found:
                     logger.error("Crash dump found. Stopping test.")
                     crash_handle(
-                        self.cfg_mgr.is_64bit, current_log_dir, 
+                        self.cfg_mgr.is_64bit, current_log_dir,
                         self.config.custom_dump_path
                     )
                     break

@@ -35,7 +35,7 @@ def main():
 
     # Use partial to pass the directory argument to the handler
     handler_class = partial(QuietHandler, directory=os.path.abspath(args.directory))
-    
+
     try:
         server = ThreadingHTTPServer(('0.0.0.0', args.port), handler_class)
     except PermissionError:

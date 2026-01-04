@@ -10,7 +10,7 @@ logger = logging.getLogger()
 def get_service_status(service_name) -> str:
     try:
         status = subprocess.check_output(
-            ["sc", "query", service_name], 
+            ["sc", "query", service_name],
             encoding='utf-8',
             errors='replace'
         )
@@ -39,19 +39,19 @@ def stop_service(service_name, timeout=30) -> bool:
     try:
         logger.info(f"Stopping service '{service_name}'...")
         subprocess.run(["sc", "stop", service_name], check=False)
-        
+
         for _ in range(timeout):
             status = get_service_status(service_name)
             if status == "STOPPED":
                 logger.info(f"Service '{service_name}' stopped successfully.")
                 return True
             time.sleep(1)
-            
+
         logger.error(
             f"Error: Timeout. Service '{service_name}' did not stop within {timeout}s."
         )
         return False
-        
+
     except Exception as e:
         logger.error(f"Exception stopping {service_name}: {e}")
         return False
@@ -72,7 +72,7 @@ def handle_non_stop(service_name, is_64bit, log_dir) -> None:
             )
             return
         time.sleep(1)
-    
+
     logger.error(
         f"Service '{service_name}' IS STILL RUNNING/HANGING after extra wait."
     )
@@ -98,7 +98,7 @@ def handle_non_stop(service_name, is_64bit, log_dir) -> None:
             )
             return
         time.sleep(1)
-    
+
     logger.error(
         f"Service '{service_name}' did NOT stop after 300s post-collection wait."
     )

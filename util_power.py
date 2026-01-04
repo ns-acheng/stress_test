@@ -41,17 +41,17 @@ def enter_s0_and_wake(duration_seconds: int) -> None:
             return False
 
         logger.info(f"Enter S0 (Monitor OFF) for {duration_seconds}s...")
-        
+
         user32.SendMessageW(
             HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, MONITOR_OFF
         )
-        
+
         kernel32.WaitForSingleObject(handle, -1)
 
         user32.SendMessageW(
             HWND_BROADCAST, WM_SYSCOMMAND, SC_MONITORPOWER, MONITOR_ON
         )
-        
+
         # Simulate Key Press (0) and Key Release (KEYEVENTF_KEYUP)
         user32.keybd_event(0, 0, 0, 0)
         user32.keybd_event(0, 0, KEYEVENTF_KEYUP, 0)
