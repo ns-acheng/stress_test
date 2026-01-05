@@ -24,7 +24,7 @@ class NsClientLogValidator:
         self.lock = threading.Lock()
         self.last_pos = 0
         self.last_inode = 0
-        self.pending_reads = [] # List of (inode, start_pos)
+        self.pending_reads = []
 
     def get_steering_config(self):
         json_path = os.path.join(self.stagent_path, 'data', 'nssteering.json')
@@ -60,10 +60,11 @@ class NsClientLogValidator:
                     inode = st.st_ino
                     if fsize == 0: return None, 0, inode
 
-                    chunk_size = 1024 * 1024 # 1MB
+                    # 1 MB
+                    chunk_size = 1024 * 1024
                     pos = fsize
-                    min_pos = max(0, fsize - (50 * 1024 * 1024)) # Max 50MB scan
-
+                    # Max 50MB scan
+                    min_pos = max(0, fsize - (50 * 1024 * 1024))
                     while pos > min_pos:
                         read_len = min(chunk_size, pos - min_pos)
                         pos -= read_len
@@ -113,7 +114,7 @@ class NsClientLogValidator:
             # Scan rotated files to find start point
             for idx, fpath in enumerate(rotated_files):
                 found, pos, inode = scan_file(fpath)
-                if found is not None: # File exists
+                if found is not None:
                     if found: # Found timestamp < target
                         found_idx = idx
                         found_pos = pos
