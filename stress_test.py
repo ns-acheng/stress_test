@@ -477,7 +477,9 @@ class StressTest:
                         validation_map["curl.exe"] = random.sample(curl_flood_urls, sample_size)
 
                     if not self.exec_validation_checks(validation_map):
+                        logger.error("Validation failed! Stopping stress test.")
                         break
+                        # break
 
                 if self.stop_event.is_set(): break
 

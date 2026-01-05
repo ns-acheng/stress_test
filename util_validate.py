@@ -384,6 +384,16 @@ def validate_traffic_flow(process_map, stop_event, exception_checker=None) -> bo
                     if "boomskope.com" in issuer or "goskope.com" in issuer:
                         is_valid_issuer = True
 
+                if not is_valid_issuer:
+                    logger.warning(f"Cert check failed for {url}. Retrying in 5 seconds...")
+                    if smart_sleep(5, stop_event):
+                        return False
+                    
+                    issuer = util_cert.check_url_cert(url)
+                    if issuer:
+                        if "boomskope.com" in issuer or "goskope.com" in issuer:
+                            is_valid_issuer = True
+
                 if is_valid_issuer:
                     logger.info(
                         f"URL: {url} ({proc}) -> PASS (Cert Issuer: {issuer})"
@@ -398,6 +408,7 @@ def validate_traffic_flow(process_map, stop_event, exception_checker=None) -> bo
                         logger.error(
                             f"URL: {url} ({proc}) -> FAIL !!!!!! (Issuer check failed)"
                         )
-                    success = False
+                    return False
 
-    return success
+    return True
+
