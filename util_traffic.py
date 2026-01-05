@@ -49,7 +49,7 @@ def check_url_alive(url) -> str:
         if response.status_code < 400 or response.status_code == 403:
             if response.url != url:
                 logger.info(f"Redirect detected: {url} -> {response.url}")
-            
+
             return response.url
         return ""
     except Exception:
@@ -61,7 +61,7 @@ def check_urls_and_write_status(urls) -> None:
 
     existing_urls = set()
     target_check_file = r'data\url.txt'
-    
+
     if os.path.exists(target_check_file):
         try:
             with open(target_check_file, 'r', encoding='utf-8') as f:
@@ -83,9 +83,9 @@ def check_urls_and_write_status(urls) -> None:
             is_alive = bool(alive_url)
             final_url = alive_url if is_alive else url
             status_text = "ALIVE" if is_alive else "DEAD"
-            
+
             logger.info(f"[{index + 1}/{len(urls)}] {url} -> {status_text}")
-            
+
             if is_alive:
                 if final_url in existing_urls:
                     logger.info(f"Skipping duplicate final URL (in DB): {final_url}")
@@ -112,9 +112,9 @@ def _dns_worker(domain) -> None:
         pass
 
 def generate_dns_flood(
-    domains: list, 
-    count: int, 
-    duration: float = 0, 
+    domains: list,
+    count: int,
+    duration: float = 0,
     concurrency: int = 20,
     stop_event: threading.Event = None
 ) -> None:
@@ -129,13 +129,13 @@ def generate_dns_flood(
 
     start_time = time.time()
     end_time = start_time + duration if duration > 0 else 0
-    
+
     completed = 0
     milestone = max(1, int(count * 0.2)) if count > 0 else 100
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as exe:
         futures = []
-        
+
         def submit_batch(n):
             for _ in range(n):
                 dom = random.choice(domains)
@@ -151,13 +151,13 @@ def generate_dns_flood(
                 while time.time() < end_time:
                     if _is_stopped(stop_event): break
                     _dns_worker(random.choice(domains))
-            
+
             futures = []
             for _ in range(concurrency):
                 futures.append(exe.submit(_time_worker))
-                
+
             concurrent.futures.wait(futures)
-            
+
         else:
             for _ in concurrent.futures.as_completed(futures):
                 if _is_stopped(stop_event):
@@ -171,16 +171,16 @@ def generate_dns_flood(
 def _udp_worker(target, port, duration, count, stop_event, family) -> None:
     sock = socket.socket(family, socket.SOCK_DGRAM)
     payload = os.urandom(1024)
-    
+
     start_time = time.time()
     end_time = start_time + duration if duration > 0 else 0
-    
+
     sent = 0
     try:
         while True:
             if _is_stopped(stop_event):
                 break
-            
+
             if duration > 0:
                 if time.time() >= end_time:
                     break
@@ -202,12 +202,12 @@ def _udp_worker(target, port, duration, count, stop_event, family) -> None:
         sock.close()
 
 def generate_udp_flood(
-    target: str, 
-    port: int, 
+    target: str,
+    port: int,
     count: int = 0,
-    duration: float = 0, 
+    duration: float = 0,
     concurrency: int = 1,
-    stop_event: threading.Event = None, 
+    stop_event: threading.Event = None,
     ipv6: bool = False
 ) -> None:
     msg = f"UDP flood -> {target}:{port}"
@@ -217,29 +217,29 @@ def generate_udp_flood(
         msg += f", limit {count} pkts"
     msg += f", {concurrency} threads (IPv6={ipv6})"
     logger.info(msg)
-    
+
     family = socket.AF_INET6 if ipv6 else socket.AF_INET
-    
+
     threads = []
     count_per_thread = count // concurrency if count > 0 else 0
-    
+
     for i in range(concurrency):
         t = threading.Thread(
-            target=_udp_worker, 
+            target=_udp_worker,
             args=(target, port, duration, count_per_thread, stop_event, family)
         )
         t.start()
         threads.append(t)
-        
+
     for t in threads:
         t.join()
-        
+
     logger.info("UDP Flood finished.")
 
 def run_high_concurrency_test(
-    target_url: str, 
-    requests: int, 
-    concurrency: int, 
+    target_url: str,
+    requests: int,
+    concurrency: int,
     tool_dir: str,
     stop_event: threading.Event = None,
     duration: float = 0
@@ -254,89 +254,89 @@ def run_high_concurrency_test(
             f"Run AB: {concurrency} conn -> {target_url} for {duration}s"
         )
         cmd = [
-            ab_path, "-t", str(int(duration)), 
-            "-n", "2000000000", 
+            ab_path, "-t", str(int(duration)),
+            "-n", "2000000000",
             "-c", str(concurrency), "-k", target_url
         ]
-        
+
         try:
             proc = subprocess.Popen(
-                cmd, 
-                stdout=subprocess.PIPE, 
-                stderr=subprocess.PIPE, 
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 encoding='utf-8',
                 errors='replace'
             )
-            
+
             start_time = time.time()
             next_pct = 20
-            
+
             while proc.poll() is None:
                 if _is_stopped(stop_event):
                     logger.warning("Stop signal received. Killing AB...")
                     proc.kill()
                     return
-                
+
                 elapsed = time.time() - start_time
                 if (elapsed / duration) * 100 >= next_pct:
                     logger.info(f"AB Test progress: {next_pct}%")
                     next_pct += 20
-                    
+
                 time.sleep(0.5)
-                
+
             proc.communicate()
             if proc.returncode != 0:
                  logger.error(f"AB failed (RC {proc.returncode})")
             else:
                  logger.info("AB finished successfully.")
-                 
+
         except Exception as e:
             logger.error(f"Failed to run AB: {e}")
-            
+
     else:
         batches = 5
         if requests < batches:
             batches = 1
-            
+
         chunk_size = max(1, requests // batches)
         logger.info(
             f"Run AB: {requests} reqs (split {batches}), "
             f"{concurrency} conn -> {target_url}"
         )
-        
+
         for i in range(batches):
             if _is_stopped(stop_event):
                 break
 
             cmd = [
-                ab_path, "-n", str(chunk_size), 
+                ab_path, "-n", str(chunk_size),
                 "-c", str(concurrency), "-k", target_url
             ]
-            
+
             try:
                 proc = subprocess.Popen(
-                    cmd, 
-                    stdout=subprocess.PIPE, 
-                    stderr=subprocess.PIPE, 
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
                     encoding='utf-8',
                     errors='replace'
                 )
-                
+
                 while proc.poll() is None:
                     if _is_stopped(stop_event):
                         logger.warning("Stop signal received. Killing AB...")
                         proc.kill()
                         return
                     time.sleep(0.5)
-                    
+
                 proc.communicate()
-                
+
                 if proc.returncode != 0:
                     logger.error(f"AB batch {i+1} failed (RC {proc.returncode})")
                 else:
                     pct = int(((i + 1) / batches) * 100)
                     logger.info(f"AB Test progress: {pct}%")
-                    
+
             except Exception as e:
                 logger.error(f"Failed to run AB batch {i+1}: {e}")
 
@@ -380,7 +380,7 @@ def open_browser_tabs(
         args = " ".join(selected)
         cmd = os.path.join(tool_dir, f"open_msedge_tabs.bat {args}")
         run_batch(cmd)
-        
+
         opened_urls.extend(selected)
 
         total_tabs += count
@@ -399,7 +399,7 @@ def open_browser_tabs(
 
     if batch_cnt >= batch_limit:
         logger.warning(f"Reached max batch limit ({batch_limit})")
-    
+
     return opened_urls
 
 def curl_requests(urls, stop_event=None) -> None:
@@ -409,10 +409,10 @@ def curl_requests(urls, stop_event=None) -> None:
     # Ensure first and last URLs are always included
     mandatory = {urls[0], urls[-1]}
     pool = [u for u in urls if u not in mandatory]
-    
+
     count = min(len(urls), 10)
     needed = count - len(mandatory)
-    
+
     selected = list(mandatory)
     if needed > 0 and pool:
         selected.extend(random.sample(pool, min(len(pool), needed)))
@@ -436,10 +436,10 @@ def _curl_flood_worker(url) -> str:
     return url
 
 def generate_curl_flood(
-    urls, 
-    count, 
-    duration=0, 
-    concurrency=50, 
+    urls,
+    count,
+    duration=0,
+    concurrency=50,
     stop_event=None
 ) -> list[str]:
     all_used_urls = []
@@ -456,7 +456,7 @@ def generate_curl_flood(
 
     if duration > 0:
         end_time = time.time() + duration
-        
+
         def _time_worker():
             while time.time() < end_time:
                 if _is_stopped(stop_event): break
@@ -470,12 +470,12 @@ def generate_curl_flood(
             for _ in range(concurrency):
                 futures.append(exe.submit(_time_worker))
             concurrent.futures.wait(futures)
-            
+
     else:
         milestone = max(1, int(count * 0.2))
         completed = 0
         log_buffer = []
-        
+
         # Use round-robin to ensure even coverage of the batch
         # Create a local copy to shuffle so we don't affect the caller
         pool = list(urls)
@@ -491,16 +491,16 @@ def generate_curl_flood(
                     break
                 url = next(url_cycler)
                 futures.append(exe.submit(_curl_flood_worker, url))
-            
+
             for f in concurrent.futures.as_completed(futures):
                 if _is_stopped(stop_event):
                     exe.shutdown(wait=False, cancel_futures=True)
                     break
-                
+
                 used_url = f.result()
                 all_used_urls.append(used_url)
                 log_buffer.append(used_url)
-                
+
                 if len(log_buffer) >= 100:
                     logger.info("CURL Batch:\n" + "\n".join([f"  -> {u}" for u in log_buffer]))
                     log_buffer = []
@@ -509,10 +509,10 @@ def generate_curl_flood(
                 if completed % milestone == 0:
                     pct = int((completed / count) * 100)
                     logger.info(f"CURL Flood progress: {pct}%")
-        
+
         if log_buffer:
             logger.info("CURL Batch:\n" + "\n".join([f"  -> {u}" for u in log_buffer]))
-    
+
     logger.info("CURL Flood finished.")
     return all_used_urls
 
@@ -529,7 +529,7 @@ class VirtualFile(io.BytesIO):
             size = self._size - self._pos
         else:
             size = min(size, self._size - self._pos)
-        
+
         self._pos += size
         return b'0' * size
 
@@ -553,10 +553,10 @@ def _ftp_worker(target, port, user, password, file_size_mb, is_ftps) -> bool:
             ftp = ftplib.FTP_TLS()
         else:
             ftp = ftplib.FTP()
-        
+
         ftp.connect(target, port, timeout=10)
         ftp.login(user, password)
-        
+
         if is_ftps:
             ftp.prot_p()
 
@@ -564,16 +564,16 @@ def _ftp_worker(target, port, user, password, file_size_mb, is_ftps) -> bool:
         logger.info(f"Generating virtual file {filename} ({file_size_mb} MB)")
         size_bytes = int(file_size_mb * 1024 * 1024)
         vfile = VirtualFile(size_bytes)
-        
+
         ftp.storbinary(f"STOR {filename}", vfile)
         logger.info(f"Uploaded {filename}")
-        
+
         # Delete the file after upload to save disk space on server
         try:
             ftp.delete(filename)
         except Exception:
             pass
-            
+
         ftp.quit()
         return True
     except Exception:
@@ -586,7 +586,7 @@ def _ftp_worker(target, port, user, password, file_size_mb, is_ftps) -> bool:
                 pass
 
 def generate_ftp_traffic(
-    target, port, user, password, file_size_mb, 
+    target, port, user, password, file_size_mb,
     count, duration, concurrency, stop_event, is_ftps=False
 ) -> None:
     protocol = "FTPS" if is_ftps else "FTP"
@@ -600,10 +600,10 @@ def generate_ftp_traffic(
     start_time = time.time()
     end_time = start_time + duration if duration > 0 else 0
     completed = 0
-    
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as exe:
         futures = []
-        
+
         def _worker_wrapper():
             return _ftp_worker(
                 target, port, user, password, file_size_mb, is_ftps
@@ -614,7 +614,7 @@ def generate_ftp_traffic(
                 while time.time() < end_time:
                     if _is_stopped(stop_event): break
                     _worker_wrapper()
-            
+
             for _ in range(concurrency):
                 futures.append(exe.submit(_time_worker))
             concurrent.futures.wait(futures)
@@ -622,22 +622,22 @@ def generate_ftp_traffic(
             for _ in range(count):
                 if _is_stopped(stop_event): break
                 futures.append(exe.submit(_worker_wrapper))
-            
+
             for f in concurrent.futures.as_completed(futures):
                 if _is_stopped(stop_event):
                     exe.shutdown(wait=False, cancel_futures=True)
                     break
                 if f.result():
                     completed += 1
-                    
+
     logger.info(f"{protocol} finished. Completed uploads: {completed}")
 
 def generate_ftps_traffic(
-    target, port, user, password, file_size_mb, 
+    target, port, user, password, file_size_mb,
     count, duration, concurrency, stop_event
 ) -> None:
     generate_ftp_traffic(
-        target, port, user, password, file_size_mb, 
+        target, port, user, password, file_size_mb,
         count, duration, concurrency, stop_event, is_ftps=True
     )
 
@@ -648,21 +648,21 @@ def _sftp_worker(target, port, user, password, file_size_mb) -> bool:
         transport = paramiko.Transport((target, port))
         transport.connect(username=user, password=password)
         sftp = paramiko.SFTPClient.from_transport(transport)
-        
+
         filename = f"upload_{random.randint(1000, 9999)}.bin"
         logger.info(f"Generating virtual file {filename} ({file_size_mb} MB)")
         size_bytes = int(file_size_mb * 1024 * 1024)
         vfile = VirtualFile(size_bytes)
-        
+
         sftp.putfo(vfile, filename)
         logger.info(f"Uploaded {filename}")
-        
+
         # Delete the file after upload to save disk space on server
         try:
             sftp.remove(filename)
         except Exception:
             pass
-            
+
         return True
     except Exception:
         return False
@@ -671,7 +671,7 @@ def _sftp_worker(target, port, user, password, file_size_mb) -> bool:
         if transport: transport.close()
 
 def generate_sftp_traffic(
-    target, port, user, password, file_size_mb, 
+    target, port, user, password, file_size_mb,
     count, duration, concurrency, stop_event
 ) -> None:
     msg = f"SFTP Traffic: {target}:{port}, Size: {file_size_mb}MB"
@@ -684,16 +684,16 @@ def generate_sftp_traffic(
     start_time = time.time()
     end_time = start_time + duration if duration > 0 else 0
     completed = 0
-    
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as exe:
         futures = []
-        
+
         if duration > 0:
             def _time_worker():
                 while time.time() < end_time:
                     if _is_stopped(stop_event): break
                     _sftp_worker(target, port, user, password, file_size_mb)
-            
+
             for _ in range(concurrency):
                 futures.append(exe.submit(_time_worker))
             concurrent.futures.wait(futures)
@@ -703,7 +703,7 @@ def generate_sftp_traffic(
                 futures.append(exe.submit(
                     _sftp_worker, target, port, user, password, file_size_mb
                 ))
-            
+
             for f in concurrent.futures.as_completed(futures):
                 if _is_stopped(stop_event):
                     exe.shutdown(wait=False, cancel_futures=True)
@@ -721,7 +721,7 @@ def get_hostname_from_url(url: str) -> str:
             hostname = hostname[8:]
         elif hostname.lower().startswith("http://"):
             hostname = hostname[7:]
-        
+
         hostname = hostname.split('/')[0]
         hostname = hostname.split(':')[0]
         return hostname

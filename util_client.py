@@ -16,11 +16,11 @@ def _wait_interval(duration, stop_event) -> bool:
     return False
 
 def client_toggler_loop(
-    stop_event, 
-    service_name, 
-    is_64bit, 
-    enable_min, 
-    enable_max, 
+    stop_event,
+    service_name,
+    is_64bit,
+    enable_min,
+    enable_max,
     disable_ratio,
     client_enabled_event=None
 ) -> None:
@@ -28,11 +28,11 @@ def client_toggler_loop(
     while not stop_event.is_set():
         if client_enabled_event:
             client_enabled_event.set()
-            
+
         run_time = random.randint(enable_min, enable_max)
         logger.info(f"Client Toggle Thread: Keeping enabled for {run_time}s...")
         if _wait_interval(run_time, stop_event): break
-        
+
         if get_service_status(service_name) != "RUNNING":
             logger.info("Client Toggle Thread: Service not running, skip toggle.")
             continue
@@ -45,7 +45,7 @@ def client_toggler_loop(
         nsdiag_enable_client(False, is_64bit)
         if client_enabled_event:
             client_enabled_event.clear()
-        
+
         disable_time = max(1, int(run_time * disable_ratio))
         if _wait_interval(disable_time, stop_event): break
 

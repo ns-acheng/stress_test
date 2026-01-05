@@ -36,7 +36,7 @@ class PROCESSENTRY32(ctypes.Structure):
         ("th32ParentProcessID", wintypes.DWORD),
         ("pcPriClassBase", wintypes.LONG),
         ("dwFlags", wintypes.DWORD),
-        ("szExeFile", ctypes.c_wchar * 260) 
+        ("szExeFile", ctypes.c_wchar * 260)
     ]
 
 class PROCESS_MEMORY_COUNTERS_EX(ctypes.Structure):
@@ -96,9 +96,9 @@ class TOKEN_PRIVILEGES(ctypes.Structure):
 def enable_privilege(privilege_name) -> int:
     k32 = ctypes.windll.kernel32
     advapi32 = ctypes.windll.advapi32
-    
+
     hToken = wintypes.HANDLE()
-    
+
     if not k32.OpenProcessToken(
         k32.GetCurrentProcess(),
         TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,
@@ -125,7 +125,7 @@ def enable_privilege(privilege_name) -> int:
         err = ctypes.get_last_error()
         k32.CloseHandle(hToken)
         return err
-    
+
     err = ctypes.get_last_error()
     k32.CloseHandle(hToken)
     return err
@@ -147,7 +147,7 @@ def get_system_memory_usage() -> float:
 def get_pid_by_name(process_name: str) -> int:
     k32 = ctypes.windll.kernel32
     hSnapshot = k32.CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)
-    
+
     if hSnapshot == INVALID_HANDLE_VALUE:
         return 0
 
@@ -169,13 +169,13 @@ def get_pid_by_name(process_name: str) -> int:
                 break
     finally:
         k32.CloseHandle(hSnapshot)
-        
+
     return target_pid
 
 def get_process_memory_usage(pid: int) -> int:
-    if pid == 0: 
+    if pid == 0:
         return 0
-    
+
     k32 = ctypes.windll.kernel32
     process_handle = k32.OpenProcess(
         PROCESS_QUERY_LIMITED_INFORMATION,
@@ -189,13 +189,13 @@ def get_process_memory_usage(pid: int) -> int:
     try:
         counters = PROCESS_MEMORY_COUNTERS_EX()
         counters.cb = ctypes.sizeof(PROCESS_MEMORY_COUNTERS_EX)
-        
+
         success = ctypes.windll.psapi.GetProcessMemoryInfo(
             process_handle,
             ctypes.byref(counters),
             ctypes.sizeof(counters)
         )
-        
+
         if success:
             return counters.PrivateUsage
         else:
@@ -206,15 +206,15 @@ def get_process_memory_usage(pid: int) -> int:
 def get_process_handle_count(pid: int) -> int:
     if pid == 0:
         return 0
-    
+
     k32 = ctypes.windll.kernel32
     process_handle = k32.OpenProcess(
         PROCESS_QUERY_LIMITED_INFORMATION, False, pid
     )
-    
+
     if not process_handle:
         return 0
-        
+
     try:
         count = wintypes.DWORD()
         success = k32.GetProcessHandleCount(
@@ -242,43 +242,43 @@ def get_process_cpu_usage(pid: int, interval: float = 0.5) -> float:
         k_start = FILETIME()
         u_start = FILETIME()
         sys_start = FILETIME()
-        
+
         k32.GetProcessTimes(
-            process_handle, 
-            ctypes.byref(creation), 
-            ctypes.byref(exit_time), 
-            ctypes.byref(k_start), 
+            process_handle,
+            ctypes.byref(creation),
+            ctypes.byref(exit_time),
+            ctypes.byref(k_start),
             ctypes.byref(u_start)
         )
         k32.GetSystemTimeAsFileTime(ctypes.byref(sys_start))
-        
+
         time.sleep(interval)
-        
+
         k_end = FILETIME()
         u_end = FILETIME()
         sys_end = FILETIME()
-        
+
         k32.GetProcessTimes(
-            process_handle, 
-            ctypes.byref(creation), 
-            ctypes.byref(exit_time), 
-            ctypes.byref(k_end), 
+            process_handle,
+            ctypes.byref(creation),
+            ctypes.byref(exit_time),
+            ctypes.byref(k_end),
             ctypes.byref(u_end)
         )
         k32.GetSystemTimeAsFileTime(ctypes.byref(sys_end))
-        
+
         p_k_delta = _filetime_to_int(k_end) - _filetime_to_int(k_start)
         p_u_delta = _filetime_to_int(u_end) - _filetime_to_int(u_start)
         sys_delta = _filetime_to_int(sys_end) - _filetime_to_int(sys_start)
-        
+
         if sys_delta == 0:
             return 0.0
-            
+
         num_procs = _get_num_processors()
         cpu_pct = (
             ((p_k_delta + p_u_delta) / sys_delta) * 100.0 / num_procs
         )
-        
+
         return max(0.0, cpu_pct)
 
     finally:
@@ -291,33 +291,33 @@ def log_resource_usage(
     pid = get_pid_by_name(process_name)
     if pid == 0:
         return False
-        
+
     mem_bytes = get_process_memory_usage(pid)
     mem_kb = mem_bytes / 1024
     mem_mb = mem_bytes / (1024 * 1024)
-    
+
     handle_count = get_process_handle_count(pid)
     cpu_percent = get_process_cpu_usage(pid, interval=0.5)
-    
+
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
-        
+
     log_file = f"{process_name}_resources.log"
     full_path = os.path.join(log_dir, log_file)
     now_str = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
-    
+
     write_header = not os.path.exists(full_path)
 
     log_line = (
         f"{now_str}, {cpu_percent:.0f}%, "
         f"{mem_mb:.1f}MB, {mem_kb:.0f}KB, {handle_count}\n"
     )
-    
+
     with open(full_path, "a", encoding='utf-8') as f:
         if write_header:
             f.write("Timestamp, CPU, Memory(MB), Memory(KB), Handles\n")
         f.write(log_line)
-        
+
     return True
 
 if __name__ == "__main__":
@@ -326,6 +326,6 @@ if __name__ == "__main__":
     try:
         while True:
             log_resource_usage(target, ts)
-            time.sleep(4.5) 
+            time.sleep(4.5)
     except KeyboardInterrupt:
         pass

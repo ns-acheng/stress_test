@@ -10,14 +10,14 @@ class LogSetup:
 
     def get_timestamp(self):
         return self.timestamp
-    
+
     def get_log_folder(self):
         return self.log_folder
 
     def setup_logging(self):
         if not os.path.exists(self.log_folder):
             os.makedirs(self.log_folder)
-            
+
         logger = logging.getLogger()
         logger.setLevel(logging.INFO)
 

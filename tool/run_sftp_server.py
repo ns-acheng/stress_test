@@ -87,7 +87,7 @@ def handle_client(client_sock, args, host_key):
             transport.set_subsystem_handler(
                 "sftp", paramiko.SFTPServer, StubSFTPServer
             )
-            channel.recv(1024) 
+            channel.recv(1024)
     except Exception as e:
         logger.error(f"Connection error: {e}")
     finally:
@@ -104,21 +104,21 @@ def main():
     if not os.path.exists(args.keyfile):
         key = paramiko.RSAKey.generate(2048)
         key.write_private_key_file(args.keyfile)
-    
+
     host_key = paramiko.RSAKey(filename=args.keyfile)
-    
+
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.bind(('0.0.0.0', args.port))
     sock.listen(10)
     sock.settimeout(1.0)
-    
+
     logger.info(f"SFTP Server listening on {args.port}")
     logger.info("Press ESC to stop the server")
 
     stop_event = threading.Event()
     start_input_monitor(stop_event)
-    
+
     while not stop_event.is_set():
         try:
             client, addr = sock.accept()
@@ -133,7 +133,7 @@ def main():
         )
         t.daemon = True
         t.start()
-    
+
     logger.info("Stopping SFTP server...")
     sock.close()
 

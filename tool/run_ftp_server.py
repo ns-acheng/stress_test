@@ -67,7 +67,7 @@ def generate_cert(cert_path, key_path):
             cert.set_issuer(cert.get_subject())
             cert.set_pubkey(k)
             cert.sign(k, 'sha256')
-            
+
             with open(cert_path, "wb") as f:
                 f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
             with open(key_path, "wb") as f:

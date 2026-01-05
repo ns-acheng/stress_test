@@ -9,7 +9,7 @@ logger = logging.getLogger()
 def check_url_cert(url: str) -> str:
     try:
         hostname = get_hostname_from_url(url)
-        
+
         if not hostname:
             logger.error(f"Could not extract hostname from {url}")
             return ""
@@ -26,7 +26,13 @@ def check_url_cert(url: str) -> str:
         x509 = crypto.load_certificate(crypto.FILETYPE_ASN1, cert_bin)
         issuer = x509.get_issuer()
 
-        components = [f"{k.decode()}={v.decode()}" for k, v in issuer.get_components()]
+        components = []
+        for k, v in issuer.get_components():
+            key = k.decode()
+            val = v.decode()
+            if key in ['emailAddress', 'CN']:
+                components.append(f"{key}={val}")
+
         issuer_str = ", ".join(components)
         logger.info(f"Cert Issuer for {hostname}: {issuer_str}")
 

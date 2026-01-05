@@ -21,7 +21,7 @@ def main():
 
     print(f"Checking certificate for: {url}")
     issuer = check_url_cert(url)
-    
+
     if issuer:
         print(f"Issuer: {issuer}")
     else:

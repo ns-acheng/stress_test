@@ -97,11 +97,11 @@ class ToolConfig:
 
     # Traffic Validation: (Name, DurationAttr, CountAttr, ConcurrencyAttr, EnabledAttr)
     TRAFFIC_VALIDATION = [
-        ("DNS", "dns_duration", "dns_count", 
+        ("DNS", "dns_duration", "dns_count",
          "dns_concurrent", "dns_enabled"),
-        ("UDP", "udp_duration", "udp_count", 
+        ("UDP", "udp_duration", "udp_count",
          "udp_concurrent", "udp_enabled"),
-        ("HTTPS", "curl_flood_duration", "curl_flood_count", 
+        ("HTTPS", "curl_flood_duration", "curl_flood_count",
          "curl_flood_concurrent", "curl_flood_enabled"),
         ("AB", "ab_duration", "ab_total_conn", "ab_concurrent", None),
         ("FTP", "ftp_duration", "ftp_count", "ftp_concurrent", "ftp_enabled"),
@@ -235,7 +235,7 @@ class ToolConfig:
                 section = tg.get(proto['json_key'], {})
                 current_enabled = getattr(self, proto['enable_attr'])
                 setattr(self, proto['enable_attr'], bool(section.get('enable', current_enabled)))
-                
+
                 for json_field, attr_name in proto['fields'].items():
                     current_val = getattr(self, attr_name)
                     setattr(self, attr_name, section.get(json_field, current_val))
@@ -245,11 +245,11 @@ class ToolConfig:
             self.ab_concurrent = ab.get('concurrent_conn', self.ab_concurrent)
             self.ab_duration = ab.get('duration_sec', self.ab_duration)
             self.ab_total_conn = ab.get('total_conn', self.ab_total_conn)
-            
+
             if not ab_enabled:
                 self.ab_total_conn = 0
                 self.ab_duration = 0
-            
+
             self.ab_target_urls = ab.get('target_urls', self.ab_target_urls)
             if not isinstance(self.ab_target_urls, list):
                 if self.ab_target_urls:
@@ -289,7 +289,7 @@ class ToolConfig:
         if self.client_enable_max < self.client_enable_min:
             logger.warning("client_enable_max < min, adjusting to min.")
             self.client_enable_max = self.client_enable_min
-            
+
         if self.long_idle_time_max < self.long_idle_time_min:
             logger.warning("long_idle_time_max < min, adjusting to min.")
             self.long_idle_time_max = self.long_idle_time_min
@@ -297,18 +297,18 @@ class ToolConfig:
         for name, dur_attr, count_attr, conc_attr, enabled_attr in self.TRAFFIC_VALIDATION:
             if enabled_attr and not getattr(self, enabled_attr):
                 continue
-                
+
             dur = getattr(self, dur_attr)
             count = getattr(self, count_attr)
             conc = getattr(self, conc_attr)
-            
+
             new_dur, new_count = self._cap_duration_count(dur, count, name)
             setattr(self, dur_attr, new_dur)
             setattr(self, count_attr, new_count)
-            
+
             new_conc = self._cap_concurrency(conc, name)
             setattr(self, conc_attr, new_conc)
-            
+
             if enabled_attr:
                 is_valid = self._validate_traffic_section(True, new_dur, new_count, name)
                 setattr(self, enabled_attr, is_valid)
@@ -318,7 +318,7 @@ class ToolConfig:
 
         if self.ab_total_conn == 0 and self.ab_duration == 0:
              pass
-             
+
         if self.ab_duration > 0 and self.ab_total_conn <= 0:
              self.ab_total_conn = 1
 
@@ -344,7 +344,7 @@ class ToolConfig:
 
     def _cap_concurrency(self, concurrency, name):
         new_concurrency = concurrency
-        
+
         if name in ["FTP", "FTPS", "SFTP"]:
             if new_concurrency < 1:
                 logger.warning(f"{name} concurrency {new_concurrency} < 1. Resetting to 1.")

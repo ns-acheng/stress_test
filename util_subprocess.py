@@ -16,18 +16,18 @@ def run_powershell(script_path, args=None) -> None:
         "-ExecutionPolicy", "Bypass",
         "-File", script_path
     ]
-    
+
     if args:
         command.extend(args)
-    
+
     try:
         logger.info(
             f"Running PowerShell: {script_path} {args if args else ''}"
         )
         subprocess.run(
-            command, 
-            check=True, 
-            capture_output=True, 
+            command,
+            check=True,
+            capture_output=True,
             text=True,
             encoding='utf-8',
             errors='replace'
@@ -41,9 +41,9 @@ def run_powershell(script_path, args=None) -> None:
             err_msg = e.stderr.strip()
         elif e.stdout:
             err_msg = e.stdout.strip()
-            
+
         logger.error(f"Error details: {err_msg}")
-    
+
     except FileNotFoundError:
         logger.error("PowerShell.exe not found in PATH.")
 
@@ -69,7 +69,7 @@ def _run_nsdiag_generic(nsdiag_path: str, args: list, desc: str) -> bool:
         return False
 
     command = [nsdiag_path] + args
-    try:        
+    try:
         subprocess.run(
             command,
             check=True,
@@ -87,7 +87,7 @@ def _run_nsdiag_generic(nsdiag_path: str, args: list, desc: str) -> bool:
 
 def nsdiag_collect_log(timestamp: str, is_64bit: bool, output_dir: str) -> None:
     nsdiag_path = _get_nsdiag_path(is_64bit)
-    
+
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -108,17 +108,17 @@ def nsdiag_enable_client(enable: bool, is_64bit: bool = True) -> None:
     _run_nsdiag_generic(nsdiag_path, ["-t", action], f"client {action}")
 
 def enable_wake_timers() -> bool:
-    subgroup = "238C9FA8-0AAD-41ED-83F4-97BE242C8F20" 
+    subgroup = "238C9FA8-0AAD-41ED-83F4-97BE242C8F20"
     setting  = "BD3B718A-0680-4D9D-8AB2-E1D2B4EF806D"
     val = "1"
 
     commands = [
         [
-            "powercfg", "/setacvalueindex", "SCHEME_CURRENT", 
+            "powercfg", "/setacvalueindex", "SCHEME_CURRENT",
             subgroup, setting, val
         ],
         [
-            "powercfg", "/setdcvalueindex", "SCHEME_CURRENT", 
+            "powercfg", "/setdcvalueindex", "SCHEME_CURRENT",
             subgroup, setting, val
         ],
         ["powercfg", "/setactive", "SCHEME_CURRENT"]
@@ -128,9 +128,9 @@ def enable_wake_timers() -> bool:
         logger.info("Enabling 'Allow wake timers' in Power Settings...")
         for cmd in commands:
             subprocess.run(
-                cmd, 
-                check=True, 
-                stdout=subprocess.DEVNULL, 
+                cmd,
+                check=True,
+                stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL
             )
         logger.info("Wake timers successfully enabled.")

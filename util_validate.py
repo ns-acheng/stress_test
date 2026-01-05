@@ -19,12 +19,12 @@ class NsClientLogValidator:
         self.log_path = os.path.join(
             self.stagent_path, 'logs', 'nsdebuglog.log'
         )
-        
+
         self.rotated_log_path = self.log_path.replace('.log', '.1.log')
         self.lock = threading.Lock()
         self.last_pos = 0
         self.last_inode = 0
-        self.pending_reads = [] # List of (inode, start_pos)
+        self.pending_reads = []
 
     def get_steering_config(self):
         json_path = os.path.join(self.stagent_path, 'data', 'nssteering.json')
@@ -49,7 +49,7 @@ class NsClientLogValidator:
         with self.lock:
             self.pending_reads = []
             target_time = datetime.now() - timedelta(seconds=seconds)
-            
+
             # Helper to scan a file backwards for timestamp < target_time
             def scan_file(filepath):
                 if not os.path.exists(filepath):
@@ -59,11 +59,12 @@ class NsClientLogValidator:
                     fsize = st.st_size
                     inode = st.st_ino
                     if fsize == 0: return None, 0, inode
-                    
-                    chunk_size = 1024 * 1024 # 1MB
+
+                    # 1 MB
+                    chunk_size = 1024 * 1024
                     pos = fsize
-                    min_pos = max(0, fsize - (50 * 1024 * 1024)) # Max 50MB scan
-                    
+                    # Max 50MB scan
+                    min_pos = max(0, fsize - (50 * 1024 * 1024))
                     while pos > min_pos:
                         read_len = min(chunk_size, pos - min_pos)
                         pos -= read_len
@@ -73,7 +74,7 @@ class NsClientLogValidator:
                                 chunk = f.read(read_len)
                                 text = chunk.decode('utf-8', errors='ignore')
                                 match = re.search(
-                                    r'(\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2})', 
+                                    r'(\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2})',
                                     text
                                 )
                                 if match:
@@ -106,19 +107,19 @@ class NsClientLogValidator:
                     rotated_files.append(p)
                 else:
                     break
-            
+
             found_idx = -1
             found_pos = 0
-            
+
             # Scan rotated files to find start point
             for idx, fpath in enumerate(rotated_files):
                 found, pos, inode = scan_file(fpath)
-                if found is not None: # File exists
+                if found is not None:
                     if found: # Found timestamp < target
                         found_idx = idx
                         found_pos = pos
                         break
-            
+
             # Queue files based on finding
             files_to_queue = []
             if found_idx != -1:
@@ -129,7 +130,7 @@ class NsClientLogValidator:
                 if rotated_files:
                     for i in range(len(rotated_files) - 1, -1, -1):
                         files_to_queue.append((rotated_files[i], 0))
-            
+
             # Store inodes for pending reads
             for fpath, start_pos in files_to_queue:
                 try:
@@ -137,7 +138,7 @@ class NsClientLogValidator:
                     self.pending_reads.append((ino, start_pos))
                 except OSError:
                     pass
-            
+
             # Set state for current log (to be read after pending)
             try:
                 st = os.stat(self.log_path)
@@ -146,7 +147,7 @@ class NsClientLogValidator:
             except OSError:
                 self.last_inode = 0
                 self.last_pos = 0
-                
+
             logger.info(f"Log seek: Queued {len(self.pending_reads)} pending files based on inodes.")
 
     def _read_chunk(self, filepath, start_pos):
@@ -170,7 +171,7 @@ class NsClientLogValidator:
                     current_size = os.path.getsize(self.log_path)
                 except OSError:
                     current_size = 0
-            
+
             if current_size < self.last_pos:
                 content_old = self._read_chunk(self.rotated_log_path, self.last_pos)
                 if is_regex:
@@ -179,7 +180,7 @@ class NsClientLogValidator:
                 elif pattern in content_old:
                     found = True
                 self.last_pos = 0
-                
+
             content_new = self._read_chunk(self.log_path, self.last_pos)
             if not found:
                 if is_regex:
@@ -187,7 +188,7 @@ class NsClientLogValidator:
                         found = True
                 elif pattern in content_new:
                     found = True
-            
+
             if os.path.exists(self.log_path):
                 self.last_pos = os.path.getsize(self.log_path)
             else:
@@ -236,7 +237,7 @@ class NsClientLogValidator:
                 old_path = find_file_by_inode(self.last_inode)
                 if old_path:
                     content += self._read_chunk(old_path, self.last_pos)
-                
+
                 # Reset for new file
                 self.last_pos = 0
                 self.last_inode = current_inode
@@ -245,10 +246,10 @@ class NsClientLogValidator:
             if current_size < self.last_pos:
                 # Truncated or reset without inode change (unlikely but possible)
                 self.last_pos = 0
-            
+
             chunk = self._read_chunk(self.log_path, self.last_pos)
             content += chunk
-            
+
             # Update state
             if os.path.exists(self.log_path):
                 try:
@@ -257,13 +258,13 @@ class NsClientLogValidator:
                     self.last_inode = st.st_ino
                 except OSError:
                     pass
-            
+
             if content:
                 preview_start = content[:100].replace('\r', '\\r').replace('\n', '\\n')
                 preview_end = content[-100:].replace('\r', '\\r').replace('\n', '\\n')
                 logger.info(f"Log Reader: Read {len(content)} bytes. Start: '{preview_start}'")
                 logger.info(f"Log Reader: End: '{preview_end}'")
-            
+
             return content
 
 _validator = None
@@ -296,21 +297,21 @@ def check_tunneling_in_text(process_name, url, text) -> bool:
         if not host:
             if "://" not in url:
                 host = url.split("/")[0].split(":")[0]
-        
+
         if not host:
-            return True 
+            return True
 
         # Pattern 1: Tunneling flow
         pat_tunnel = (
-            r"Tunneling flow from addr: .*, process: " + 
-            re.escape(process_name) + 
+            r"Tunneling flow from addr: .*, process: " +
+            re.escape(process_name) +
             r" to host: " + re.escape(host) + r"(,|:)"
         )
-        
+
         # Pattern 2: Bypassing flow (exception host)
         pat_bypass = (
-            r"bypassing flow to exception host: " + 
-            re.escape(host) + 
+            r"bypassing flow to exception host: " +
+            re.escape(host) +
             r", process: " + re.escape(process_name)
         )
 
@@ -324,26 +325,41 @@ def validate_traffic_flow(process_map, stop_event, exception_checker=None) -> bo
     # process_map: {"msedge.exe": [url1, url2], "curl.exe": [url3, url4]}
     # Filter out empty target lists
     active_map = {proc: urls for proc, urls in process_map.items() if urls}
-    
+
     if not active_map:
         logger.info("No URLs to validate.")
         return True
 
     logger.info(f"Validating traffic for processes: {list(active_map.keys())}")
-    
+
     pending = {
-        proc: {url: False for url in urls} 
+        proc: {url: False for url in urls}
         for proc, urls in active_map.items()
     }
-    
+
+    # Check HTTP and exceptions first
+    for proc, urls in active_map.items():
+        for url in urls:
+            if url.lower().startswith("http://"):
+                logger.info(f"URL: {url} ({proc}) -> PASS (HTTP skipped)")
+                pending[proc][url] = True
+                continue
+
+            if exception_checker and exception_checker(url):
+                logger.info(f"URL: {url} ({proc}) -> PASS (In NSClient Exception List)")
+                pending[proc][url] = True
+
+    if all(all(status for status in p_urls.values()) for p_urls in pending.values()):
+        return True
+
     log_buffer = ""
     validator = get_validator()
-    
+
     for i in range(5):
         new_logs = validator.read_new_logs()
         if new_logs:
             log_buffer += new_logs
-        
+
         all_passed = True
         for proc, urls in active_map.items():
             for url in urls:
@@ -353,10 +369,10 @@ def validate_traffic_flow(process_map, stop_event, exception_checker=None) -> bo
                         logger.info(f"URL: {url} ({proc}) -> PASS")
                     else:
                         all_passed = False
-        
+
         if all_passed:
             return True
-        
+
         if i < 4:
             if smart_sleep(2, stop_event):
                 return False
@@ -365,18 +381,23 @@ def validate_traffic_flow(process_map, stop_event, exception_checker=None) -> bo
     for proc, urls in active_map.items():
         for url in urls:
             if not pending[proc][url]:
-                if exception_checker and exception_checker(url):
-                    logger.info(f"URL: {url} ({proc}) -> PASS (In NSClient Exception List)")
-                    pending[proc][url] = True
-                    continue
-
                 logger.info(f"Log validation failed for {url}. Checking Cert...")
                 issuer = util_cert.check_url_cert(url)
-                
+
                 is_valid_issuer = False
                 if issuer:
                     if "boomskope.com" in issuer or "goskope.com" in issuer:
                         is_valid_issuer = True
+
+                if not is_valid_issuer:
+                    logger.warning(f"Cert check failed for {url}. Retrying in 5 seconds...")
+                    if smart_sleep(5, stop_event):
+                        return False
+                    
+                    issuer = util_cert.check_url_cert(url)
+                    if issuer:
+                        if "boomskope.com" in issuer or "goskope.com" in issuer:
+                            is_valid_issuer = True
 
                 if is_valid_issuer:
                     logger.info(
@@ -392,6 +413,7 @@ def validate_traffic_flow(process_map, stop_event, exception_checker=None) -> bo
                         logger.error(
                             f"URL: {url} ({proc}) -> FAIL !!!!!! (Issuer check failed)"
                         )
-                    success = False
-    
-    return success
+                    return False
+
+    return True
+
