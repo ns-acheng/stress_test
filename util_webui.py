@@ -3,7 +3,6 @@ import os
 import logging
 
 # Add sibling repo 'pylark-webapi-lib/src' to sys.path
-# Assumes directory structure:
 #   parent/
 #     stress_test/ (current repo)
 #     pylark-webapi-lib/ (sibling repo)
@@ -70,8 +69,7 @@ class WebUIClient:
         try:
             client_config = ClientConfiguration(self.webapi)
             logger.info(f"Updating client configuration '{config_name}' with {kwargs}")
-            
-            # Default search_config to config_name if not provided
+
             if 'search_config' not in kwargs:
                 kwargs['search_config'] = config_name
 
@@ -120,3 +118,52 @@ class WebUIClient:
         except Exception as e:
             logger.error(f"An error occurred during Steering Config update: {e}")
             return False
+
+def perform_onprem_setup(config):
+    client_toggles = config.get("client_feature_toggling", {})
+    webui_cfg = client_toggles.get("webui_login", {})
+    onprem_cfg = client_toggles.get("on_prem", {})
+
+    if not onprem_cfg.get("enable", 0):
+        return
+
+    hostname = webui_cfg.get("hostname", "")
+    username = webui_cfg.get("username", "")
+    password = webui_cfg.get("password", "")
+
+    if "://" in hostname:
+        from urllib.parse import urlparse
+        hostname = urlparse(hostname).netloc
+
+    client = WebUIClient(hostname, username, password)
+    if client.login():
+        use_dns = onprem_cfg.get("onprem_use_dns", 0)
+        http_host = onprem_cfg.get("onprem_http_host", "")
+        
+        client.update_client_config(
+            onpremcheck=1,
+            onprem_use_dns=int(use_dns),
+            onprem_http_host=http_host
+        )
+        return True
+    
+    return False
+
+if __name__ == "__main__":
+    hostname = 'ac-stg01.stg.boomskope.com'
+    username = 'acheng@netskope.com'
+    password = 'N3tskope!'
+
+    client = WebUIClient(hostname, username, password)
+    if client.login():
+        print("Login successful.")
+        client.update_client_config(
+            onpremcheck=1,
+            onprem_use_dns=0,
+            onprem_http_host="http://googleapi.com"
+        )
+        client.update_steering_config(
+            traffic_mode="all"
+        )
+    else:
+        print("Login failed.")

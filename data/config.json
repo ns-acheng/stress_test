@@ -7,6 +7,11 @@
   "long_idle_time_min": 300,
   "long_idle_time_max": 600,
   "client_feature_toggling": {
+    "webui_login": {
+      "hostname": "ac-stg01.stg.boomskope.com",
+      "username": "acheng@netskope.com",
+      "password": "N3tskope!"
+    },
     "failclose": {
       "enable": 1,
       "interval": 15
@@ -21,6 +26,11 @@
       "enable": 0,
       "interval": 0,
       "duration_sec": 60
+    },
+    "on_prem": {
+      "enable": 0,
+      "onprem_use_dns": 0,
+      "onprem_http_host": "http://smallpdf.com"
     }
   },
   "traffic_gen": {

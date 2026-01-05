@@ -22,6 +22,7 @@ from util_power import enter_s0_and_wake
 import util_traffic
 import util_client
 import util_validate
+import util_webui
 from urllib.parse import urlparse
 import re
 
@@ -67,6 +68,10 @@ class StressTest:
                 logger.warning(f"Failed to enable {priv}. Err: {err}")
 
         self.config.load()
+
+        # Perform On-Prem setup if enabled
+        util_webui.perform_onprem_setup(self.config.config_data)
+
         self.load_urls()
 
         # Check steering config for validation

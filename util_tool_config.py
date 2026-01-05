@@ -197,6 +197,7 @@ class ToolConfig:
         try:
             with open(self.config_file, 'r', encoding='utf-8') as f:
                 config = json.load(f)
+            self.config_data = config
             logger.info(f"Loaded configuration from {self.config_file}")
 
             self.loop_times = config.get('loop_times', self.loop_times)
