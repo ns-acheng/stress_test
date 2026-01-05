@@ -39,10 +39,10 @@
     "https": {
       "enable": 1,
       "duration_sec": 0,
-      "count": 800,
-      "concurrent_conn": 50,
+      "count": 500,
+      "concurrent_conn": 30,
       "log_validation": 1,
-      "log_validation_ratio": 5
+      "log_validation_ratio": 3
     },
     "udp": {
       "enable": 0,

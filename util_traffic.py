@@ -458,9 +458,14 @@ def generate_curl_flood(
         end_time = time.time() + duration
 
         def _time_worker():
+            # Use local cycle to avoid random.choice overhead and ensure coverage
+            local_pool = list(urls)
+            # No shuffle here, respect caller's order
+            cycler = itertools.cycle(local_pool)
+            
             while time.time() < end_time:
                 if _is_stopped(stop_event): break
-                url = random.choice(urls)
+                url = next(cycler)
                 _curl_flood_worker(url)
 
         with concurrent.futures.ThreadPoolExecutor(
@@ -477,10 +482,16 @@ def generate_curl_flood(
         log_buffer = []
 
         # Use round-robin to ensure even coverage of the batch
-        # Create a local copy to shuffle so we don't affect the caller
+        # Respect caller's order (no shuffle)
         pool = list(urls)
-        random.shuffle(pool)
-        url_cycler = itertools.cycle(pool)
+        # random.shuffle(pool) # Removed to preserve order from stress_test.py
+        
+        # If count is larger than pool, we must cycle.
+        # If count is smaller, we just take the first 'count' items to avoid duplicates if possible.
+        if count > len(pool):
+            url_iter = itertools.cycle(pool)
+        else:
+            url_iter = iter(pool)
 
         with concurrent.futures.ThreadPoolExecutor(
             max_workers=concurrency
@@ -489,7 +500,13 @@ def generate_curl_flood(
             for i in range(1, count + 1):
                 if _is_stopped(stop_event):
                     break
-                url = next(url_cycler)
+                try:
+                    url = next(url_iter)
+                except StopIteration:
+                    # Should not happen if logic is correct, but safe fallback
+                    url_iter = itertools.cycle(pool)
+                    url = next(url_iter)
+                    
                 futures.append(exe.submit(_curl_flood_worker, url))
 
             for f in concurrent.futures.as_completed(futures):
