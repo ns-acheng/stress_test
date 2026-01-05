@@ -336,6 +336,16 @@ def validate_traffic_flow(process_map, stop_event, exception_checker=None) -> bo
         for proc, urls in active_map.items()
     }
 
+    if exception_checker:
+        for proc, urls in active_map.items():
+            for url in urls:
+                if exception_checker(url):
+                    logger.info(f"URL: {url} ({proc}) -> PASS (In NSClient Exception List)")
+                    pending[proc][url] = True
+
+    if all(all(status for status in p_urls.values()) for p_urls in pending.values()):
+        return True
+
     log_buffer = ""
     validator = get_validator()
 
@@ -365,11 +375,6 @@ def validate_traffic_flow(process_map, stop_event, exception_checker=None) -> bo
     for proc, urls in active_map.items():
         for url in urls:
             if not pending[proc][url]:
-                if exception_checker and exception_checker(url):
-                    logger.info(f"URL: {url} ({proc}) -> PASS (In NSClient Exception List)")
-                    pending[proc][url] = True
-                    continue
-
                 logger.info(f"Log validation failed for {url}. Checking Cert...")
                 issuer = util_cert.check_url_cert(url)
 

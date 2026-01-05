@@ -31,6 +31,7 @@ class AgentConfigManager:
     def load_nsexception(self):
         self.exception_names = []
         if not os.path.exists(self.exception_path):
+            logger.warning(f"nsexception.json not found at {self.exception_path}")
             return
 
         try:

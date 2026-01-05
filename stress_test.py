@@ -255,6 +255,9 @@ class StressTest:
             logger.info("Validation skipped (disabled by firewall_traffic_mode).")
             return True
 
+        # Reload exceptions to ensure we have the latest
+        self.cfg_mgr.load_nsexception()
+
         if self.config.client_disabling_enabled and not self.client_enabled_event.is_set():
              logger.info("Validation skipped (Client is disabled).")
              return True
