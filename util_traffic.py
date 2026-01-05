@@ -377,7 +377,7 @@ def open_browser_tabs(
         for u in selected:
             logger.info(f"  -> {u}")
 
-        args = " ".join(selected)
+        args = " ".join([f'"{u}"' for u in selected])
         cmd = os.path.join(tool_dir, f"open_msedge_tabs.bat {args}")
         run_batch(cmd)
 
