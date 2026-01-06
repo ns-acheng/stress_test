@@ -90,15 +90,4 @@ def handle_non_stop(service_name, is_64bit, log_dir) -> None:
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     nsdiag_collect_log(timestamp, is_64bit, log_dir)
 
-    logger.info("Waiting up to 300s for service to stop...")
-    for j in range(300):
-        if get_service_status(service_name) == "STOPPED":
-            logger.info(
-                f"Service '{service_name}' stopped after {j}s post-collection wait."
-            )
-            return
-        time.sleep(1)
-
-    logger.error(
-        f"Service '{service_name}' did NOT stop after 300s post-collection wait."
-    )
+    logger.info("Live dump and logs collected. Returning to stop testing.")
