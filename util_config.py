@@ -26,7 +26,6 @@ class AgentConfigManager:
             self.stagent_root, "data", "nsexception.json"
         )
         self.exception_names = []
-        self.load_nsexception()
 
     def load_nsexception(self):
         self.exception_names = []

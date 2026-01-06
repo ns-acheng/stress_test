@@ -69,6 +69,9 @@ class StressTest:
 
         self.config.load()
 
+        if self.config.browser_log_validation != 0 or self.config.curl_flood_log_validation != 0:
+            self.cfg_mgr.load_nsexception()
+
         util_webui.perform_onprem_setup(self.config.config_data)
 
         self.load_urls()
