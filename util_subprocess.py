@@ -6,7 +6,7 @@ logger = logging.getLogger()
 
 def run_batch(batch_file: str) -> None:
     try:
-        subprocess.Popen(["cmd", "/c", batch_file])
+        subprocess.Popen(batch_file, shell=True)
     except Exception as e:
         logger.error(f"Failed to run batch file {batch_file}: {e}")
 
