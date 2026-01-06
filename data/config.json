@@ -8,9 +8,8 @@
   "long_idle_time_max": 600,
   "client_feature_toggling": {
     "webui_login": {
-      "hostname": "ac-stg01.stg.boomskope.com",
-      "username": "acheng@netskope.com",
-      "password": "N3tskope!"
+      "tenant_username": "acheng@netskope.com",
+      "tenant_password": "N3tskope!"
     },
     "failclose": {
       "enable": 1,

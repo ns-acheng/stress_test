@@ -78,6 +78,31 @@ class AgentConfigManager:
         except Exception:
             return False
 
+    def get_tenant_hostname(self) -> str:
+        try:
+            if not os.path.exists(self.target_nsconfig):
+                return ""
+
+            with open(self.target_nsconfig, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+
+            nsgw = data.get("nsgw", {})
+            host = nsgw.get("host") 
+
+            if not host:
+                return ""
+
+            parts = host.split('.')
+            if parts and parts[0].startswith("gateway-"):
+                parts[0] = parts[0].replace("gateway-", "")
+                return ".".join(parts)
+
+            return ""
+
+        except Exception as e:
+            logger.error(f"Error reading tenant hostname from nsconfig: {e}")
+            return ""
+
     def setup_environment(self):
         check_path = r"C:\Program Files\Netskope\STAgent\stAgentSvc.exe"
         if os.path.exists(check_path):
