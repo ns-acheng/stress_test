@@ -407,7 +407,6 @@ def curl_requests(urls, stop_event=None) -> None:
     if not urls:
         return
 
-
     mandatory = {urls[0], urls[-1]}
     pool = [u for u in urls if u not in mandatory]
 
@@ -482,12 +481,7 @@ def generate_curl_flood(
         completed = 0
         log_buffer = []
 
-
-
         pool = list(urls)
-
-
-
 
         if count > len(pool):
             url_iter = itertools.cycle(pool)
@@ -586,7 +580,6 @@ def _ftp_worker(target, port, user, password, file_size_mb, is_ftps) -> bool:
         ftp.storbinary(f"STOR {filename}", vfile)
         logger.info(f"Uploaded {filename}")
 
-
         try:
             ftp.delete(filename)
         except Exception:
@@ -675,7 +668,6 @@ def _sftp_worker(target, port, user, password, file_size_mb) -> bool:
         sftp.putfo(vfile, filename)
         logger.info(f"Uploaded {filename}")
 
-
         try:
             sftp.remove(filename)
         except Exception:
@@ -730,7 +722,6 @@ def generate_sftp_traffic(
                     completed += 1
 
     logger.info(f"SFTP finished. Completed uploads: {completed}")
-
 
 def get_hostname_from_url(url: str) -> str:
     try:

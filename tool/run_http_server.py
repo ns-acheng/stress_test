@@ -33,7 +33,6 @@ def main():
     if not os.path.exists(args.directory):
         os.makedirs(args.directory)
 
-
     handler_class = partial(QuietHandler, directory=os.path.abspath(args.directory))
 
     try:
@@ -51,7 +50,6 @@ def main():
 
     stop_event = threading.Event()
     start_input_monitor(stop_event)
-
 
     server_thread = threading.Thread(target=server.serve_forever)
     server_thread.daemon = True

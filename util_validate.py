@@ -50,7 +50,6 @@ class NsClientLogValidator:
             self.pending_reads = []
             target_time = datetime.now() - timedelta(seconds=seconds)
 
-
             def scan_file(filepath):
                 if not os.path.exists(filepath):
                     return None, 0, 0
@@ -59,7 +58,6 @@ class NsClientLogValidator:
                     fsize = st.st_size
                     inode = st.st_ino
                     if fsize == 0: return None, 0, inode
-
 
                     chunk_size = 1024 * 1024
                     pos = fsize
@@ -91,14 +89,12 @@ class NsClientLogValidator:
                 except OSError:
                     return None, 0, 0
 
-
             found, pos, inode = scan_file(self.log_path)
             if found:
                 self.last_pos = pos
                 self.last_inode = inode
                 logger.info(f"Log seek: Found logs older than {seconds}s in current log at {pos}")
                 return
-
 
             rotated_files = []
             for i in range(1, 11):
@@ -111,7 +107,6 @@ class NsClientLogValidator:
             found_idx = -1
             found_pos = 0
 
-
             for idx, fpath in enumerate(rotated_files):
                 found, pos, inode = scan_file(fpath)
                 if found is not None:
@@ -119,7 +114,6 @@ class NsClientLogValidator:
                         found_idx = idx
                         found_pos = pos
                         break
-
 
             files_to_queue = []
             if found_idx != -1:
@@ -131,14 +125,12 @@ class NsClientLogValidator:
                     for i in range(len(rotated_files) - 1, -1, -1):
                         files_to_queue.append((rotated_files[i], 0))
 
-
             for fpath, start_pos in files_to_queue:
                 try:
                     ino = os.stat(fpath).st_ino
                     self.pending_reads.append((ino, start_pos))
                 except OSError:
                     pass
-
 
             try:
                 st = os.stat(self.log_path)
@@ -215,7 +207,6 @@ class NsClientLogValidator:
                         except OSError: pass
                 return None
 
-
             if self.pending_reads:
                 for inode, start_pos in self.pending_reads:
                     fpath = find_file_by_inode(inode)
@@ -223,7 +214,6 @@ class NsClientLogValidator:
                         chunk = self._read_chunk(fpath, start_pos)
                         content += chunk
                 self.pending_reads = []
-
 
             try:
                 st = os.stat(self.log_path)
@@ -238,10 +228,8 @@ class NsClientLogValidator:
                 if old_path:
                     content += self._read_chunk(old_path, self.last_pos)
 
-
                 self.last_pos = 0
                 self.last_inode = current_inode
-
 
             if current_size < self.last_pos:
 
@@ -249,7 +237,6 @@ class NsClientLogValidator:
 
             chunk = self._read_chunk(self.log_path, self.last_pos)
             content += chunk
-
 
             if os.path.exists(self.log_path):
                 try:
@@ -301,13 +288,11 @@ def check_tunneling_in_text(process_name, url, text) -> bool:
         if not host:
             return True
 
-
         pat_tunnel = (
             r"Tunneling flow from addr: .*, process: " +
             re.escape(process_name) +
             r" to host: " + re.escape(host) + r"(,|:)"
         )
-
 
         pat_bypass = (
             r"bypassing flow to exception host: " +
@@ -323,7 +308,6 @@ def check_tunneling_in_text(process_name, url, text) -> bool:
 
 def validate_traffic_flow(process_map, stop_event, exception_checker=None) -> bool:
 
-
     active_map = {proc: urls for proc, urls in process_map.items() if urls}
 
     if not active_map:
@@ -336,7 +320,6 @@ def validate_traffic_flow(process_map, stop_event, exception_checker=None) -> bo
         proc: {url: False for url in urls}
         for proc, urls in active_map.items()
     }
-
 
     for proc, urls in active_map.items():
         for url in urls:
@@ -416,4 +399,3 @@ def validate_traffic_flow(process_map, stop_event, exception_checker=None) -> bo
                     return False
 
     return True
-

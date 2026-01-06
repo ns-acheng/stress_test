@@ -69,11 +69,9 @@ class StressTest:
 
         self.config.load()
 
-
         util_webui.perform_onprem_setup(self.config.config_data)
 
         self.load_urls()
-
 
         st_cfg = util_validate.get_steering_config()
         if not st_cfg:
@@ -260,7 +258,6 @@ class StressTest:
             logger.info("Validation skipped (disabled by firewall_traffic_mode).")
             return True
 
-
         self.cfg_mgr.load_nsexception()
 
         if self.config.client_disabling_enabled and not self.client_enabled_event.is_set():
@@ -293,7 +290,6 @@ class StressTest:
         else:
 
             batch = self.urls[self.url_cursor :]
-
 
             random.shuffle(self.urls)
             logger.info("All URLs used. Re-shuffling list.")
@@ -333,23 +329,13 @@ class StressTest:
 
                 if self.stop_event.is_set(): break
 
-
-
-
-
-
-
                 needed_size = 50
                 if self.config.curl_flood_enabled:
                     needed_size += self.config.curl_flood_count
                 if self.config.enable_browser_tabs_open:
                     needed_size += self.config.browser_max_tabs
 
-
                 batch_size = max(50, needed_size)
-
-
-
 
                 current_iter_urls = self.get_next_batch(batch_size)
 
@@ -413,17 +399,9 @@ class StressTest:
                 curl_flood_urls = []
                 if self.config.curl_flood_enabled:
 
-
-
-
-
-
                     browser_count = 0
                     if self.config.enable_browser_tabs_open:
                         browser_count = self.config.browser_max_tabs
-
-
-
 
                     curl_targets = []
                     if len(current_iter_urls) >= (self.config.curl_flood_count + browser_count):
@@ -499,7 +477,6 @@ class StressTest:
                     browser_urls = self.exec_browser_tabs(browser_targets)
                     if smart_sleep(2, self.stop_event): break
 
-
                     logger.info("Waiting for logs to be flushed...")
                     if smart_sleep(10, self.stop_event): break
 
@@ -522,7 +499,6 @@ class StressTest:
                     if not self.exec_validation_checks(validation_map):
                         logger.error("Validation failed! Stopping stress test.")
                         break
-
 
                 if self.stop_event.is_set(): break
 

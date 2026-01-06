@@ -69,10 +69,8 @@ class AgentConfigManager:
                 if fnmatch.fnmatch(host, pattern):
                     return True
 
-
                 if pattern.startswith("*.") and host == pattern[2:]:
                     return True
-
 
                 if '*' not in pattern and host.endswith('.' + pattern):
                     return True
