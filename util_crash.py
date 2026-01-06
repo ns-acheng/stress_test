@@ -74,7 +74,7 @@ def generate_live_dump(pid: int, output_dir: str):
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         dump_file = os.path.join(output_dir, f"LiveDump_{pid}_{timestamp}.dmp")
 
-        # rundll32 comsvcs.dll, MiniDump <PID> <DumpFile> full
+
         cmd = [
             "rundll32.exe",
             "comsvcs.dll",

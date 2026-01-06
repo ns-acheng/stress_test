@@ -69,11 +69,11 @@ class AgentConfigManager:
                 if fnmatch.fnmatch(host, pattern):
                     return True
 
-                # Handle *.domain.com matching domain.com
+
                 if pattern.startswith("*.") and host == pattern[2:]:
                     return True
 
-                # Handle domain.com matching sub.domain.com (implicit wildcard)
+
                 if '*' not in pattern and host.endswith('.' + pattern):
                     return True
 

@@ -69,12 +69,12 @@ class StressTest:
 
         self.config.load()
 
-        # Perform On-Prem setup if enabled
+
         util_webui.perform_onprem_setup(self.config.config_data)
 
         self.load_urls()
 
-        # Check steering config for validation
+
         st_cfg = util_validate.get_steering_config()
         if not st_cfg:
             logger.warning("Steering config empty/not found. Validation disabled.")
@@ -260,7 +260,7 @@ class StressTest:
             logger.info("Validation skipped (disabled by firewall_traffic_mode).")
             return True
 
-        # Reload exceptions to ensure we have the latest
+
         self.cfg_mgr.load_nsexception()
 
         if self.config.client_disabling_enabled and not self.client_enabled_event.is_set():
@@ -277,7 +277,7 @@ class StressTest:
 
         if len(self.urls) <= batch_size:
             batch = self.urls[:]
-            # Only shuffle if we've used them all (which is every time for small lists)
+
             random.shuffle(self.urls)
             return batch
 
@@ -291,13 +291,13 @@ class StressTest:
                  logger.info("All URLs used. Re-shuffling list.")
             return batch
         else:
-            # Wrap around
+
             batch = self.urls[self.url_cursor :]
-            
-            # Re-shuffle BEFORE taking the rest to ensure randomness across cycles
+
+
             random.shuffle(self.urls)
             logger.info("All URLs used. Re-shuffling list.")
-            
+
             self.url_cursor = 0
             needed = batch_size - len(batch)
             if needed > 0:
@@ -333,24 +333,24 @@ class StressTest:
 
                 if self.stop_event.is_set(): break
 
-                # Calculate dynamic batch size
-                # We need enough unique URLs for:
-                # 1. Browser tabs (unique per tab ideally)
-                # 2. HTTPS flood (if we want unique URLs per request, though flood usually implies repetition)
-                # The user requested: max(50, http_count + browser_max_tabs)
-                
+
+
+
+
+
+
                 needed_size = 50
                 if self.config.curl_flood_enabled:
                     needed_size += self.config.curl_flood_count
                 if self.config.enable_browser_tabs_open:
                     needed_size += self.config.browser_max_tabs
-                
-                # Ensure we don't ask for more than we have in total (though get_next_batch handles wrapping)
+
+
                 batch_size = max(50, needed_size)
-                
-                # If the batch size is huge (e.g. > 1000), we might want to cap it or warn, 
-                # but user asked for this logic.
-                
+
+
+
+
                 current_iter_urls = self.get_next_batch(batch_size)
 
                 if self.config.dns_enabled:
@@ -412,27 +412,27 @@ class StressTest:
 
                 curl_flood_urls = []
                 if self.config.curl_flood_enabled:
-                    # Use the URLs we fetched. 
-                    # Since batch_size >= curl_flood_count + browser_tabs, we can split them.
-                    
-                    # Reserve URLs for browser first (to ensure they are unique from curl if possible, or just share)
-                    # Actually, let's split the list to avoid overlap if that's the goal of "max(50, sum)"
-                    
+
+
+
+
+
+
                     browser_count = 0
                     if self.config.enable_browser_tabs_open:
                         browser_count = self.config.browser_max_tabs
-                        
-                    # Slice for curl: take from the end or after browser
-                    # If we have enough, we take a dedicated slice.
-                    
+
+
+
+
                     curl_targets = []
                     if len(current_iter_urls) >= (self.config.curl_flood_count + browser_count):
-                         # We have enough for disjoint sets
+
                          start_idx = browser_count
                          end_idx = start_idx + self.config.curl_flood_count
                          curl_targets = current_iter_urls[start_idx:end_idx]
                     else:
-                         # Fallback: use whatever we have (shouldn't happen with new batch logic unless total URLs are low)
+
                          curl_targets = current_iter_urls[:]
 
                     curl_flood_urls = util_traffic.generate_curl_flood(
@@ -487,7 +487,7 @@ class StressTest:
                 if self.cfg_mgr.is_false_close:
                     self.exec_failclose_check()
                 else:
-                    # Use the first N URLs for browser, as planned in batch calculation
+
                     browser_targets = []
                     if self.config.enable_browser_tabs_open:
                         needed = self.config.browser_max_tabs
@@ -522,7 +522,7 @@ class StressTest:
                     if not self.exec_validation_checks(validation_map):
                         logger.error("Validation failed! Stopping stress test.")
                         break
-                        # break
+
 
                 if self.stop_event.is_set(): break
 

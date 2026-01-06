@@ -407,7 +407,7 @@ def curl_requests(urls, stop_event=None) -> None:
     if not urls:
         return
 
-    # Ensure first and last URLs are always included
+
     mandatory = {urls[0], urls[-1]}
     pool = [u for u in urls if u not in mandatory]
 
@@ -459,11 +459,11 @@ def generate_curl_flood(
         end_time = time.time() + duration
 
         def _time_worker():
-            # Use local cycle to avoid random.choice overhead and ensure coverage
+
             local_pool = list(urls)
-            # No shuffle here, respect caller's order
+
             cycler = itertools.cycle(local_pool)
-            
+
             while time.time() < end_time:
                 if _is_stopped(stop_event): break
                 url = next(cycler)
@@ -482,13 +482,13 @@ def generate_curl_flood(
         completed = 0
         log_buffer = []
 
-        # Use round-robin to ensure even coverage of the batch
-        # Respect caller's order (no shuffle)
+
+
         pool = list(urls)
-        # random.shuffle(pool) # Removed to preserve order from stress_test.py
-        
-        # If count is larger than pool, we must cycle.
-        # If count is smaller, we just take the first 'count' items to avoid duplicates if possible.
+
+
+
+
         if count > len(pool):
             url_iter = itertools.cycle(pool)
         else:
@@ -504,10 +504,10 @@ def generate_curl_flood(
                 try:
                     url = next(url_iter)
                 except StopIteration:
-                    # Should not happen if logic is correct, but safe fallback
+
                     url_iter = itertools.cycle(pool)
                     url = next(url_iter)
-                    
+
                 futures.append(exe.submit(_curl_flood_worker, url))
 
             for f in concurrent.futures.as_completed(futures):
@@ -586,7 +586,7 @@ def _ftp_worker(target, port, user, password, file_size_mb, is_ftps) -> bool:
         ftp.storbinary(f"STOR {filename}", vfile)
         logger.info(f"Uploaded {filename}")
 
-        # Delete the file after upload to save disk space on server
+
         try:
             ftp.delete(filename)
         except Exception:
@@ -675,7 +675,7 @@ def _sftp_worker(target, port, user, password, file_size_mb) -> bool:
         sftp.putfo(vfile, filename)
         logger.info(f"Uploaded {filename}")
 
-        # Delete the file after upload to save disk space on server
+
         try:
             sftp.remove(filename)
         except Exception:
