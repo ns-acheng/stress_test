@@ -268,7 +268,7 @@ class StressTest:
 
     def exec_validation_checks(self, process_map):
         if not self.validation_enabled:
-            logger.info("Validation skipped (disabled by firewall_traffic_mode).")
+            logger.info("Validation skipped (disabled by cloud_app_mode).")
             return True
 
         self.cfg_mgr.load_nsexception()
