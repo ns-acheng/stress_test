@@ -21,10 +21,15 @@
       "enable_sec_max": 600,
       "disable_ratio": 0.15
     },
-    "aoac_sleep": {
+    "aoac_s0_standby": {
       "enable": 0,
       "interval": 0,
-      "duration_sec": 60
+      "duration_sec": 10
+    },
+    "aoac_s4_hibernate": {
+      "enable": 0,
+      "interval": 0,
+      "duration_sec": 10
     },
     "on_prem": {
       "enable": 0,

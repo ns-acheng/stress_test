@@ -89,7 +89,8 @@ class ToolConfig:
         ("client_disable_ratio", 0.00001, 1.0, 0.15),
         ("browser_max_memory", 50, 99, 85),
         ("browser_max_tabs", 1, 300, 20),
-        ("aoac_sleep_duration", 10, 600, 60),
+        ("aoac_s0_standby_duration", 10, 120, 10),
+        ("aoac_s4_hibernate_duration", 10, 120, 10),
         ("long_idle_time_min", 300, 7200, 300),
         ("long_idle_time_max", 300, 7200, 300),
         ("dns_count", 10, 10000, 50)
@@ -125,9 +126,13 @@ class ToolConfig:
         self.client_enable_max = 600
         self.client_disable_ratio = 0.15
 
-        self.aoac_sleep_enabled = False
-        self.aoac_sleep_interval = 0
-        self.aoac_sleep_duration = 60
+        self.aoac_s0_standby_enabled = False
+        self.aoac_s0_standby_interval = 0
+        self.aoac_s0_standby_duration = 10
+
+        self.aoac_s4_hibernate_enabled = False
+        self.aoac_s4_hibernate_interval = 0
+        self.aoac_s4_hibernate_duration = 10
 
         self.long_idle_interval = 0
         self.long_idle_time_min = 300
@@ -220,10 +225,15 @@ class ToolConfig:
             self.client_enable_max = cd.get('enable_sec_max', self.client_enable_max)
             self.client_disable_ratio = cd.get('disable_ratio', self.client_disable_ratio)
 
-            aoac = cft.get('aoac_sleep', {})
-            self.aoac_sleep_enabled = bool(aoac.get('enable', self.aoac_sleep_enabled))
-            self.aoac_sleep_interval = aoac.get('interval', self.aoac_sleep_interval)
-            self.aoac_sleep_duration = aoac.get('duration_sec', self.aoac_sleep_duration)
+            aoac = cft.get('aoac_s0_standby', {})
+            self.aoac_s0_standby_enabled = bool(aoac.get('enable', self.aoac_s0_standby_enabled))
+            self.aoac_s0_standby_interval = aoac.get('interval', self.aoac_s0_standby_interval)
+            self.aoac_s0_standby_duration = aoac.get('duration_sec', self.aoac_s0_standby_duration)
+
+            aoac_s4 = cft.get('aoac_s4_hibernate', {})
+            self.aoac_s4_hibernate_enabled = bool(aoac_s4.get('enable', self.aoac_s4_hibernate_enabled))
+            self.aoac_s4_hibernate_interval = aoac_s4.get('interval', self.aoac_s4_hibernate_interval)
+            self.aoac_s4_hibernate_duration = aoac_s4.get('duration_sec', self.aoac_s4_hibernate_duration)
 
             tg = config.get('traffic_gen', {})
             browser = tg.get('browser', {})
@@ -277,8 +287,11 @@ class ToolConfig:
         if self.stop_drv_interval < 0:
             logger.error(f"invalid 'stop_drv_interval'. Exiting.")
             sys.exit(1)
-        if self.aoac_sleep_interval < 0:
-            logger.error("invalid 'aoac_sleep_interval'. Exiting.")
+        if self.aoac_s0_standby_interval < 0:
+            logger.error("invalid 'aoac_s0_standby_interval'. Exiting.")
+            sys.exit(1)
+        if self.aoac_s4_hibernate_interval < 0:
+            logger.error("invalid 'aoac_s4_hibernate_interval'. Exiting.")
             sys.exit(1)
 
         for attr, min_val, max_val, default in self.RANGE_CONSTRAINTS:

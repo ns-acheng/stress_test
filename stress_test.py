@@ -18,7 +18,7 @@ from util_input import start_input_monitor
 from util_crash import check_crash_dumps, crash_handle
 from util_config import AgentConfigManager
 from util_tool_config import ToolConfig
-from util_power import enter_s0_and_wake
+from util_power import enter_s0_and_wake, enter_s4_and_wake
 import util_traffic
 import util_client
 import util_validate
@@ -92,7 +92,7 @@ class StressTest:
         else:
             logger.info(f"Validation Disabled. Mode: '{mode}' (Requires 'all' or 'web')")
 
-        if self.config.aoac_sleep_enabled:
+        if self.config.aoac_s0_standby_enabled or self.config.aoac_s4_hibernate_enabled:
             enable_wake_timers()
 
         self.cfg_mgr.setup_environment()
@@ -170,9 +170,12 @@ class StressTest:
         if self.config.enable_browser_tabs_open:
             logger.info(f"Max Mem: {self.config.browser_max_memory}%")
             logger.info(f"Max Tabs: {self.config.browser_max_tabs}")
-        if self.config.aoac_sleep_enabled:
-            logger.info(f"AOAC Sleep Int: {self.config.aoac_sleep_interval}")
-            logger.info(f"AOAC Sleep Dur: {self.config.aoac_sleep_duration}s")
+        if self.config.aoac_s0_standby_enabled:
+            logger.info(f"AOAC S0 Int: {self.config.aoac_s0_standby_interval}")
+            logger.info(f"AOAC S0 Dur: {self.config.aoac_s0_standby_duration}s")
+        if self.config.aoac_s4_hibernate_enabled:
+            logger.info(f"AOAC S4 Int: {self.config.aoac_s4_hibernate_interval}")
+            logger.info(f"AOAC S4 Dur: {self.config.aoac_s4_hibernate_duration}s")
         if self.config.long_idle_interval > 0:
             logger.info(f"Long Idle Int: {self.config.long_idle_interval}")
             logger.info(
@@ -526,13 +529,26 @@ class StressTest:
                     logger.info(f"Random Sleep (idle=0). {sleep_dur}s...")
                     if smart_sleep(sleep_dur, self.stop_event): break
 
-                if self.config.aoac_sleep_enabled and self.config.aoac_sleep_interval > 0:
-                    if count % self.config.aoac_sleep_interval == 0:
+                s0_triggered = False
+                if self.config.aoac_s0_standby_enabled and self.config.aoac_s0_standby_interval > 0:
+                    if count % self.config.aoac_s0_standby_interval == 0:
                         logger.info(
-                            f"AOAC Sleep. {self.config.aoac_sleep_duration}s"
+                            f"AOAC S0. {self.config.aoac_s0_standby_duration}s"
                         )
-                        enter_s0_and_wake(self.config.aoac_sleep_duration)
+                        enter_s0_and_wake(self.config.aoac_s0_standby_duration)
+                        s0_triggered = True
                         if self.stop_event.is_set(): break
+
+                if self.config.aoac_s4_hibernate_enabled and self.config.aoac_s4_hibernate_interval > 0:
+                    if count % self.config.aoac_s4_hibernate_interval == 0:
+                        if s0_triggered:
+                            logger.info("AOAC S4 skipped because S0 executed in this iteration.")
+                        else:
+                            logger.info(
+                                f"AOAC S4. {self.config.aoac_s4_hibernate_duration}s"
+                            )
+                            enter_s4_and_wake(self.config.aoac_s4_hibernate_duration)
+                            if self.stop_event.is_set(): break
 
                 if self.config.long_idle_interval > 0:
                     if count % self.config.long_idle_interval == 0:

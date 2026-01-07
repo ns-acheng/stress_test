@@ -1,6 +1,7 @@
 import ctypes
 from ctypes import wintypes
 import logging
+import subprocess
 
 logger = logging.getLogger()
 kernel32 = ctypes.windll.kernel32
@@ -20,26 +21,29 @@ class LARGE_INTEGER(ctypes.Structure):
     _fields_ = [("LowPart", wintypes.DWORD),
                 ("HighPart", wintypes.LONG)]
 
-def enter_s0_and_wake(duration_seconds: int) -> None:
+def _set_wake_timer(duration_seconds: int) -> int | None:
     handle = kernel32.CreateWaitableTimerW(None, True, None)
     if not handle:
-        logger.error(
-            f"Failed create timer. Err: {kernel32.GetLastError()}"
-        )
+        logger.error(f"Failed create timer. Err: {kernel32.GetLastError()}")
+        return None
+
+    dt = int(duration_seconds * 10000000) * -1
+    li = LARGE_INTEGER(dt & 0xFFFFFFFF, dt >> 32)
+
+    if not kernel32.SetWaitableTimer(
+        handle, ctypes.byref(li), 0, None, None, True
+    ):
+        logger.error(f"Failed set timer. Err: {kernel32.GetLastError()}")
+        kernel32.CloseHandle(handle)
+        return None
+    return handle
+
+def enter_s0_and_wake(duration_seconds: int) -> bool:
+    handle = _set_wake_timer(duration_seconds)
+    if not handle:
         return False
 
     try:
-        dt = int(duration_seconds * 10000000) * -1
-        li = LARGE_INTEGER(dt & 0xFFFFFFFF, dt >> 32)
-
-        if not kernel32.SetWaitableTimer(
-            handle, ctypes.byref(li), 0, None, None, True
-        ):
-            logger.error(
-                f"Failed set timer. Err: {kernel32.GetLastError()}"
-            )
-            return False
-
         logger.info(f"Enter S0 (Monitor OFF) for {duration_seconds}s...")
 
         user32.SendMessageW(
@@ -58,7 +62,26 @@ def enter_s0_and_wake(duration_seconds: int) -> None:
 
         logger.info("System Woke (Monitor ON).")
         return True
+    except Exception as e:
+        logger.error(f"Failed to cycle S0: {e}")
+        return False
+    finally:
+        kernel32.CloseHandle(handle)
 
+def enter_s4_and_wake(duration_seconds: int) -> bool:
+    handle = _set_wake_timer(duration_seconds)
+    if not handle:
+        return False
+
+    try:
+        logger.info(f"Enter S4 (Hibernate) for {duration_seconds}s...")
+        subprocess.run(["shutdown", "/h"], check=False)
+        kernel32.WaitForSingleObject(handle, -1)
+        logger.info("System Woke from S4.")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to enter S4: {e}")
+        return False
     finally:
         kernel32.CloseHandle(handle)
 
