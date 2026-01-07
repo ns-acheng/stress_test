@@ -18,10 +18,11 @@ from util_input import start_input_monitor
 from util_crash import check_crash_dumps, crash_handle
 from util_config import AgentConfigManager
 from util_tool_config import ToolConfig
-from util_power import enter_s0_and_wake
+from util_power import enter_s0_and_wake, enter_s4_and_wake
 import util_traffic
 import util_client
 import util_validate
+import util_webui
 from urllib.parse import urlparse
 import re
 
@@ -67,9 +68,15 @@ class StressTest:
                 logger.warning(f"Failed to enable {priv}. Err: {err}")
 
         self.config.load()
+
+        if self.config.browser_log_validation != 0 or self.config.curl_flood_log_validation != 0:
+            self.cfg_mgr.load_nsexception()
+
+        tenant_host = self.cfg_mgr.get_tenant_hostname()
+        util_webui.perform_onprem_setup(self.config.config_data, tenant_host)
+
         self.load_urls()
 
-        # Check steering config for validation
         st_cfg = util_validate.get_steering_config()
         if not st_cfg:
             logger.warning("Steering config empty/not found. Validation disabled.")
@@ -85,7 +92,7 @@ class StressTest:
         else:
             logger.info(f"Validation Disabled. Mode: '{mode}' (Requires 'all' or 'web')")
 
-        if self.config.aoac_sleep_enabled:
+        if self.config.aoac_s0_standby_enabled or self.config.aoac_s4_hibernate_enabled:
             enable_wake_timers()
 
         self.cfg_mgr.setup_environment()
@@ -163,9 +170,12 @@ class StressTest:
         if self.config.enable_browser_tabs_open:
             logger.info(f"Max Mem: {self.config.browser_max_memory}%")
             logger.info(f"Max Tabs: {self.config.browser_max_tabs}")
-        if self.config.aoac_sleep_enabled:
-            logger.info(f"AOAC Sleep Int: {self.config.aoac_sleep_interval}")
-            logger.info(f"AOAC Sleep Dur: {self.config.aoac_sleep_duration}s")
+        if self.config.aoac_s0_standby_enabled:
+            logger.info(f"AOAC S0 Int: {self.config.aoac_s0_standby_interval}")
+            logger.info(f"AOAC S0 Dur: {self.config.aoac_s0_standby_duration}s")
+        if self.config.aoac_s4_hibernate_enabled:
+            logger.info(f"AOAC S4 Int: {self.config.aoac_s4_hibernate_interval}")
+            logger.info(f"AOAC S4 Dur: {self.config.aoac_s4_hibernate_duration}s")
         if self.config.long_idle_interval > 0:
             logger.info(f"Long Idle Int: {self.config.long_idle_interval}")
             logger.info(
@@ -255,7 +265,6 @@ class StressTest:
             logger.info("Validation skipped (disabled by firewall_traffic_mode).")
             return True
 
-        # Reload exceptions to ensure we have the latest
         self.cfg_mgr.load_nsexception()
 
         if self.config.client_disabling_enabled and not self.client_enabled_event.is_set():
@@ -272,6 +281,7 @@ class StressTest:
 
         if len(self.urls) <= batch_size:
             batch = self.urls[:]
+
             random.shuffle(self.urls)
             return batch
 
@@ -282,12 +292,21 @@ class StressTest:
             if self.url_cursor == len(self.urls):
                  self.url_cursor = 0
                  random.shuffle(self.urls)
+                 logger.info("All URLs used. Re-shuffling list.")
             return batch
         else:
-            # Wrap around
+
             batch = self.urls[self.url_cursor :]
+
             random.shuffle(self.urls)
+            logger.info("All URLs used. Re-shuffling list.")
+
             self.url_cursor = 0
+            needed = batch_size - len(batch)
+            if needed > 0:
+                batch.extend(self.urls[0:needed])
+                self.url_cursor = needed
+            return batch
             needed = batch_size - len(batch)
             if needed > 0:
                 batch.extend(self.urls[0:needed])
@@ -317,7 +336,15 @@ class StressTest:
 
                 if self.stop_event.is_set(): break
 
-                current_iter_urls = self.get_next_batch(BATCH_SIZE)
+                needed_size = 50
+                if self.config.curl_flood_enabled:
+                    needed_size += self.config.curl_flood_count
+                if self.config.enable_browser_tabs_open:
+                    needed_size += self.config.browser_max_tabs
+
+                batch_size = max(50, needed_size)
+
+                current_iter_urls = self.get_next_batch(batch_size)
 
                 if self.config.dns_enabled:
                     dns_domains = []
@@ -378,17 +405,20 @@ class StressTest:
 
                 curl_flood_urls = []
                 if self.config.curl_flood_enabled:
-                    curl_targets = current_iter_urls[:]
-                    target_count = BATCH_SIZE
 
-                    if len(curl_targets) < target_count and self.urls:
-                        existing_set = set(curl_targets)
-                        pool = [u for u in self.urls if u not in existing_set]
-                        needed = target_count - len(curl_targets)
-                        if pool:
-                            added = random.sample(pool, min(len(pool), needed))
-                            curl_targets.extend(added)
-                            current_iter_urls.extend(added)
+                    browser_count = 0
+                    if self.config.enable_browser_tabs_open:
+                        browser_count = self.config.browser_max_tabs
+
+                    curl_targets = []
+                    if len(current_iter_urls) >= (self.config.curl_flood_count + browser_count):
+
+                         start_idx = browser_count
+                         end_idx = start_idx + self.config.curl_flood_count
+                         curl_targets = current_iter_urls[start_idx:end_idx]
+                    else:
+
+                         curl_targets = current_iter_urls[:]
 
                     curl_flood_urls = util_traffic.generate_curl_flood(
                         curl_targets,
@@ -442,20 +472,17 @@ class StressTest:
                 if self.cfg_mgr.is_false_close:
                     self.exec_failclose_check()
                 else:
-                    browser_targets = current_iter_urls[:]
-                    needed = self.config.browser_max_tabs
-                    if len(browser_targets) < needed and self.urls:
-                        existing_set = set(browser_targets)
-                        pool = [u for u in self.urls if u not in existing_set]
-                        missing = needed - len(browser_targets)
-                        if pool:
-                            added = random.sample(pool, min(len(pool), missing))
-                            browser_targets.extend(added)
-                            current_iter_urls.extend(added)
+
+                    browser_targets = []
+                    if self.config.enable_browser_tabs_open:
+                        needed = self.config.browser_max_tabs
+                        if len(current_iter_urls) >= needed:
+                            browser_targets = current_iter_urls[:needed]
+                        else:
+                            browser_targets = current_iter_urls[:]
 
                     browser_urls = self.exec_browser_tabs(browser_targets)
                     if smart_sleep(2, self.stop_event): break
-
 
                     logger.info("Waiting for logs to be flushed...")
                     if smart_sleep(10, self.stop_event): break
@@ -479,7 +506,6 @@ class StressTest:
                     if not self.exec_validation_checks(validation_map):
                         logger.error("Validation failed! Stopping stress test.")
                         break
-                        # break
 
                 if self.stop_event.is_set(): break
 
@@ -503,13 +529,26 @@ class StressTest:
                     logger.info(f"Random Sleep (idle=0). {sleep_dur}s...")
                     if smart_sleep(sleep_dur, self.stop_event): break
 
-                if self.config.aoac_sleep_enabled and self.config.aoac_sleep_interval > 0:
-                    if count % self.config.aoac_sleep_interval == 0:
+                s0_triggered = False
+                if self.config.aoac_s0_standby_enabled and self.config.aoac_s0_standby_interval > 0:
+                    if count % self.config.aoac_s0_standby_interval == 0:
                         logger.info(
-                            f"AOAC Sleep. {self.config.aoac_sleep_duration}s"
+                            f"AOAC S0. {self.config.aoac_s0_standby_duration}s"
                         )
-                        enter_s0_and_wake(self.config.aoac_sleep_duration)
+                        enter_s0_and_wake(self.config.aoac_s0_standby_duration)
+                        s0_triggered = True
                         if self.stop_event.is_set(): break
+
+                if self.config.aoac_s4_hibernate_enabled and self.config.aoac_s4_hibernate_interval > 0:
+                    if count % self.config.aoac_s4_hibernate_interval == 0:
+                        if s0_triggered:
+                            logger.info("AOAC S4 skipped because S0 executed in this iteration.")
+                        else:
+                            logger.info(
+                                f"AOAC S4. {self.config.aoac_s4_hibernate_duration}s"
+                            )
+                            enter_s4_and_wake(self.config.aoac_s4_hibernate_duration)
+                            if self.stop_event.is_set(): break
 
                 if self.config.long_idle_interval > 0:
                     if count % self.config.long_idle_interval == 0:

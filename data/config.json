@@ -7,6 +7,10 @@
   "long_idle_time_min": 300,
   "long_idle_time_max": 600,
   "client_feature_toggling": {
+    "webui_login": {
+      "tenant_username": "acheng@netskope.com",
+      "tenant_password": "N3tskope!"
+    },
     "failclose": {
       "enable": 1,
       "interval": 15
@@ -17,10 +21,20 @@
       "enable_sec_max": 600,
       "disable_ratio": 0.15
     },
-    "aoac_sleep": {
+    "aoac_s0_standby": {
       "enable": 0,
       "interval": 0,
-      "duration_sec": 60
+      "duration_sec": 10
+    },
+    "aoac_s4_hibernate": {
+      "enable": 0,
+      "interval": 0,
+      "duration_sec": 10
+    },
+    "on_prem": {
+      "enable": 0,
+      "onprem_use_dns": 0,
+      "onprem_http_host": "http://smallpdf.com"
     }
   },
   "traffic_gen": {
@@ -39,10 +53,10 @@
     "https": {
       "enable": 1,
       "duration_sec": 0,
-      "count": 800,
-      "concurrent_conn": 50,
+      "count": 500,
+      "concurrent_conn": 30,
       "log_validation": 1,
-      "log_validation_ratio": 5
+      "log_validation_ratio": 3
     },
     "udp": {
       "enable": 0,

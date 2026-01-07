@@ -145,13 +145,11 @@ def main():
         logger.error(f"{url_new_file} not found.")
         return
 
-    # Read all candidates
     with open(url_new_file, 'r', encoding='utf-8') as f:
         all_candidates = [line.strip().rstrip('/') for line in f if line.strip()]
 
     logger.info(f"Found {len(all_candidates)} URLs in {url_new_file} to process.")
 
-    # Ensure url_alive.txt exists
     if not os.path.exists(url_alive_file):
         with open(url_alive_file, 'w', encoding='utf-8') as f:
             pass
@@ -214,7 +212,6 @@ def main():
 
         processed_count += len(batch)
 
-    # Update url_new.txt (remove processed batch)
     logger.info(f"Updating {url_new_file}...")
     with open(url_new_file, 'w', encoding='utf-8') as f:
         for url in remaining_candidates:

@@ -39,7 +39,7 @@ def generate_cert(cert_path, key_path):
     if os.path.exists(cert_path) and os.path.exists(key_path):
         return
     try:
-        # Try using OpenSSL CLI first
+
         cmd = [
             "openssl", "req", "-new", "-x509", "-days", "365", "-nodes",
             "-out", cert_path, "-keyout", key_path,
@@ -50,7 +50,7 @@ def generate_cert(cert_path, key_path):
         )
         logger.info(f"Generated cert (CLI): {cert_path}, key: {key_path}")
     except Exception:
-        # Fallback to pyopenssl if CLI fails
+
         try:
             from OpenSSL import crypto
             k = crypto.PKey()

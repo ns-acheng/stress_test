@@ -4,3 +4,6 @@ requests
 pyftpdlib
 paramiko
 pyopenssl
+selenium
+webdriver-manager
+urllib3

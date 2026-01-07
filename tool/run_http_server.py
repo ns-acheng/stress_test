@@ -18,7 +18,7 @@ logger = logging.getLogger()
 
 class QuietHandler(SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
-        # Redirect http.server logging to our logger
+
         logger.info("%s - - [%s] %s" %
                     (self.client_address[0],
                      self.log_date_time_string(),
@@ -33,7 +33,6 @@ def main():
     if not os.path.exists(args.directory):
         os.makedirs(args.directory)
 
-    # Use partial to pass the directory argument to the handler
     handler_class = partial(QuietHandler, directory=os.path.abspath(args.directory))
 
     try:
@@ -52,7 +51,6 @@ def main():
     stop_event = threading.Event()
     start_input_monitor(stop_event)
 
-    # Run server in a separate thread
     server_thread = threading.Thread(target=server.serve_forever)
     server_thread.daemon = True
     server_thread.start()

@@ -377,8 +377,9 @@ def open_browser_tabs(
         for u in selected:
             logger.info(f"  -> {u}")
 
-        args = " ".join(selected)
-        cmd = os.path.join(tool_dir, f"open_msedge_tabs.bat {args}")
+        args = " ".join([f'"{u}"' for u in selected])
+        bat_path = os.path.join(tool_dir, "open_msedge_tabs.bat")
+        cmd = f'"{bat_path}" {args}'
         run_batch(cmd)
 
         opened_urls.extend(selected)
@@ -406,7 +407,6 @@ def curl_requests(urls, stop_event=None) -> None:
     if not urls:
         return
 
-    # Ensure first and last URLs are always included
     mandatory = {urls[0], urls[-1]}
     pool = [u for u in urls if u not in mandatory]
 
@@ -458,9 +458,14 @@ def generate_curl_flood(
         end_time = time.time() + duration
 
         def _time_worker():
+
+            local_pool = list(urls)
+
+            cycler = itertools.cycle(local_pool)
+
             while time.time() < end_time:
                 if _is_stopped(stop_event): break
-                url = random.choice(urls)
+                url = next(cycler)
                 _curl_flood_worker(url)
 
         with concurrent.futures.ThreadPoolExecutor(
@@ -476,11 +481,12 @@ def generate_curl_flood(
         completed = 0
         log_buffer = []
 
-        # Use round-robin to ensure even coverage of the batch
-        # Create a local copy to shuffle so we don't affect the caller
         pool = list(urls)
-        random.shuffle(pool)
-        url_cycler = itertools.cycle(pool)
+
+        if count > len(pool):
+            url_iter = itertools.cycle(pool)
+        else:
+            url_iter = iter(pool)
 
         with concurrent.futures.ThreadPoolExecutor(
             max_workers=concurrency
@@ -489,7 +495,13 @@ def generate_curl_flood(
             for i in range(1, count + 1):
                 if _is_stopped(stop_event):
                     break
-                url = next(url_cycler)
+                try:
+                    url = next(url_iter)
+                except StopIteration:
+
+                    url_iter = itertools.cycle(pool)
+                    url = next(url_iter)
+
                 futures.append(exe.submit(_curl_flood_worker, url))
 
             for f in concurrent.futures.as_completed(futures):
@@ -568,7 +580,6 @@ def _ftp_worker(target, port, user, password, file_size_mb, is_ftps) -> bool:
         ftp.storbinary(f"STOR {filename}", vfile)
         logger.info(f"Uploaded {filename}")
 
-        # Delete the file after upload to save disk space on server
         try:
             ftp.delete(filename)
         except Exception:
@@ -657,7 +668,6 @@ def _sftp_worker(target, port, user, password, file_size_mb) -> bool:
         sftp.putfo(vfile, filename)
         logger.info(f"Uploaded {filename}")
 
-        # Delete the file after upload to save disk space on server
         try:
             sftp.remove(filename)
         except Exception:
@@ -712,7 +722,6 @@ def generate_sftp_traffic(
                     completed += 1
 
     logger.info(f"SFTP finished. Completed uploads: {completed}")
-
 
 def get_hostname_from_url(url: str) -> str:
     try:
