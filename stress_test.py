@@ -18,7 +18,7 @@ from util_input import start_input_monitor
 from util_crash import check_crash_dumps, crash_handle
 from util_config import AgentConfigManager
 from util_tool_config import ToolConfig
-from util_power import enter_s0_and_wake, enter_s4_and_wake
+from util_power import enter_s0_and_wake, enter_s4_and_wake, is_s4_available
 import util_traffic
 import util_client
 import util_validate
@@ -68,6 +68,12 @@ class StressTest:
                 logger.warning(f"Failed to enable {priv}. Err: {err}")
 
         self.config.load()
+
+        if self.config.aoac_s4_hibernate_enabled:
+            if not is_s4_available():
+                logger.warning(
+                    "AOAC S4 (Hibernate) is disabled due to system not supporting it.")
+                self.config.aoac_s4_hibernate_enabled = False
 
         if self.config.browser_log_validation != 0 or self.config.curl_flood_log_validation != 0:
             self.cfg_mgr.load_nsexception()
