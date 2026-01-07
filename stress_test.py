@@ -539,7 +539,7 @@ class StressTest:
                 if self.config.aoac_s0_standby_enabled and self.config.aoac_s0_standby_interval > 0:
                     if count % self.config.aoac_s0_standby_interval == 0:
                         logger.info(
-                            f"AOAC S0. {self.config.aoac_s0_standby_duration}s"
+                            f"Perform AOAC S0. {self.config.aoac_s0_standby_duration}s"
                         )
                         enter_s0_and_wake(self.config.aoac_s0_standby_duration)
                         s0_triggered = True
@@ -551,7 +551,7 @@ class StressTest:
                             logger.info("AOAC S4 skipped because S0 executed in this iteration.")
                         else:
                             logger.info(
-                                f"AOAC S4. {self.config.aoac_s4_hibernate_duration}s"
+                                f"Perform AOAC S4. {self.config.aoac_s4_hibernate_duration}s"
                             )
                             enter_s4_and_wake(self.config.aoac_s4_hibernate_duration)
                             if self.stop_event.is_set(): break
