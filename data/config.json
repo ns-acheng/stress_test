@@ -8,8 +8,7 @@
   "long_idle_time_max": 600,
   "client_feature_toggling": {
     "webui_login": {
-      "tenant_username": "acheng@netskope.com",
-      "tenant_password": "N3tskope!"
+      "tenant_username": "acheng@netskope.com"
     },
     "failclose": {
       "enable": 1,
@@ -31,7 +30,7 @@
       "interval": 0,
       "duration_sec": 10
     },
-    "on_prem": {
+    "webui_on_prem": {
       "enable": 0,
       "onprem_use_dns": 0,
       "onprem_http_host": "http://smallpdf.com"

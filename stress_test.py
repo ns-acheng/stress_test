@@ -79,7 +79,21 @@ class StressTest:
             self.cfg_mgr.load_nsexception()
 
         tenant_host = self.cfg_mgr.get_tenant_hostname()
-        util_webui.perform_onprem_setup(self.config.config_data, tenant_host)
+
+        # Check if any webui feature is enabled, currently only checking webui_on_prem
+        client_toggles = self.config.config_data.get("client_feature_toggling", {})
+        webui_on_prem = client_toggles.get("webui_on_prem", {})
+        password = ""
+
+        if webui_on_prem.get("enable", 0):
+            try:
+                import getpass
+                print("\nWebUI feature enabled. Please enter tenant password below.")
+                password = getpass.getpass("Tenant Password: ")
+            except Exception as e:
+                logger.warning(f"Failed to read password: {e}")
+        
+        util_webui.perform_onprem_setup(self.config.config_data, tenant_host, password)
 
         self.load_urls()
 
