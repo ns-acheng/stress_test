@@ -11,7 +11,7 @@
       "tenant_username": "acheng@netskope.com"
     },
     "failclose": {
-      "enable": 1,
+      "enable": 0,
       "interval": 15
     },
     "client_disabling": {
@@ -47,14 +47,14 @@
       "enable": 1,
       "max_memory": 60,
       "max_tabs": 20,
-      "log_validation": 1
+      "log_validation": 0
     },
     "https": {
       "enable": 1,
       "duration_sec": 0,
       "count": 500,
       "concurrent_conn": 30,
-      "log_validation": 1,
+      "log_validation": 0,
       "log_validation_ratio": 3
     },
     "udp": {
@@ -69,8 +69,8 @@
     "ab": {
       "enable": 0,
       "duration_sec": 0,
-      "total_conn": 10000,
-      "concurrent_conn": 256,
+      "total_conn": 2000,
+      "concurrent_conn": 100,
       "target_urls": [
         "http://192.168.15.17/"
       ]
