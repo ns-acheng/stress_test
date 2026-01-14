@@ -60,6 +60,7 @@ class StressTest:
         self.validation_enabled = False
         self.client_enabled_event = threading.Event()
         self.client_enabled_event.set()
+        self.last_svc_restart_count = 0
 
     def setup(self):
         for priv in ["SeDebugPrivilege", "SeSystemtimePrivilege", "SeWakeAlarmPrivilege"]:
@@ -536,8 +537,10 @@ class StressTest:
                 if self.stop_event.is_set(): break
 
                 if self.config.stop_svc_interval > 0:
-                    if count % self.config.stop_svc_interval == 0:
+                    # Check if enough iterations passed since last restart (manual counter check to allow reset)
+                    if (count - self.last_svc_restart_count) >= self.config.stop_svc_interval:
                         self.exec_stop_service()
+                        self.last_svc_restart_count = count
                         if self.stop_event.is_set(): break
 
                         if self.config.stop_drv_interval > 0:
@@ -548,6 +551,12 @@ class StressTest:
                 if self.config.failclose_enabled and self.config.failclose_interval > 0:
                     if count % self.config.failclose_interval == 0:
                         self.cfg_mgr.toggle_failclose()
+                        
+                        # Force service restart for failclose changes to take effect
+                        logger.info("Restarting service for FailClose toggle...")
+                        self.exec_stop_service()
+                        self.last_svc_restart_count = count  # Reset service restart interval
+                        
                         if self.stop_event.is_set(): break
 
                 if self.config.long_idle_interval == 0:
