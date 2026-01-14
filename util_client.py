@@ -25,6 +25,7 @@ def client_toggler_loop(
     client_enabled_event=None
 ) -> None:
     logger.info("Client Toggle Thread Started.")
+    disable_count = 0
     while not stop_event.is_set():
         if client_enabled_event:
             client_enabled_event.set()
@@ -41,7 +42,8 @@ def client_toggler_loop(
         if disable_time < 1:
             disable_time = 1
 
-        logger.info(f"Client Toggle Thread: Disabling Client for {disable_time}s...")
+        disable_count += 1
+        logger.info(f"Client Toggle Thread: Disabling Client (Time: {disable_count}) for {disable_time}s...")
         nsdiag_enable_client(False, is_64bit)
         if client_enabled_event:
             client_enabled_event.clear()

@@ -119,20 +119,19 @@ class WebUIClient:
             logger.error(f"An error occurred during Steering Config update: {e}")
             return False
 
-def perform_onprem_setup(config, hostname):
+def perform_onprem_setup(config, hostname, password):
     if not hostname:
         logger.warning("No hostname detected. Skipping WebUI setup.")
         return False
 
     client_toggles = config.get("client_feature_toggling", {})
     webui_cfg = client_toggles.get("webui_login", {})
-    onprem_cfg = client_toggles.get("on_prem", {})
+    onprem_cfg = client_toggles.get("webui_on_prem", {})
     if not onprem_cfg.get("enable", 0):
         logger.warning("On-prem setup is not enabled. Skipping WebUI setup.")
         return False
 
     username = webui_cfg.get("tenant_username", "")
-    password = webui_cfg.get("tenant_password", "")
 
     client = WebUIClient(hostname, username, password)
     if client.login():

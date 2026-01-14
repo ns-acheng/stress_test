@@ -85,6 +85,14 @@ def enter_s4_and_wake(duration_seconds: int) -> bool:
     finally:
         kernel32.CloseHandle(handle)
 
+def is_s4_available() -> bool:
+    try:
+        powrprof = ctypes.windll.powrprof
+        return bool(powrprof.IsPwrHibernateAllowed())
+    except Exception as e:
+        logger.error(f"Failed to check S4 availability: {e}")
+        return False
+
 if __name__ == "__main__":
     from util_log import LogSetup
     log_helper = LogSetup()

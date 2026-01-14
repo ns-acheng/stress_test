@@ -360,42 +360,49 @@ def validate_traffic_flow(process_map, stop_event, exception_checker=None) -> bo
             if smart_sleep(2, stop_event):
                 return False
 
-    success = True
+    failed_items = []
     for proc, urls in active_map.items():
         for url in urls:
             if not pending[proc][url]:
                 logger.info(f"Log validation failed for {url}. Checking Cert...")
                 issuer = util_cert.check_url_cert(url)
 
-                is_valid_issuer = False
-                if issuer:
-                    if "boomskope.com" in issuer or "goskope.com" in issuer:
-                        is_valid_issuer = True
+                is_valid = False
+                if issuer and ("boomskope.com" in issuer or "goskope.com" in issuer):
+                    is_valid = True
 
-                if not is_valid_issuer:
-                    logger.warning(f"Cert check failed for {url}. Retrying in 5 seconds...")
-                    if smart_sleep(5, stop_event):
-                        return False
-
-                    issuer = util_cert.check_url_cert(url)
-                    if issuer:
-                        if "boomskope.com" in issuer or "goskope.com" in issuer:
-                            is_valid_issuer = True
-
-                if is_valid_issuer:
-                    logger.info(
-                        f"URL: {url} ({proc}) -> PASS (Cert Issuer: {issuer})"
-                    )
+                if is_valid:
+                    logger.info(f"URL: {url} ({proc}) -> PASS (Cert Issuer: {issuer})")
                     pending[proc][url] = True
                 else:
-                    if issuer:
-                        logger.error(
-                            f"URL: {url} ({proc}) -> FAIL !!!!!! (Issuer: {issuer})"
-                        )
-                    else:
-                        logger.error(
-                            f"URL: {url} ({proc}) -> FAIL !!!!!! (Issuer check failed)"
-                        )
-                    return False
+                    failed_items.append((proc, url))
 
-    return True
+    if not failed_items:
+        return True
+
+    logger.warning(
+        f"Cert check failed for {len(failed_items)} URLs. Sleeping 20s and re-testing..."
+    )
+    if smart_sleep(20, stop_event):
+        return False
+
+    all_passed = True
+    for proc, url in failed_items:
+        logger.info(f"Re-testing URL: {url} ({proc})")
+        issuer = util_cert.check_url_cert(url)
+        is_valid = False
+        if issuer and ("boomskope.com" in issuer or "goskope.com" in issuer):
+            is_valid = True
+
+        if is_valid:
+            logger.info(f"URL: {url} ({proc}) -> PASS (Cert Issuer: {issuer})")
+        else:
+            if issuer:
+                logger.error(f"URL: {url} ({proc}) -> FAIL !!!!!! (Issuer: {issuer})")
+            else:
+                logger.error(
+                    f"URL: {url} ({proc}) -> FAIL !!!!!! (Issuer check failed)"
+                )
+            all_passed = False
+
+    return all_passed

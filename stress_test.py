@@ -18,7 +18,7 @@ from util_input import start_input_monitor
 from util_crash import check_crash_dumps, crash_handle
 from util_config import AgentConfigManager
 from util_tool_config import ToolConfig
-from util_power import enter_s0_and_wake, enter_s4_and_wake
+from util_power import enter_s0_and_wake, enter_s4_and_wake, is_s4_available
 import util_traffic
 import util_client
 import util_validate
@@ -69,11 +69,31 @@ class StressTest:
 
         self.config.load()
 
+        if self.config.aoac_s4_hibernate_enabled:
+            if not is_s4_available():
+                logger.warning(
+                    "AOAC S4 (Hibernate) is disabled due to system not supporting it.")
+                self.config.aoac_s4_hibernate_enabled = False
+
         if self.config.browser_log_validation != 0 or self.config.curl_flood_log_validation != 0:
             self.cfg_mgr.load_nsexception()
 
         tenant_host = self.cfg_mgr.get_tenant_hostname()
-        util_webui.perform_onprem_setup(self.config.config_data, tenant_host)
+
+        # Check if any webui feature is enabled, currently only checking webui_on_prem
+        client_toggles = self.config.config_data.get("client_feature_toggling", {})
+        webui_on_prem = client_toggles.get("webui_on_prem", {})
+        password = ""
+
+        if webui_on_prem.get("enable", 0):
+            try:
+                import getpass
+                print("\nWebUI feature enabled. Please enter tenant password below.")
+                password = getpass.getpass("Tenant Password: ")
+            except Exception as e:
+                logger.warning(f"Failed to read password: {e}")
+        
+        util_webui.perform_onprem_setup(self.config.config_data, tenant_host, password)
 
         self.load_urls()
 
@@ -262,7 +282,7 @@ class StressTest:
 
     def exec_validation_checks(self, process_map):
         if not self.validation_enabled:
-            logger.info("Validation skipped (disabled by firewall_traffic_mode).")
+            logger.info("Validation skipped (disabled by cloud_app_mode).")
             return True
 
         self.cfg_mgr.load_nsexception()
@@ -484,14 +504,18 @@ class StressTest:
                     browser_urls = self.exec_browser_tabs(browser_targets)
                     if smart_sleep(2, self.stop_event): break
 
-                    logger.info("Waiting for logs to be flushed...")
-                    if smart_sleep(10, self.stop_event): break
-
                     validation_map = {}
-                    if browser_urls and self.config.browser_log_validation:
+                    check_browser = browser_urls and self.config.browser_log_validation
+                    check_curl = curl_flood_urls and self.config.curl_flood_log_validation
+
+                    if check_browser or check_curl:
+                        logger.info("Waiting for logs to be flushed...")
+                        if smart_sleep(10, self.stop_event): break
+
+                    if check_browser:
                         validation_map["msedge.exe"] = browser_urls
 
-                    if curl_flood_urls and self.config.curl_flood_log_validation:
+                    if check_curl:
                         ratio = self.config.curl_flood_log_validation_ratio
                         total = len(curl_flood_urls)
                         sample_size = int(total * (ratio / 100.0))
@@ -533,7 +557,7 @@ class StressTest:
                 if self.config.aoac_s0_standby_enabled and self.config.aoac_s0_standby_interval > 0:
                     if count % self.config.aoac_s0_standby_interval == 0:
                         logger.info(
-                            f"AOAC S0. {self.config.aoac_s0_standby_duration}s"
+                            f"Perform AOAC S0. {self.config.aoac_s0_standby_duration}s"
                         )
                         enter_s0_and_wake(self.config.aoac_s0_standby_duration)
                         s0_triggered = True
@@ -545,7 +569,7 @@ class StressTest:
                             logger.info("AOAC S4 skipped because S0 executed in this iteration.")
                         else:
                             logger.info(
-                                f"AOAC S4. {self.config.aoac_s4_hibernate_duration}s"
+                                f"Perform AOAC S4. {self.config.aoac_s4_hibernate_duration}s"
                             )
                             enter_s4_and_wake(self.config.aoac_s4_hibernate_duration)
                             if self.stop_event.is_set(): break
