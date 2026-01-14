@@ -124,9 +124,6 @@ class StressTest:
 
     def tear_down(self):
         self.cfg_mgr.restore_config()
-        if os.path.exists(self.manage_nic_script):
-            logger.info("Tear down: Ensuring NICs are enabled...")
-            run_powershell(self.manage_nic_script, ["-Action", "Enable"])
 
     def load_urls(self):
         try:
