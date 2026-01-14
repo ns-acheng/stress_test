@@ -504,14 +504,18 @@ class StressTest:
                     browser_urls = self.exec_browser_tabs(browser_targets)
                     if smart_sleep(2, self.stop_event): break
 
-                    logger.info("Waiting for logs to be flushed...")
-                    if smart_sleep(10, self.stop_event): break
-
                     validation_map = {}
-                    if browser_urls and self.config.browser_log_validation:
+                    check_browser = browser_urls and self.config.browser_log_validation
+                    check_curl = curl_flood_urls and self.config.curl_flood_log_validation
+
+                    if check_browser or check_curl:
+                        logger.info("Waiting for logs to be flushed...")
+                        if smart_sleep(10, self.stop_event): break
+
+                    if check_browser:
                         validation_map["msedge.exe"] = browser_urls
 
-                    if curl_flood_urls and self.config.curl_flood_log_validation:
+                    if check_curl:
                         ratio = self.config.curl_flood_log_validation_ratio
                         total = len(curl_flood_urls)
                         sample_size = int(total * (ratio / 100.0))
