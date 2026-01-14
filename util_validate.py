@@ -140,7 +140,9 @@ class NsClientLogValidator:
                 self.last_inode = 0
                 self.last_pos = 0
 
-            logger.info(f"Log seek: Queued {len(self.pending_reads)} pending files based on inodes.")
+            logger.info(
+                f"Log seek: Queued {len(self.pending_reads)} pending files based on inodes."
+            )
 
     def _read_chunk(self, filepath, start_pos):
         if not os.path.exists(filepath):

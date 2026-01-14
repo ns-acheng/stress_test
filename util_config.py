@@ -215,7 +215,10 @@ class AgentConfigManager:
                     logger.info(f"Copied devconfig to {self.target_devconfig}")
                     self.is_local_cfg = True
                 else:
-                    logger.warning(f"Source {self.source_devconfig} not found. FailClose might not work as expected.")
+                    logger.warning(
+                        f"Source {self.source_devconfig} not found. "
+                        "FailClose might not work as expected."
+                    )
 
                 # Set FailClose config to true
                 if os.path.exists(self.target_nsconfig):
@@ -238,7 +241,10 @@ class AgentConfigManager:
                             f.write(f"10.1.1.1 {h}\n")
                         f.write("# End Stress Test \n")
                     
-                    logger.info(f"Blocked gateways {self.gateway_hosts} in hosts file (Simulating Network Failure).")
+                    logger.info(
+                        f"Blocked gateways {self.gateway_hosts} in hosts file "
+                        "(Simulating Network Failure)."
+                    )
                     self.failclose_active = True
                     self.is_false_close = True
                 except Exception as e:

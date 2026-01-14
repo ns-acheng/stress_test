@@ -529,7 +529,9 @@ class StressTest:
                         if sample_size > total:
                             sample_size = total
 
-                        logger.info(f"Sampling {sample_size} URLs ({ratio}%) from {total} for validation.")
+                        logger.info(
+                            f"Sampling {sample_size} URLs ({ratio}%) from {total} for validation."
+                        )
                         validation_map["curl.exe"] = random.sample(curl_flood_urls, sample_size)
 
                     if not self.exec_validation_checks(validation_map):
@@ -575,7 +577,10 @@ class StressTest:
                         s0_triggered = True
                         if self.stop_event.is_set(): break
 
-                if self.config.aoac_s4_hibernate_enabled and self.config.aoac_s4_hibernate_interval > 0:
+                if (
+                    self.config.aoac_s4_hibernate_enabled and 
+                    self.config.aoac_s4_hibernate_interval > 0
+                ):
                     if count % self.config.aoac_s4_hibernate_interval == 0:
                         if s0_triggered:
                             logger.info("AOAC S4 skipped because S0 executed in this iteration.")
