@@ -158,13 +158,16 @@ class StressTest:
             self.client_thread.start()
 
     def exec_failclose_check(self):
-        if not os.path.exists(self.manage_nic_script):
-            logger.error(f"NIC Manager not found: {self.manage_nic_script}")
+        if not self.cfg_mgr.failclose_active:
+             logger.info("FailClose simulation not active. Skipping check.")
+             return
+
+        logger.info("Checking connection status during FailClose simulation...")
+        
+        # Wait for potential client reaction
+        if smart_sleep(20, self.stop_event):
             return
-        logger.info("Simulating FailClose by Disabling NICs...")
-        run_powershell(self.manage_nic_script, ["-Action", "Disable"])
-        if smart_sleep(SHORT_SEC, self.stop_event):
-            return
+
         test_urls = random.sample(self.urls, min(len(self.urls), 10))
         logger.info(f"Checking {len(test_urls)} URLs for reachability...")
         for url in test_urls:
@@ -176,8 +179,7 @@ class StressTest:
             logger.info(f"URL: {url} -> {status}")
             if smart_sleep(1, self.stop_event):
                 break
-        logger.info("FailClose check done. Re-Enabling NICs...")
-        run_powershell(self.manage_nic_script, ["-Action", "Enable"])
+        logger.info("FailClose check done.")
         smart_sleep(SHORT_SEC, self.stop_event)
 
     def header_msg(self):

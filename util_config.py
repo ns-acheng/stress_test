@@ -26,6 +26,8 @@ class AgentConfigManager:
             self.stagent_root, "data", "nsexception.json"
         )
         self.exception_names = []
+        self.gateway_hosts = []
+        self.failclose_active = False
 
     def load_nsexception(self):
         self.exception_names = []
@@ -112,6 +114,25 @@ class AgentConfigManager:
             self.is_64bit = False
             logger.info("64-bit Agent path not found, assuming 32-bit.")
 
+        try:
+            if os.path.exists(self.target_nsconfig):
+                with open(self.target_nsconfig, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                
+                nsgw = data.get("nsgw", {})
+                h1 = nsgw.get("host")
+                h2 = nsgw.get("backupHost")
+
+                if h1: self.gateway_hosts.append(h1)
+                if h2: self.gateway_hosts.append(h2)
+
+                logger.info(f"Loaded Gateway Hosts for FailClose simulation: {self.gateway_hosts}")
+            else:
+                logger.warning(f"nsconfig.json not found at {self.target_nsconfig}")
+
+        except Exception as e:
+            logger.error(f"Failed to load gateway hosts from nsconfig: {e}")
+
         if os.path.exists(self.hosts_path):
             try:
                 shutil.copy(self.hosts_path, self.hosts_bk)
@@ -148,54 +169,40 @@ class AgentConfigManager:
         self.is_local_cfg = False
 
     def toggle_failclose(self):
-        logger.info("Executing FailClose configuration change...")
+        logger.info("Executing FailClose simulation (Hosts manipulation)...")
         try:
-            if not os.path.exists(self.backup_path):
-                if os.path.exists(self.target_nsconfig):
-                    shutil.copy(self.target_nsconfig, self.backup_path)
-                    logger.info(f"Backed up nsconfig to {self.backup_path}")
+            if self.failclose_active:
+                # Restore
+                if os.path.exists(self.hosts_bk):
+                    try:
+                        shutil.copy(self.hosts_bk, self.hosts_path)
+                        logger.info("Restored hosts file (Simulating Network Recovery).")
+                        self.failclose_active = False
+                        self.is_false_close = False
+                    except Exception as e:
+                        logger.error(f"Failed to restore hosts file: {e}")
                 else:
-                    logger.warning(f"File {self.target_nsconfig} not found.")
-
-            if os.path.exists(self.source_devconfig):
-                shutil.copy(self.source_devconfig, self.target_devconfig)
-                logger.info(f"Copied devconfig to {self.target_devconfig}")
-                self.is_local_cfg = True
+                    logger.error("Hosts backup not found, cannot restore.")
             else:
-                logger.warning(f"Source {self.source_devconfig} not found.")
+                if not self.gateway_hosts:
+                    logger.warning("No gateway hosts loaded. Cannot simulate FailClose.")
+                    return
 
-            if os.path.exists(self.target_nsconfig):
-                with open(self.target_nsconfig, 'r', encoding='utf-8') as f:
-                    ns_data = json.load(f)
+                if not os.path.exists(self.hosts_bk) and os.path.exists(self.hosts_path):
+                    shutil.copy(self.hosts_path, self.hosts_bk)
 
-                fc_sec = ns_data.get("failClose", {})
-                curr_val = fc_sec.get("fail_close", "false")
-
-                if curr_val == "true":
-                    new_cfg = {
-                        "fail_close": "false",
-                        "exclude_npa": "false",
-                        "notification": "false",
-                        "captive_portal_timeout": "0"
-                    }
-                    logger.info("Switching FailClose to FALSE")
-                    self.is_false_close = False
-                else:
-                    new_cfg = {
-                        "fail_close": "true",
-                        "exclude_npa": "false",
-                        "notification": "false",
-                        "captive_portal_timeout": "0"
-                    }
-                    logger.info("Switching FailClose to TRUE")
+                try:
+                    with open(self.hosts_path, 'a', encoding='utf-8') as f:
+                        f.write("\n# Stress Test FailClose Simulation\n")
+                        for h in self.gateway_hosts:
+                            f.write(f"10.1.1.1 {h}\n")
+                        f.write("# End Stress Test \n")
+                    
+                    logger.info(f"Blocked gateways {self.gateway_hosts} in hosts file (Simulating Network Failure).")
+                    self.failclose_active = True
                     self.is_false_close = True
-
-                ns_data["failClose"] = new_cfg
-
-                with open(self.target_nsconfig, 'w', encoding='utf-8') as f:
-                    json.dump(ns_data, f, indent=4)
-                logger.info(f"{self.target_nsconfig} updated successfully.")
-            else:
-                logger.error(f"Target file {self.target_nsconfig} not found.")
+                except Exception as e:
+                    logger.error(f"Failed to modify hosts file: {e}")
+                    
         except Exception as e:
-            logger.error(f"Error during FailClose config change: {e}")
+            logger.error(f"Error during FailClose simulation: {e}")
