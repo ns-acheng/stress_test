@@ -366,130 +366,135 @@ class StressTest:
 
                 current_iter_urls = self.get_next_batch(batch_size)
 
-                if self.config.dns_enabled:
-                    dns_domains = []
-                    for u in current_iter_urls:
-                        try:
-                            parsed = urlparse(u)
-                            if parsed.netloc:
-                                dns_domains.append(parsed.netloc)
-                            else:
-                                dns_domains.append(u.split('/')[0])
-                        except Exception:
-                            pass
-
-                    util_traffic.generate_dns_flood(
-                        dns_domains,
-                        self.config.dns_count,
-                        self.config.dns_duration,
-                        self.config.dns_concurrent,
-                        self.stop_event
-                    )
-
-                if self.config.udp_enabled:
-                    current_target = self.config.udp_target_ip
-                    use_ipv6 = False
-                    if self.config.udp_target_ipv6:
-                        if count % 2 == 0:
-                            current_target = self.config.udp_target_ipv6
-                            use_ipv6 = True
-                        else:
-                            current_target = self.config.udp_target_ip
-                    util_traffic.generate_udp_flood(
-                        current_target,
-                        self.config.udp_target_port,
-                        self.config.udp_count,
-                        float(self.config.udp_duration),
-                        self.config.udp_concurrent,
-                        self.stop_event,
-                        use_ipv6
-                    )
-
-                if (
-                    (self.config.ab_total_conn > 0 or self.config.ab_duration > 0) and
-                    self.config.ab_concurrent > 0 and
-                    self.config.ab_target_urls
-                ):
-                    idx = count % len(self.config.ab_target_urls)
-                    current_ab_url = self.config.ab_target_urls[idx]
-
-                    if util_traffic.check_url_alive(current_ab_url):
-                        util_traffic.run_high_concurrency_test(
-                            current_ab_url, self.config.ab_total_conn,
-                            self.config.ab_concurrent, self.tool_dir,
-                            self.stop_event,
-                            self.config.ab_duration
-                        )
-                    else:
-                        logger.warning(f"AB Test skipped. URL not alive: {current_ab_url}")
 
                 curl_flood_urls = []
-                if self.config.curl_flood_enabled:
 
-                    browser_count = 0
-                    if self.config.enable_browser_tabs_open:
-                        browser_count = self.config.browser_max_tabs
+                if self.cfg_mgr.failclose_active:
+                    logger.info("FailClose simulation active. Skipping traffic flooding.")
+                else:
+                    if self.config.dns_enabled:
+                        dns_domains = []
+                        for u in current_iter_urls:
+                            try:
+                                parsed = urlparse(u)
+                                if parsed.netloc:
+                                    dns_domains.append(parsed.netloc)
+                                else:
+                                    dns_domains.append(u.split('/')[0])
+                            except Exception:
+                                pass
 
-                    curl_targets = []
-                    if len(current_iter_urls) >= (self.config.curl_flood_count + browser_count):
+                        util_traffic.generate_dns_flood(
+                            dns_domains,
+                            self.config.dns_count,
+                            self.config.dns_duration,
+                            self.config.dns_concurrent,
+                            self.stop_event
+                        )
 
-                         start_idx = browser_count
-                         end_idx = start_idx + self.config.curl_flood_count
-                         curl_targets = current_iter_urls[start_idx:end_idx]
-                    else:
+                    if self.config.udp_enabled:
+                        current_target = self.config.udp_target_ip
+                        use_ipv6 = False
+                        if self.config.udp_target_ipv6:
+                            if count % 2 == 0:
+                                current_target = self.config.udp_target_ipv6
+                                use_ipv6 = True
+                            else:
+                                current_target = self.config.udp_target_ip
+                        util_traffic.generate_udp_flood(
+                            current_target,
+                            self.config.udp_target_port,
+                            self.config.udp_count,
+                            float(self.config.udp_duration),
+                            self.config.udp_concurrent,
+                            self.stop_event,
+                            use_ipv6
+                        )
 
-                         curl_targets = current_iter_urls[:]
+                    if (
+                        (self.config.ab_total_conn > 0 or self.config.ab_duration > 0) and
+                        self.config.ab_concurrent > 0 and
+                        self.config.ab_target_urls
+                    ):
+                        idx = count % len(self.config.ab_target_urls)
+                        current_ab_url = self.config.ab_target_urls[idx]
 
-                    curl_flood_urls = util_traffic.generate_curl_flood(
-                        curl_targets,
-                        self.config.curl_flood_count,
-                        self.config.curl_flood_duration,
-                        self.config.curl_flood_concurrent,
-                        self.stop_event
-                    )
+                        if util_traffic.check_url_alive(current_ab_url):
+                            util_traffic.run_high_concurrency_test(
+                                current_ab_url, self.config.ab_total_conn,
+                                self.config.ab_concurrent, self.tool_dir,
+                                self.stop_event,
+                                self.config.ab_duration
+                            )
+                        else:
+                            logger.warning(f"AB Test skipped. URL not alive: {current_ab_url}")
 
-                if self.config.ftp_enabled:
-                    util_traffic.generate_ftp_traffic(
-                        self.config.ftp_target_ip,
-                        self.config.ftp_target_port,
-                        self.config.ftp_user,
-                        self.config.ftp_password,
-                        self.config.ftp_file_size_mb,
-                        self.config.ftp_count,
-                        self.config.ftp_duration,
-                        self.config.ftp_concurrent,
-                        self.stop_event
-                    )
+                    if self.config.curl_flood_enabled:
 
-                if self.config.ftps_enabled:
-                    util_traffic.generate_ftps_traffic(
-                        self.config.ftps_target_ip,
-                        self.config.ftps_target_port,
-                        self.config.ftps_user,
-                        self.config.ftps_password,
-                        self.config.ftps_file_size_mb,
-                        self.config.ftps_count,
-                        self.config.ftps_duration,
-                        self.config.ftps_concurrent,
-                        self.stop_event
-                    )
+                        browser_count = 0
+                        if self.config.enable_browser_tabs_open:
+                            browser_count = self.config.browser_max_tabs
 
-                if self.config.sftp_enabled:
-                    util_traffic.generate_sftp_traffic(
-                        self.config.sftp_target_ip,
-                        self.config.sftp_target_port,
-                        self.config.sftp_user,
-                        self.config.sftp_password,
-                        self.config.sftp_file_size_mb,
-                        self.config.sftp_count,
-                        self.config.sftp_duration,
-                        self.config.sftp_concurrent,
-                        self.stop_event
-                    )
+                        curl_targets = []
+                        if len(current_iter_urls) >= (self.config.curl_flood_count + browser_count):
+
+                            start_idx = browser_count
+                            end_idx = start_idx + self.config.curl_flood_count
+                            curl_targets = current_iter_urls[start_idx:end_idx]
+                        else:
+
+                            curl_targets = current_iter_urls[:]
+
+                        curl_flood_urls = util_traffic.generate_curl_flood(
+                            curl_targets,
+                            self.config.curl_flood_count,
+                            self.config.curl_flood_duration,
+                            self.config.curl_flood_concurrent,
+                            self.stop_event
+                        )
+
+                    if self.config.ftp_enabled:
+                        util_traffic.generate_ftp_traffic(
+                            self.config.ftp_target_ip,
+                            self.config.ftp_target_port,
+                            self.config.ftp_user,
+                            self.config.ftp_password,
+                            self.config.ftp_file_size_mb,
+                            self.config.ftp_count,
+                            self.config.ftp_duration,
+                            self.config.ftp_concurrent,
+                            self.stop_event
+                        )
+
+                    if self.config.ftps_enabled:
+                        util_traffic.generate_ftps_traffic(
+                            self.config.ftps_target_ip,
+                            self.config.ftps_target_port,
+                            self.config.ftps_user,
+                            self.config.ftps_password,
+                            self.config.ftps_file_size_mb,
+                            self.config.ftps_count,
+                            self.config.ftps_duration,
+                            self.config.ftps_concurrent,
+                            self.stop_event
+                        )
+
+                    if self.config.sftp_enabled:
+                        util_traffic.generate_sftp_traffic(
+                            self.config.sftp_target_ip,
+                            self.config.sftp_target_port,
+                            self.config.sftp_user,
+                            self.config.sftp_password,
+                            self.config.sftp_file_size_mb,
+                            self.config.sftp_count,
+                            self.config.sftp_duration,
+                            self.config.sftp_concurrent,
+                            self.stop_event
+                        )
 
                 if self.stop_event.is_set(): break
 
-                if self.cfg_mgr.is_false_close:
+                if self.cfg_mgr.failclose_active:
                     self.exec_failclose_check()
                 else:
 
