@@ -169,20 +169,35 @@ class AgentConfigManager:
         self.is_local_cfg = False
 
     def toggle_failclose(self):
-        logger.info("Executing FailClose simulation (Hosts manipulation)...")
+        logger.info("Executing FailClose simulation (Hosts manipulation + Config update)...")
         try:
             if self.failclose_active:
-                # Restore
+                # Restore Hosts
                 if os.path.exists(self.hosts_bk):
                     try:
                         shutil.copy(self.hosts_bk, self.hosts_path)
                         logger.info("Restored hosts file (Simulating Network Recovery).")
-                        self.failclose_active = False
-                        self.is_false_close = False
                     except Exception as e:
                         logger.error(f"Failed to restore hosts file: {e}")
                 else:
                     logger.error("Hosts backup not found, cannot restore.")
+
+                # Revert FailClose config to false
+                if os.path.exists(self.target_nsconfig):
+                     try:
+                         with open(self.target_nsconfig, 'r', encoding='utf-8') as f:
+                             ns_data = json.load(f)
+                         
+                         ns_data.setdefault("failClose", {})["fail_close"] = "false"
+                         
+                         with open(self.target_nsconfig, 'w', encoding='utf-8') as f:
+                             json.dump(ns_data, f, indent=4)
+                         logger.info("Updated nsconfig.json: fail_close = false")
+                     except Exception as e:
+                         logger.error(f"Failed to update nsconfig.json: {e}")
+
+                self.failclose_active = False
+                self.is_false_close = False
             else:
                 if not self.gateway_hosts:
                     logger.warning("No gateway hosts loaded. Cannot simulate FailClose.")
@@ -190,6 +205,31 @@ class AgentConfigManager:
 
                 if not os.path.exists(self.hosts_bk) and os.path.exists(self.hosts_path):
                     shutil.copy(self.hosts_path, self.hosts_bk)
+                
+                if not os.path.exists(self.backup_path) and os.path.exists(self.target_nsconfig):
+                    shutil.copy(self.target_nsconfig, self.backup_path)
+
+                # Deploy devconfig for FailClose
+                if os.path.exists(self.source_devconfig):
+                    shutil.copy(self.source_devconfig, self.target_devconfig)
+                    logger.info(f"Copied devconfig to {self.target_devconfig}")
+                    self.is_local_cfg = True
+                else:
+                    logger.warning(f"Source {self.source_devconfig} not found. FailClose might not work as expected.")
+
+                # Set FailClose config to true
+                if os.path.exists(self.target_nsconfig):
+                     try:
+                         with open(self.target_nsconfig, 'r', encoding='utf-8') as f:
+                             ns_data = json.load(f)
+                         
+                         ns_data.setdefault("failClose", {})["fail_close"] = "true"
+                         
+                         with open(self.target_nsconfig, 'w', encoding='utf-8') as f:
+                             json.dump(ns_data, f, indent=4)
+                         logger.info("Updated nsconfig.json: fail_close = true")
+                     except Exception as e:
+                         logger.error(f"Failed to update nsconfig.json: {e}")
 
                 try:
                     with open(self.hosts_path, 'a', encoding='utf-8') as f:
