@@ -116,7 +116,9 @@ class StressTest:
         if self.config.aoac_s0_standby_enabled or self.config.aoac_s4_hibernate_enabled:
             enable_wake_timers()
 
-        self.cfg_mgr.setup_environment()
+        if not self.cfg_mgr.setup_environment():
+            raise RuntimeError("Environment Setup Failed: nsconfig.json missing.")
+
         self.cfg_mgr.restore_config(remove_only=True)
 
         logger.info("Setup: Ensuring Client is Enabled...")
@@ -285,7 +287,11 @@ class StressTest:
             logger.info("Validation skipped (disabled by cloud_app_mode).")
             return True
 
-        self.cfg_mgr.load_nsexception()
+        if (
+            self.config.browser_log_validation != 0 or 
+            self.config.curl_flood_log_validation != 0
+        ):
+            self.cfg_mgr.load_nsexception()
 
         if self.config.client_disabling_enabled and not self.client_enabled_event.is_set():
              logger.info("Validation skipped (Client is disabled).")

@@ -105,7 +105,7 @@ class AgentConfigManager:
             logger.error(f"Error reading tenant hostname from nsconfig: {e}")
             return ""
 
-    def setup_environment(self):
+    def setup_environment(self) -> bool:
         check_path = r"C:\Program Files\Netskope\STAgent\stAgentSvc.exe"
         if os.path.exists(check_path):
             self.is_64bit = True
@@ -114,24 +114,27 @@ class AgentConfigManager:
             self.is_64bit = False
             logger.info("64-bit Agent path not found, assuming 32-bit.")
 
+        if not os.path.exists(self.target_nsconfig):
+            logger.error(f"ABORT: nsconfig.json not found at {self.target_nsconfig}. Client not installed.")
+            return False
+
         try:
-            if os.path.exists(self.target_nsconfig):
-                with open(self.target_nsconfig, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                
-                nsgw = data.get("nsgw", {})
-                h1 = nsgw.get("host")
-                h2 = nsgw.get("backupHost")
+            with open(self.target_nsconfig, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            nsgw = data.get("nsgw", {})
+            h1 = nsgw.get("host")
+            h2 = nsgw.get("backupHost")
 
-                if h1: self.gateway_hosts.append(h1)
-                if h2: self.gateway_hosts.append(h2)
+            if h1: self.gateway_hosts.append(h1)
+            if h2: self.gateway_hosts.append(h2)
 
-                logger.info(f"Loaded Gateway Hosts for FailClose simulation: {self.gateway_hosts}")
-            else:
-                logger.warning(f"nsconfig.json not found at {self.target_nsconfig}")
+            logger.info(f"Loaded Gateway Hosts for FailClose simulation: {self.gateway_hosts}")
 
         except Exception as e:
             logger.error(f"Failed to load gateway hosts from nsconfig: {e}")
+            # We don't necessarily abort here if file exists but read fails, 
+            # though user only specified "if cannot find".
 
         if os.path.exists(self.hosts_path):
             try:
@@ -139,6 +142,8 @@ class AgentConfigManager:
                 logger.info(f"Backed up hosts file to {self.hosts_bk}")
             except Exception as e:
                 logger.error(f"Failed to backup hosts file: {e}")
+        
+        return True
 
     def restore_config(self, remove_only=False):
         try:
