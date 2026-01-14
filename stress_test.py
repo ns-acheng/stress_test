@@ -539,7 +539,7 @@ class StressTest:
                 if self.stop_event.is_set(): break
 
                 if self.config.stop_svc_interval > 0:
-                    # Check if enough iterations passed since last restart (manual counter check to allow reset)
+                    # Check if enough iterations passed since last restart
                     if (count - self.last_svc_restart_count) >= self.config.stop_svc_interval:
                         self.exec_stop_service()
                         self.last_svc_restart_count = count
@@ -553,11 +553,10 @@ class StressTest:
                 if self.config.failclose_enabled and self.config.failclose_interval > 0:
                     if count % self.config.failclose_interval == 0:
                         self.cfg_mgr.toggle_failclose()
-                        
-                        # Force service restart for failclose changes to take effect
+
                         logger.info("Restarting service for FailClose toggle...")
                         self.exec_stop_service()
-                        self.last_svc_restart_count = count  # Reset service restart interval
+                        self.last_svc_restart_count = count
                         
                         if self.stop_event.is_set(): break
 
