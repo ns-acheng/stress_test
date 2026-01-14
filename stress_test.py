@@ -595,8 +595,10 @@ class StressTest:
                         logger.info(f"Long Idle triggered. {sleep_dur}s...")
                         if smart_sleep(sleep_dur, self.stop_event): break
 
-                ps_script = os.path.join(self.tool_dir, "close_browsers.ps1")
-                run_powershell(ps_script)
+                if self.config.enable_browser_tabs_open:
+                    ps_script = os.path.join(self.tool_dir, "close_browsers.ps1")
+                    run_powershell(ps_script)
+                
                 if smart_sleep(SHORT_SEC, self.stop_event): break
 
                 crash_found, zero_count = check_crash_dumps(
