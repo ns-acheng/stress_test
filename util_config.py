@@ -240,11 +240,35 @@ class AgentConfigManager:
                          logger.error(f"Failed to update nsconfig.json: {e}")
 
                 try:
-                    with open(self.hosts_path, 'a', encoding='utf-8') as f:
-                        f.write("\n# Stress Test FailClose Simulation\n")
-                        for h in self.gateway_hosts:
-                            f.write(f"10.1.1.1 {h}\n")
-                        f.write("# End Stress Test \n")
+                    # Clean existing entries to prevent duplication
+                    with open(self.hosts_path, 'r', encoding='utf-8') as f:
+                        lines = f.readlines()
+
+                    new_lines = []
+                    in_block = False
+                    start_marker = "# Stress Test FailClose Simulation"
+                    end_marker = "# End Stress Test"
+
+                    for line in lines:
+                        if start_marker in line:
+                            in_block = True
+                            continue
+                        if end_marker in line:
+                            in_block = False
+                            continue
+                        if not in_block:
+                            new_lines.append(line)
+                    
+                    if new_lines and not new_lines[-1].endswith('\n'):
+                        new_lines[-1] += '\n'
+
+                    new_lines.append(f"\n{start_marker}\n")
+                    for h in self.gateway_hosts:
+                        new_lines.append(f"10.1.1.1 {h}\n")
+                    new_lines.append(f"{end_marker} \n")
+
+                    with open(self.hosts_path, 'w', encoding='utf-8') as f:
+                        f.writelines(new_lines)
                     
                     logger.info(
                         f"Blocked gateways {self.gateway_hosts} in hosts file "
