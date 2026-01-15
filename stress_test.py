@@ -553,10 +553,14 @@ class StressTest:
                         self.last_svc_restart_count = count
                         if self.stop_event.is_set(): break
 
-                        if self.config.stop_drv_interval > 0:
-                            if count % self.config.stop_drv_interval == 0:
-                                self.exec_restart_driver()
-                                if self.stop_event.is_set(): break
+                if self.config.stop_drv_interval > 0:
+                    if count % self.config.stop_drv_interval == 0:
+                        logger.info("Restarting Service for Driver restart...")
+                        self.exec_stop_service()
+                        self.last_svc_restart_count = count
+                        
+                        self.exec_restart_driver()
+                        if self.stop_event.is_set(): break
 
                 if self.config.failclose_enabled and self.config.failclose_interval > 0:
                     if count % self.config.failclose_interval == 0:
