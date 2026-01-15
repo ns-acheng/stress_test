@@ -9,7 +9,9 @@ import logging
 #       src/
 #         webapi/
 current_dir = os.path.dirname(os.path.abspath(__file__))
-sibling_repo_path = os.path.abspath(os.path.join(current_dir, "..", "pylark-webapi-lib", "src"))
+sibling_repo_path = os.path.abspath(
+    os.path.join(current_dir, "..", "pylark-webapi-lib", "src")
+)
 
 if os.path.exists(sibling_repo_path):
     if sibling_repo_path not in sys.path:
@@ -24,10 +26,16 @@ else:
 try:
     from webapi import WebAPI
     from webapi.auth import Authentication
-    from webapi.settings.security_cloud_platform.netskope_client.client_configuration import ClientConfiguration
-    from webapi.settings.security_cloud_platform.traffic_steering.steering_configuration import SteeringConfiguration
+    from webapi.settings.security_cloud_platform.netskope_client.client_configuration import (
+        ClientConfiguration
+    )
+    from webapi.settings.security_cloud_platform.traffic_steering.steering_configuration import (
+        SteeringConfiguration
+    )
 except ImportError:
-    logging.getLogger(__name__).warning("Failed to import pylark-webapi-lib. WebUI features will be unavailable.")
+    logging.getLogger(__name__).warning(
+        "Failed to import pylark-webapi-lib. WebUI features will be unavailable."
+    )
     WebAPI = None
 
 logger = logging.getLogger(__name__)
@@ -46,7 +54,11 @@ class WebUIClient:
     def login(self):
         try:
             logger.info(f"Connecting to WebUI {self.hostname} as {self.username}")
-            self.webapi = WebAPI(hostname=self.hostname, username=self.username, password=self.password)
+            self.webapi = WebAPI(
+                hostname=self.hostname,
+                username=self.username,
+                password=self.password
+            )
             auth = Authentication(self.webapi)
             auth.login()
             self.is_logged_in = True
@@ -85,8 +97,11 @@ class WebUIClient:
         except Exception as e:
             logger.error(f"An error occurred during Client Config update: {e}")
             return False
+                              
 
-    def update_steering_config(self, config_name="Default tenant config", traffic_mode=None, exception_domains=None):
+    def update_steering_config(
+        self, config_name="Default tenant config", traffic_mode=None, exception_domains=None
+    ):
         """
         Updates Steering Configuration.
         traffic_mode: "web", "all", etc.
@@ -100,7 +115,9 @@ class WebUIClient:
             steering_config = SteeringConfiguration(self.webapi)
             
             if traffic_mode:
-                logger.info(f"Updating traffic steering mode to '{traffic_mode}' for '{config_name}'")
+                logger.info(
+                    f"Updating traffic steering mode to '{traffic_mode}' for '{config_name}'"
+                )
                 steering_config.update_traffic_steering_mode(
                     traffic_mode=traffic_mode,
                     config_name=config_name

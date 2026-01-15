@@ -2,6 +2,7 @@ import sys
 import os
 import random
 import threading
+import logging
 from util_service import (
     start_service, stop_service, get_service_status, handle_non_stop
 )
@@ -32,9 +33,23 @@ STD_SEC = 30
 LONG_SEC = 60
 BATCH_SIZE = 50
 
+class MainThreadIterFilter(logging.Filter):
+    def __init__(self):
+        super().__init__()
+        self.iteration = None
+
+    def filter(self, record):
+        if self.iteration is not None:
+             if threading.current_thread() is threading.main_thread():
+                 record.msg = f"[{self.iteration}] {record.msg}"
+        return True
+
+ITER_FILTER = MainThreadIterFilter()
+
 try:
     log_helper = LogSetup()
     logger = log_helper.setup_logging()
+    logger.addFilter(ITER_FILTER)
     current_timestamp = log_helper.get_timestamp()
     current_log_dir = log_helper.get_log_folder()
 except Exception as e:
@@ -60,6 +75,7 @@ class StressTest:
         self.validation_enabled = False
         self.client_enabled_event = threading.Event()
         self.client_enabled_event.set()
+        self.last_svc_restart_count = 0
 
     def setup(self):
         for priv in ["SeDebugPrivilege", "SeSystemtimePrivilege", "SeWakeAlarmPrivilege"]:
@@ -115,7 +131,9 @@ class StressTest:
         if self.config.aoac_s0_standby_enabled or self.config.aoac_s4_hibernate_enabled:
             enable_wake_timers()
 
-        self.cfg_mgr.setup_environment()
+        if not self.cfg_mgr.setup_environment():
+            raise RuntimeError("Environment Setup Failed: nsconfig.json missing.")
+
         self.cfg_mgr.restore_config(remove_only=True)
 
         logger.info("Setup: Ensuring Client is Enabled...")
@@ -123,9 +141,6 @@ class StressTest:
 
     def tear_down(self):
         self.cfg_mgr.restore_config()
-        if os.path.exists(self.manage_nic_script):
-            logger.info("Tear down: Ensuring NICs are enabled...")
-            run_powershell(self.manage_nic_script, ["-Action", "Enable"])
 
     def load_urls(self):
         try:
@@ -158,13 +173,16 @@ class StressTest:
             self.client_thread.start()
 
     def exec_failclose_check(self):
-        if not os.path.exists(self.manage_nic_script):
-            logger.error(f"NIC Manager not found: {self.manage_nic_script}")
+        if not self.cfg_mgr.failclose_active:
+             logger.info("FailClose simulation not active. Skipping check.")
+             return
+
+        logger.info("Checking connection status during FailClose simulation...")
+        
+        # Wait for potential client reaction
+        if smart_sleep(20, self.stop_event):
             return
-        logger.info("Simulating FailClose by Disabling NICs...")
-        run_powershell(self.manage_nic_script, ["-Action", "Disable"])
-        if smart_sleep(SHORT_SEC, self.stop_event):
-            return
+
         test_urls = random.sample(self.urls, min(len(self.urls), 10))
         logger.info(f"Checking {len(test_urls)} URLs for reachability...")
         for url in test_urls:
@@ -176,8 +194,7 @@ class StressTest:
             logger.info(f"URL: {url} -> {status}")
             if smart_sleep(1, self.stop_event):
                 break
-        logger.info("FailClose check done. Re-Enabling NICs...")
-        run_powershell(self.manage_nic_script, ["-Action", "Enable"])
+        logger.info("FailClose check done.")
         smart_sleep(SHORT_SEC, self.stop_event)
 
     def header_msg(self):
@@ -285,7 +302,11 @@ class StressTest:
             logger.info("Validation skipped (disabled by cloud_app_mode).")
             return True
 
-        self.cfg_mgr.load_nsexception()
+        if (
+            self.config.browser_log_validation != 0 or 
+            self.config.curl_flood_log_validation != 0
+        ):
+            self.cfg_mgr.load_nsexception()
 
         if self.config.client_disabling_enabled and not self.client_enabled_event.is_set():
              logger.info("Validation skipped (Client is disabled).")
@@ -327,11 +348,6 @@ class StressTest:
                 batch.extend(self.urls[0:needed])
                 self.url_cursor = needed
             return batch
-            needed = batch_size - len(batch)
-            if needed > 0:
-                batch.extend(self.urls[0:needed])
-                self.url_cursor = needed
-            return batch
 
     def run(self):
         start_input_monitor(self.stop_event)
@@ -340,6 +356,7 @@ class StressTest:
 
         count = 0
         for count in range(1, self.config.loop_times + 1):
+            ITER_FILTER.iteration = count
             if self.stop_event.is_set(): break
             try:
                 pct = count / self.config.loop_times * 100
@@ -366,130 +383,135 @@ class StressTest:
 
                 current_iter_urls = self.get_next_batch(batch_size)
 
-                if self.config.dns_enabled:
-                    dns_domains = []
-                    for u in current_iter_urls:
-                        try:
-                            parsed = urlparse(u)
-                            if parsed.netloc:
-                                dns_domains.append(parsed.netloc)
-                            else:
-                                dns_domains.append(u.split('/')[0])
-                        except Exception:
-                            pass
-
-                    util_traffic.generate_dns_flood(
-                        dns_domains,
-                        self.config.dns_count,
-                        self.config.dns_duration,
-                        self.config.dns_concurrent,
-                        self.stop_event
-                    )
-
-                if self.config.udp_enabled:
-                    current_target = self.config.udp_target_ip
-                    use_ipv6 = False
-                    if self.config.udp_target_ipv6:
-                        if count % 2 == 0:
-                            current_target = self.config.udp_target_ipv6
-                            use_ipv6 = True
-                        else:
-                            current_target = self.config.udp_target_ip
-                    util_traffic.generate_udp_flood(
-                        current_target,
-                        self.config.udp_target_port,
-                        self.config.udp_count,
-                        float(self.config.udp_duration),
-                        self.config.udp_concurrent,
-                        self.stop_event,
-                        use_ipv6
-                    )
-
-                if (
-                    (self.config.ab_total_conn > 0 or self.config.ab_duration > 0) and
-                    self.config.ab_concurrent > 0 and
-                    self.config.ab_target_urls
-                ):
-                    idx = count % len(self.config.ab_target_urls)
-                    current_ab_url = self.config.ab_target_urls[idx]
-
-                    if util_traffic.check_url_alive(current_ab_url):
-                        util_traffic.run_high_concurrency_test(
-                            current_ab_url, self.config.ab_total_conn,
-                            self.config.ab_concurrent, self.tool_dir,
-                            self.stop_event,
-                            self.config.ab_duration
-                        )
-                    else:
-                        logger.warning(f"AB Test skipped. URL not alive: {current_ab_url}")
 
                 curl_flood_urls = []
-                if self.config.curl_flood_enabled:
 
-                    browser_count = 0
-                    if self.config.enable_browser_tabs_open:
-                        browser_count = self.config.browser_max_tabs
+                if self.cfg_mgr.failclose_active:
+                    logger.info("FailClose simulation active. Skipping traffic flooding.")
+                else:
+                    if self.config.dns_enabled:
+                        dns_domains = []
+                        for u in current_iter_urls:
+                            try:
+                                parsed = urlparse(u)
+                                if parsed.netloc:
+                                    dns_domains.append(parsed.netloc)
+                                else:
+                                    dns_domains.append(u.split('/')[0])
+                            except Exception:
+                                pass
 
-                    curl_targets = []
-                    if len(current_iter_urls) >= (self.config.curl_flood_count + browser_count):
+                        util_traffic.generate_dns_flood(
+                            dns_domains,
+                            self.config.dns_count,
+                            self.config.dns_duration,
+                            self.config.dns_concurrent,
+                            self.stop_event
+                        )
 
-                         start_idx = browser_count
-                         end_idx = start_idx + self.config.curl_flood_count
-                         curl_targets = current_iter_urls[start_idx:end_idx]
-                    else:
+                    if self.config.udp_enabled:
+                        current_target = self.config.udp_target_ip
+                        use_ipv6 = False
+                        if self.config.udp_target_ipv6:
+                            if count % 2 == 0:
+                                current_target = self.config.udp_target_ipv6
+                                use_ipv6 = True
+                            else:
+                                current_target = self.config.udp_target_ip
+                        util_traffic.generate_udp_flood(
+                            current_target,
+                            self.config.udp_target_port,
+                            self.config.udp_count,
+                            float(self.config.udp_duration),
+                            self.config.udp_concurrent,
+                            self.stop_event,
+                            use_ipv6
+                        )
 
-                         curl_targets = current_iter_urls[:]
+                    if (
+                        (self.config.ab_total_conn > 0 or self.config.ab_duration > 0) and
+                        self.config.ab_concurrent > 0 and
+                        self.config.ab_target_urls
+                    ):
+                        idx = count % len(self.config.ab_target_urls)
+                        current_ab_url = self.config.ab_target_urls[idx]
 
-                    curl_flood_urls = util_traffic.generate_curl_flood(
-                        curl_targets,
-                        self.config.curl_flood_count,
-                        self.config.curl_flood_duration,
-                        self.config.curl_flood_concurrent,
-                        self.stop_event
-                    )
+                        if util_traffic.check_url_alive(current_ab_url):
+                            util_traffic.run_high_concurrency_test(
+                                current_ab_url, self.config.ab_total_conn,
+                                self.config.ab_concurrent, self.tool_dir,
+                                self.stop_event,
+                                self.config.ab_duration
+                            )
+                        else:
+                            logger.warning(f"AB Test skipped. URL not alive: {current_ab_url}")
 
-                if self.config.ftp_enabled:
-                    util_traffic.generate_ftp_traffic(
-                        self.config.ftp_target_ip,
-                        self.config.ftp_target_port,
-                        self.config.ftp_user,
-                        self.config.ftp_password,
-                        self.config.ftp_file_size_mb,
-                        self.config.ftp_count,
-                        self.config.ftp_duration,
-                        self.config.ftp_concurrent,
-                        self.stop_event
-                    )
+                    if self.config.curl_flood_enabled:
 
-                if self.config.ftps_enabled:
-                    util_traffic.generate_ftps_traffic(
-                        self.config.ftps_target_ip,
-                        self.config.ftps_target_port,
-                        self.config.ftps_user,
-                        self.config.ftps_password,
-                        self.config.ftps_file_size_mb,
-                        self.config.ftps_count,
-                        self.config.ftps_duration,
-                        self.config.ftps_concurrent,
-                        self.stop_event
-                    )
+                        browser_count = 0
+                        if self.config.enable_browser_tabs_open:
+                            browser_count = self.config.browser_max_tabs
 
-                if self.config.sftp_enabled:
-                    util_traffic.generate_sftp_traffic(
-                        self.config.sftp_target_ip,
-                        self.config.sftp_target_port,
-                        self.config.sftp_user,
-                        self.config.sftp_password,
-                        self.config.sftp_file_size_mb,
-                        self.config.sftp_count,
-                        self.config.sftp_duration,
-                        self.config.sftp_concurrent,
-                        self.stop_event
-                    )
+                        curl_targets = []
+                        if len(current_iter_urls) >= (self.config.curl_flood_count + browser_count):
+
+                            start_idx = browser_count
+                            end_idx = start_idx + self.config.curl_flood_count
+                            curl_targets = current_iter_urls[start_idx:end_idx]
+                        else:
+
+                            curl_targets = current_iter_urls[:]
+
+                        curl_flood_urls = util_traffic.generate_curl_flood(
+                            curl_targets,
+                            self.config.curl_flood_count,
+                            self.config.curl_flood_duration,
+                            self.config.curl_flood_concurrent,
+                            self.stop_event
+                        )
+
+                    if self.config.ftp_enabled:
+                        util_traffic.generate_ftp_traffic(
+                            self.config.ftp_target_ip,
+                            self.config.ftp_target_port,
+                            self.config.ftp_user,
+                            self.config.ftp_password,
+                            self.config.ftp_file_size_mb,
+                            self.config.ftp_count,
+                            self.config.ftp_duration,
+                            self.config.ftp_concurrent,
+                            self.stop_event
+                        )
+
+                    if self.config.ftps_enabled:
+                        util_traffic.generate_ftps_traffic(
+                            self.config.ftps_target_ip,
+                            self.config.ftps_target_port,
+                            self.config.ftps_user,
+                            self.config.ftps_password,
+                            self.config.ftps_file_size_mb,
+                            self.config.ftps_count,
+                            self.config.ftps_duration,
+                            self.config.ftps_concurrent,
+                            self.stop_event
+                        )
+
+                    if self.config.sftp_enabled:
+                        util_traffic.generate_sftp_traffic(
+                            self.config.sftp_target_ip,
+                            self.config.sftp_target_port,
+                            self.config.sftp_user,
+                            self.config.sftp_password,
+                            self.config.sftp_file_size_mb,
+                            self.config.sftp_count,
+                            self.config.sftp_duration,
+                            self.config.sftp_concurrent,
+                            self.stop_event
+                        )
 
                 if self.stop_event.is_set(): break
 
-                if self.cfg_mgr.is_false_close:
+                if self.cfg_mgr.failclose_active:
                     self.exec_failclose_check()
                 else:
 
@@ -524,7 +546,9 @@ class StressTest:
                         if sample_size > total:
                             sample_size = total
 
-                        logger.info(f"Sampling {sample_size} URLs ({ratio}%) from {total} for validation.")
+                        logger.info(
+                            f"Sampling {sample_size} URLs ({ratio}%) from {total} for validation."
+                        )
                         validation_map["curl.exe"] = random.sample(curl_flood_urls, sample_size)
 
                     if not self.exec_validation_checks(validation_map):
@@ -534,18 +558,29 @@ class StressTest:
                 if self.stop_event.is_set(): break
 
                 if self.config.stop_svc_interval > 0:
-                    if count % self.config.stop_svc_interval == 0:
+                    # Check if enough iterations passed since last restart
+                    if (count - self.last_svc_restart_count) >= self.config.stop_svc_interval:
                         self.exec_stop_service()
+                        self.last_svc_restart_count = count
                         if self.stop_event.is_set(): break
 
-                        if self.config.stop_drv_interval > 0:
-                            if count % self.config.stop_drv_interval == 0:
-                                self.exec_restart_driver()
-                                if self.stop_event.is_set(): break
+                if self.config.stop_drv_interval > 0:
+                    if count % self.config.stop_drv_interval == 0:
+                        logger.info("Restarting Service for Driver restart...")
+                        self.exec_stop_service()
+                        self.last_svc_restart_count = count
+                        
+                        self.exec_restart_driver()
+                        if self.stop_event.is_set(): break
 
                 if self.config.failclose_enabled and self.config.failclose_interval > 0:
                     if count % self.config.failclose_interval == 0:
                         self.cfg_mgr.toggle_failclose()
+
+                        logger.info("Restarting service for FailClose toggle...")
+                        self.exec_stop_service()
+                        self.last_svc_restart_count = count
+                        
                         if self.stop_event.is_set(): break
 
                 if self.config.long_idle_interval == 0:
@@ -563,7 +598,10 @@ class StressTest:
                         s0_triggered = True
                         if self.stop_event.is_set(): break
 
-                if self.config.aoac_s4_hibernate_enabled and self.config.aoac_s4_hibernate_interval > 0:
+                if (
+                    self.config.aoac_s4_hibernate_enabled and 
+                    self.config.aoac_s4_hibernate_interval > 0
+                ):
                     if count % self.config.aoac_s4_hibernate_interval == 0:
                         if s0_triggered:
                             logger.info("AOAC S4 skipped because S0 executed in this iteration.")
@@ -583,8 +621,10 @@ class StressTest:
                         logger.info(f"Long Idle triggered. {sleep_dur}s...")
                         if smart_sleep(sleep_dur, self.stop_event): break
 
-                ps_script = os.path.join(self.tool_dir, "close_browsers.ps1")
-                run_powershell(ps_script)
+                if self.config.enable_browser_tabs_open:
+                    ps_script = os.path.join(self.tool_dir, "close_browsers.ps1")
+                    run_powershell(ps_script)
+                
                 if smart_sleep(SHORT_SEC, self.stop_event): break
 
                 crash_found, zero_count = check_crash_dumps(

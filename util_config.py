@@ -26,6 +26,8 @@ class AgentConfigManager:
             self.stagent_root, "data", "nsexception.json"
         )
         self.exception_names = []
+        self.gateway_hosts = []
+        self.failclose_active = False
 
     def load_nsexception(self):
         self.exception_names = []
@@ -103,7 +105,7 @@ class AgentConfigManager:
             logger.error(f"Error reading tenant hostname from nsconfig: {e}")
             return ""
 
-    def setup_environment(self):
+    def setup_environment(self) -> bool:
         check_path = r"C:\Program Files\Netskope\STAgent\stAgentSvc.exe"
         if os.path.exists(check_path):
             self.is_64bit = True
@@ -112,12 +114,36 @@ class AgentConfigManager:
             self.is_64bit = False
             logger.info("64-bit Agent path not found, assuming 32-bit.")
 
+        if not os.path.exists(self.target_nsconfig):
+            logger.error(f"ABORT: nsconfig.json not found at {self.target_nsconfig}. Client not installed.")
+            return False
+
+        try:
+            with open(self.target_nsconfig, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            nsgw = data.get("nsgw", {})
+            h1 = nsgw.get("host")
+            h2 = nsgw.get("backupHost")
+
+            if h1: self.gateway_hosts.append(h1)
+            if h2: self.gateway_hosts.append(h2)
+
+            logger.info(f"Loaded Gateway Hosts for FailClose simulation: {self.gateway_hosts}")
+
+        except Exception as e:
+            logger.error(f"Failed to load gateway hosts from nsconfig: {e}")
+            # We don't necessarily abort here if file exists but read fails, 
+            # though user only specified "if cannot find".
+
         if os.path.exists(self.hosts_path):
             try:
                 shutil.copy(self.hosts_path, self.hosts_bk)
                 logger.info(f"Backed up hosts file to {self.hosts_bk}")
             except Exception as e:
                 logger.error(f"Failed to backup hosts file: {e}")
+        
+        return True
 
     def restore_config(self, remove_only=False):
         try:
@@ -148,54 +174,110 @@ class AgentConfigManager:
         self.is_local_cfg = False
 
     def toggle_failclose(self):
-        logger.info("Executing FailClose configuration change...")
+        logger.info("Executing FailClose simulation (Hosts manipulation + Config update)...")
         try:
-            if not os.path.exists(self.backup_path):
+            if self.failclose_active:
+                # Restore Hosts using the backup
+                if os.path.exists(self.hosts_bk):
+                    try:
+                        shutil.copy(self.hosts_bk, self.hosts_path)
+                        logger.info(f"Restored hosts file from backup {self.hosts_bk}")
+                    except Exception as e:
+                        logger.error(f"Failed to restore hosts file: {e}")
+                else:
+                    logger.error("Hosts backup not found, cannot restore.")
+
+                # Revert FailClose config to false
                 if os.path.exists(self.target_nsconfig):
+                     try:
+                         with open(self.target_nsconfig, 'r', encoding='utf-8') as f:
+                             ns_data = json.load(f)
+                         
+                         ns_data.setdefault("failClose", {})["fail_close"] = "false"
+                         
+                         with open(self.target_nsconfig, 'w', encoding='utf-8') as f:
+                             json.dump(ns_data, f, indent=4)
+                         logger.info("Updated nsconfig.json: fail_close = false")
+                     except Exception as e:
+                         logger.error(f"Failed to update nsconfig.json: {e}")
+
+                self.failclose_active = False
+                self.is_false_close = False
+            else:
+                if not self.gateway_hosts:
+                    logger.warning("No gateway hosts loaded. Cannot simulate FailClose.")
+                    return
+
+                if not os.path.exists(self.hosts_bk) and os.path.exists(self.hosts_path):
+                    shutil.copy(self.hosts_path, self.hosts_bk)
+                
+                if not os.path.exists(self.backup_path) and os.path.exists(self.target_nsconfig):
                     shutil.copy(self.target_nsconfig, self.backup_path)
-                    logger.info(f"Backed up nsconfig to {self.backup_path}")
+
+                # Deploy devconfig for FailClose
+                if os.path.exists(self.source_devconfig):
+                    shutil.copy(self.source_devconfig, self.target_devconfig)
+                    logger.info(f"Copied devconfig to {self.target_devconfig}")
+                    self.is_local_cfg = True
                 else:
-                    logger.warning(f"File {self.target_nsconfig} not found.")
+                    logger.warning(
+                        f"Source {self.source_devconfig} not found. "
+                        "FailClose might not work as expected."
+                    )
 
-            if os.path.exists(self.source_devconfig):
-                shutil.copy(self.source_devconfig, self.target_devconfig)
-                logger.info(f"Copied devconfig to {self.target_devconfig}")
-                self.is_local_cfg = True
-            else:
-                logger.warning(f"Source {self.source_devconfig} not found.")
+                # Set FailClose config to true
+                if os.path.exists(self.target_nsconfig):
+                     try:
+                         with open(self.target_nsconfig, 'r', encoding='utf-8') as f:
+                             ns_data = json.load(f)
+                         
+                         ns_data.setdefault("failClose", {})["fail_close"] = "true"
+                         
+                         with open(self.target_nsconfig, 'w', encoding='utf-8') as f:
+                             json.dump(ns_data, f, indent=4)
+                         logger.info("Updated nsconfig.json: fail_close = true")
+                     except Exception as e:
+                         logger.error(f"Failed to update nsconfig.json: {e}")
 
-            if os.path.exists(self.target_nsconfig):
-                with open(self.target_nsconfig, 'r', encoding='utf-8') as f:
-                    ns_data = json.load(f)
+                try:
+                    # Clean existing entries to prevent duplication
+                    with open(self.hosts_path, 'r', encoding='utf-8') as f:
+                        lines = f.readlines()
 
-                fc_sec = ns_data.get("failClose", {})
-                curr_val = fc_sec.get("fail_close", "false")
+                    new_lines = []
+                    in_block = False
+                    start_marker = "# Stress Test FailClose Simulation"
+                    end_marker = "# End Stress Test"
 
-                if curr_val == "true":
-                    new_cfg = {
-                        "fail_close": "false",
-                        "exclude_npa": "false",
-                        "notification": "false",
-                        "captive_portal_timeout": "0"
-                    }
-                    logger.info("Switching FailClose to FALSE")
-                    self.is_false_close = False
-                else:
-                    new_cfg = {
-                        "fail_close": "true",
-                        "exclude_npa": "false",
-                        "notification": "false",
-                        "captive_portal_timeout": "0"
-                    }
-                    logger.info("Switching FailClose to TRUE")
+                    for line in lines:
+                        if start_marker in line:
+                            in_block = True
+                            continue
+                        if end_marker in line:
+                            in_block = False
+                            continue
+                        if not in_block:
+                            new_lines.append(line)
+                    
+                    if new_lines and not new_lines[-1].endswith('\n'):
+                        new_lines[-1] += '\n'
+
+                    new_lines.append(f"\n{start_marker}\n")
+                    for h in self.gateway_hosts:
+                        new_lines.append(f"10.1.1.1 {h}\n")
+                    new_lines.append(f"{end_marker} \n")
+
+                    with open(self.hosts_path, 'w', encoding='utf-8') as f:
+                        f.writelines(new_lines)
+                    
+                    logger.info(
+                        f"Blocked gateways {self.gateway_hosts} in hosts file "
+                        "(Simulating Network Failure)."
+                    )
+                    self.failclose_active = True
                     self.is_false_close = True
-
-                ns_data["failClose"] = new_cfg
-
-                with open(self.target_nsconfig, 'w', encoding='utf-8') as f:
-                    json.dump(ns_data, f, indent=4)
-                logger.info(f"{self.target_nsconfig} updated successfully.")
-            else:
-                logger.error(f"Target file {self.target_nsconfig} not found.")
+                except Exception as e:
+                    logger.error(f"Failed to modify hosts file: {e}")
+                    
         except Exception as e:
-            logger.error(f"Error during FailClose config change: {e}")
+            logger.error(f"Error during FailClose simulation: {e}")

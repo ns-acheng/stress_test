@@ -43,7 +43,10 @@ def client_toggler_loop(
             disable_time = 1
 
         disable_count += 1
-        logger.info(f"Client Toggle Thread: Disabling Client (Time: {disable_count}) for {disable_time}s...")
+        logger.info(
+            f"Client Toggle Thread: Disabling Client (Time: {disable_count}) "
+            f"for {disable_time}s..."
+        )
         nsdiag_enable_client(False, is_64bit)
         if client_enabled_event:
             client_enabled_event.clear()

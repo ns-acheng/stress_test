@@ -304,7 +304,7 @@ def log_resource_usage(
 
     log_file = f"{process_name}_resources.log"
     full_path = os.path.join(log_dir, log_file)
-    now_str = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     write_header = not os.path.exists(full_path)
 

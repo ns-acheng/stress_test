@@ -231,9 +231,15 @@ class ToolConfig:
             self.aoac_s0_standby_duration = aoac.get('duration_sec', self.aoac_s0_standby_duration)
 
             aoac_s4 = cft.get('aoac_s4_hibernate', {})
-            self.aoac_s4_hibernate_enabled = bool(aoac_s4.get('enable', self.aoac_s4_hibernate_enabled))
-            self.aoac_s4_hibernate_interval = aoac_s4.get('interval', self.aoac_s4_hibernate_interval)
-            self.aoac_s4_hibernate_duration = aoac_s4.get('duration_sec', self.aoac_s4_hibernate_duration)
+            self.aoac_s4_hibernate_enabled = bool(
+                aoac_s4.get('enable', self.aoac_s4_hibernate_enabled)
+            )
+            self.aoac_s4_hibernate_interval = aoac_s4.get(
+                'interval', self.aoac_s4_hibernate_interval
+            )
+            self.aoac_s4_hibernate_duration = aoac_s4.get(
+                'duration_sec', self.aoac_s4_hibernate_duration
+            )
 
             tg = config.get('traffic_gen', {})
             browser = tg.get('browser', {})
