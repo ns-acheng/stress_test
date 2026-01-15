@@ -2,6 +2,7 @@ import sys
 import os
 import random
 import threading
+import logging
 from util_service import (
     start_service, stop_service, get_service_status, handle_non_stop
 )
@@ -32,9 +33,23 @@ STD_SEC = 30
 LONG_SEC = 60
 BATCH_SIZE = 50
 
+class MainThreadIterFilter(logging.Filter):
+    def __init__(self):
+        super().__init__()
+        self.iteration = None
+
+    def filter(self, record):
+        if self.iteration is not None:
+             if threading.current_thread() is threading.main_thread():
+                 record.msg = f"[{self.iteration}] {record.msg}"
+        return True
+
+ITER_FILTER = MainThreadIterFilter()
+
 try:
     log_helper = LogSetup()
     logger = log_helper.setup_logging()
+    logger.addFilter(ITER_FILTER)
     current_timestamp = log_helper.get_timestamp()
     current_log_dir = log_helper.get_log_folder()
 except Exception as e:
@@ -333,11 +348,6 @@ class StressTest:
                 batch.extend(self.urls[0:needed])
                 self.url_cursor = needed
             return batch
-            needed = batch_size - len(batch)
-            if needed > 0:
-                batch.extend(self.urls[0:needed])
-                self.url_cursor = needed
-            return batch
 
     def run(self):
         start_input_monitor(self.stop_event)
@@ -346,6 +356,7 @@ class StressTest:
 
         count = 0
         for count in range(1, self.config.loop_times + 1):
+            ITER_FILTER.iteration = count
             if self.stop_event.is_set(): break
             try:
                 pct = count / self.config.loop_times * 100
