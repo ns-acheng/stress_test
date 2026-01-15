@@ -177,11 +177,11 @@ class AgentConfigManager:
         logger.info("Executing FailClose simulation (Hosts manipulation + Config update)...")
         try:
             if self.failclose_active:
-                # Restore Hosts
+                # Restore Hosts using the backup
                 if os.path.exists(self.hosts_bk):
                     try:
                         shutil.copy(self.hosts_bk, self.hosts_path)
-                        logger.info("Restored hosts file (Simulating Network Recovery).")
+                        logger.info(f"Restored hosts file from backup {self.hosts_bk}")
                     except Exception as e:
                         logger.error(f"Failed to restore hosts file: {e}")
                 else:
