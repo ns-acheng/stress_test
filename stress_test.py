@@ -132,12 +132,14 @@ class StressTest:
         logger.info("Setup: Ensuring Client is Enabled...")
         nsdiag_enable_client(True, self.cfg_mgr.is_64bit)
 
+        task_name = "StressTestAutoResume"
+        delete_task(task_name)
+
         if self.config.reboot_interval > 0:
             py_exe = sys.executable
             script_path = os.path.abspath(sys.argv[0])
             cmd = f'"{py_exe}" "{script_path}" -continue'
             
-            task_name = "StressTestAutoResume"
             create_startup_task(task_name, cmd, delay_sec=30)
 
     def tear_down(self):

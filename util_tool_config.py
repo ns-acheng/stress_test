@@ -300,7 +300,8 @@ class ToolConfig:
         try:
             state_data = {
                 "cur_iter": self.cur_iter,
-                "cur_log_dir": self.cur_log_dir
+                "cur_log_dir": self.cur_log_dir,
+                "python_path": sys.executable
             }
             with open(self.state_file, 'w', encoding='utf-8') as f:
                 json.dump(state_data, f, indent=4)
