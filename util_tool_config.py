@@ -298,10 +298,16 @@ class ToolConfig:
 
     def save(self):
         try:
+            py_path = sys.executable
+            if sys.platform == "win32" and sys.prefix != sys.base_prefix:
+                pot_path = os.path.join(sys.prefix, "Scripts", "python.exe")
+                if os.path.exists(pot_path):
+                    py_path = pot_path
+
             state_data = {
                 "cur_iter": self.cur_iter,
                 "cur_log_dir": self.cur_log_dir,
-                "python_path": sys.executable
+                "python_path": py_path
             }
             with open(self.state_file, 'w', encoding='utf-8') as f:
                 json.dump(state_data, f, indent=4)

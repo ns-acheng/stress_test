@@ -137,6 +137,11 @@ class StressTest:
 
         if self.config.reboot_interval > 0:
             py_exe = sys.executable
+            if sys.platform == "win32" and sys.prefix != sys.base_prefix:
+                pot_path = os.path.join(sys.prefix, "Scripts", "python.exe")
+                if os.path.exists(pot_path):
+                    py_exe = pot_path
+
             script_path = os.path.abspath(sys.argv[0])
             cmd = f'"{py_exe}" "{script_path}" -continue'
             
