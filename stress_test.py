@@ -1,5 +1,6 @@
 import sys
 import os
+import json
 import random
 import threading
 import logging
@@ -10,7 +11,7 @@ from util_log import LogSetup
 from util_time import smart_sleep
 from util_subprocess import (
     run_powershell, nsdiag_update_config, enable_wake_timers,
-    nsdiag_enable_client
+    nsdiag_enable_client, create_startup_task, reboot_now, delete_task
 )
 from util_resources import (
     log_resource_usage, enable_privilege
@@ -25,7 +26,6 @@ import util_client
 import util_validate
 import util_webui
 from urllib.parse import urlparse
-import re
 
 TINY_SEC = 5
 SHORT_SEC = 15
@@ -45,19 +45,12 @@ class MainThreadIterFilter(logging.Filter):
         return True
 
 ITER_FILTER = MainThreadIterFilter()
-
-try:
-    log_helper = LogSetup()
-    logger = log_helper.setup_logging()
-    logger.addFilter(ITER_FILTER)
-    current_timestamp = log_helper.get_timestamp()
-    current_log_dir = log_helper.get_log_folder()
-except Exception as e:
-    print(f"Critical error during logging setup: {e}", file=sys.stderr)
-    sys.exit(1)
+logger = logging.getLogger()
 
 class StressTest:
-    def __init__(self):
+    def __init__(self, log_dir, is_continue_mode=False):
+        self.log_dir = log_dir
+        self.is_continue_mode = is_continue_mode
         self.service_name = "stagentsvc"
         self.drv_name = "stadrv"
         self.url_file = r"data\url.txt"
@@ -76,6 +69,7 @@ class StressTest:
         self.client_enabled_event = threading.Event()
         self.client_enabled_event.set()
         self.last_svc_restart_count = 0
+        self.reboot_pending = False
 
     def setup(self):
         for priv in ["SeDebugPrivilege", "SeSystemtimePrivilege", "SeWakeAlarmPrivilege"]:
@@ -96,7 +90,6 @@ class StressTest:
 
         tenant_host = self.cfg_mgr.get_tenant_hostname()
 
-        # Check if any webui feature is enabled, currently only checking webui_on_prem
         client_toggles = self.config.config_data.get("client_feature_toggling", {})
         webui_on_prem = client_toggles.get("webui_on_prem", {})
         password = ""
@@ -139,8 +132,19 @@ class StressTest:
         logger.info("Setup: Ensuring Client is Enabled...")
         nsdiag_enable_client(True, self.cfg_mgr.is_64bit)
 
+        if self.config.reboot_interval > 0:
+            py_exe = sys.executable
+            script_path = os.path.abspath(sys.argv[0])
+            cmd = f'"{py_exe}" "{script_path}" -continue'
+            
+            task_name = "StressTestAutoResume"
+            create_startup_task(task_name, cmd, delay_sec=30)
+
     def tear_down(self):
         self.cfg_mgr.restore_config()
+        if self.config.reboot_interval > 0 and not self.reboot_pending:
+            logger.info("Cleaning up reboot task...")
+            delete_task("StressTestAutoResume")
 
     def load_urls(self):
         try:
@@ -179,7 +183,6 @@ class StressTest:
 
         logger.info("Checking connection status during FailClose simulation...")
         
-        # Wait for potential client reaction
         if smart_sleep(20, self.stop_event):
             return
 
@@ -200,6 +203,7 @@ class StressTest:
     def header_msg(self):
         logger.info(f"--------- Start. Total iter: {self.config.loop_times} ---------")
         logger.info(f"Stop svc int: {self.config.stop_svc_interval}")
+        logger.info(f"Reboot int: {self.config.reboot_interval}")
         logger.info(f"Switch FailClose int: {self.config.failclose_interval}")
         logger.info(f"Stop/Start drv int: {self.config.stop_drv_interval}")
         logger.info(f"Client Disabling: {self.config.client_disabling_enabled}")
@@ -223,7 +227,7 @@ class StressTest:
             logger.info("Long Idle is 0. Random sleep 30-120s enabled.")
         if self.config.custom_dump_path:
             logger.info(f"Custom Dump Path: {self.config.custom_dump_path}")
-        logger.info(f"Log Folder: {current_log_dir}")
+        logger.info(f"Log Folder: {self.log_dir}")
         logger.info("--> Press ESC or Ctrl+C to stop. <--")
         logger.info("=" * 50)
 
@@ -244,7 +248,7 @@ class StressTest:
                 logger.info("Service Started. Ensuring Client Enabled.")
                 nsdiag_enable_client(True, self.cfg_mgr.is_64bit)
 
-        log_resource_usage("stAgentSvc.exe", current_log_dir)
+        log_resource_usage("stAgentSvc.exe", self.log_dir)
 
     def exec_stop_service(self):
         status = get_service_status(self.service_name)
@@ -254,14 +258,14 @@ class StressTest:
             return
         logger.info(f"Current status: {status}")
         if status == "RUNNING":
-            log_resource_usage("stAgentSvc.exe", current_log_dir)
+            log_resource_usage("stAgentSvc.exe", self.log_dir)
             stopped = stop_service(self.service_name)
             if not stopped:
                 logger.error(f"{self.service_name} failed to stop.")
                 handle_non_stop(
                     self.service_name,
                     self.cfg_mgr.is_64bit,
-                    current_log_dir
+                    self.log_dir
                 )
                 self.stop_event.set()
                 return
@@ -290,7 +294,7 @@ class StressTest:
             return []
         return util_traffic.open_browser_tabs(
             urls, self.tool_dir, self.config.browser_max_tabs,
-            self.config.browser_max_memory, self.stop_event, current_log_dir,
+            self.config.browser_max_memory, self.stop_event, self.log_dir,
             STD_SEC
         )
 
@@ -354,8 +358,13 @@ class StressTest:
         self.header_msg()
         self.start_client_thread()
 
+        start_iter = 1
+        if self.is_continue_mode and self.config.cur_iter > 0:
+            start_iter = self.config.cur_iter + 1
+            logger.info(f"Resuming from iteration {start_iter} (Previous: {self.config.cur_iter})")
+
         count = 0
-        for count in range(1, self.config.loop_times + 1):
+        for count in range(start_iter, self.config.loop_times + 1):
             ITER_FILTER.iteration = count
             if self.stop_event.is_set(): break
             try:
@@ -558,7 +567,6 @@ class StressTest:
                 if self.stop_event.is_set(): break
 
                 if self.config.stop_svc_interval > 0:
-                    # Check if enough iterations passed since last restart
                     if (count - self.last_svc_restart_count) >= self.config.stop_svc_interval:
                         self.exec_stop_service()
                         self.last_svc_restart_count = count
@@ -636,7 +644,7 @@ class StressTest:
                 if crash_found:
                     logger.error("Crash dump found. Stopping test.")
                     crash_handle(
-                        self.cfg_mgr.is_64bit, current_log_dir,
+                        self.cfg_mgr.is_64bit, self.log_dir,
                         self.config.custom_dump_path
                     )
                     break
@@ -644,12 +652,44 @@ class StressTest:
                 logger.exception("An error occurred:")
                 logger.info(f"Retrying in {STD_SEC} seconds")
                 if smart_sleep(STD_SEC, self.stop_event): break
+            
+            if self.config.reboot_interval > 0 and count % self.config.reboot_interval == 0:
+                logger.info(f"Reboot interval ({self.config.reboot_interval}) reached at iter {count}.")
+                self.config.cur_iter = count
+                self.config.cur_log_dir = self.log_dir
+                self.config.save()
+                
+                logger.info("Rebooting system...")
+                self.reboot_pending = True
+                reboot_now()
+                break
 
         logger.info(f"--------- Finished {count} iterations. ---------")
         logger.info(f"Total 0-byte dumps deleted: {self.total_zero_dumps}")
 
 if __name__ == "__main__":
-    runner = StressTest()
+    is_continue_mode = False
+    existing_log_dir = None
+    if len(sys.argv) > 1 and "-continue" in sys.argv:
+        is_continue_mode = True
+        try:
+            with open(r"data\state.json", "r", encoding="utf-8") as f:
+                 d = json.load(f)
+                 existing_log_dir = d.get("cur_log_dir", None)
+        except Exception as e:
+            print(f"Error reading state for continue mode: {e}", file=sys.stderr)
+
+    try:
+        log_helper = LogSetup(existing_log_dir)
+        log_helper.setup_logging()
+        logger.addFilter(ITER_FILTER)
+        
+        current_log_dir = log_helper.get_log_folder()
+    except Exception as e:
+        print(f"Critical error during logging setup: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    runner = StressTest(current_log_dir, is_continue_mode)
     try:
         logger.info(f"Logging initialized: {current_log_dir}")
         runner.setup()

@@ -1,112 +1,113 @@
 {
-  "loop_times": 200,
-  "stop_svc_interval": 0,
-  "stop_drv_interval": 0,
-  "custom_dump_path": "C:\\dump\\stAgentSvc.exe\\*.dmp",
-  "long_idle_interval": 100,
-  "long_idle_time_min": 300,
-  "long_idle_time_max": 600,
-  "client_feature_toggling": {
-    "webui_login": {
-      "tenant_username": "acheng@netskope.com"
+    "loop_times": 200,
+    "stop_svc_interval": 0,
+    "stop_drv_interval": 0,
+    "reboot_interval": 0,
+    "custom_dump_path": "C:\\dump\\stAgentSvc.exe\\*.dmp",
+    "long_idle_interval": 100,
+    "long_idle_time_min": 300,
+    "long_idle_time_max": 600,
+    "client_feature_toggling": {
+        "webui_login": {
+            "tenant_username": "acheng@netskope.com"
+        },
+        "failclose": {
+            "enable": 0,
+            "interval": 15
+        },
+        "client_disabling": {
+            "enable": 0,
+            "enable_sec_min": 180,
+            "enable_sec_max": 600,
+            "disable_ratio": 0.15
+        },
+        "aoac_s0_standby": {
+            "enable": 0,
+            "interval": 0,
+            "duration_sec": 10
+        },
+        "aoac_s4_hibernate": {
+            "enable": 0,
+            "interval": 0,
+            "duration_sec": 10
+        },
+        "webui_on_prem": {
+            "enable": 0,
+            "onprem_use_dns": 0,
+            "onprem_http_host": "http://smallpdf.com"
+        }
     },
-    "failclose": {
-      "enable": 0,
-      "interval": 15
-    },
-    "client_disabling": {
-      "enable": 0,
-      "enable_sec_min": 180,
-      "enable_sec_max": 600,
-      "disable_ratio": 0.15
-    },
-    "aoac_s0_standby": {
-      "enable": 0,
-      "interval": 0,
-      "duration_sec": 10
-    },
-    "aoac_s4_hibernate": {
-      "enable": 0,
-      "interval": 0,
-      "duration_sec": 10
-    },
-    "webui_on_prem": {
-      "enable": 0,
-      "onprem_use_dns": 0,
-      "onprem_http_host": "http://smallpdf.com"
+    "traffic_gen": {
+        "dns": {
+            "enable": 0,
+            "duration_sec": 0,
+            "count": 500,
+            "concurrent_conn": 25
+        },
+        "browser": {
+            "enable": 0,
+            "max_memory": 60,
+            "max_tabs": 20,
+            "log_validation": 0
+        },
+        "https": {
+            "enable": 1,
+            "duration_sec": 0,
+            "count": 120,
+            "concurrent_conn": 30,
+            "log_validation": 0,
+            "log_validation_ratio": 3
+        },
+        "udp": {
+            "enable": 0,
+            "duration_sec": 20,
+            "count": 0,
+            "concurrent_conn": 10,
+            "target_ip": "192.168.15.17",
+            "target_ipv6": "",
+            "target_port": 8080
+        },
+        "ab": {
+            "enable": 0,
+            "duration_sec": 0,
+            "total_conn": 2000,
+            "concurrent_conn": 100,
+            "target_urls": [
+                "http://192.168.15.17/"
+            ]
+        },
+        "ftp": {
+            "enable": 0,
+            "target_ip": "127.0.0.1",
+            "target_port": 21,
+            "user": "test",
+            "password": "password",
+            "file_size_mb": 10,
+            "duration_sec": 0,
+            "count": 10,
+            "concurrent_conn": 5
+        },
+        "ftps": {
+            "enable": 0,
+            "target_ip": "127.0.0.1",
+            "target_port": 990,
+            "user": "test",
+            "password": "password",
+            "file_size_mb": 10,
+            "duration_sec": 0,
+            "count": 10,
+            "concurrent_conn": 5
+        },
+        "sftp": {
+            "enable": 0,
+            "target_ip": "127.0.0.1",
+            "target_port": 2222,
+            "user": "test",
+            "password": "password",
+            "file_size_mb": 10,
+            "duration_sec": 0,
+            "count": 10,
+            "concurrent_conn": 5
+        }
     }
-  },
-  "traffic_gen": {
-    "dns": {
-      "enable": 0,
-      "duration_sec": 0,
-      "count": 500,
-      "concurrent_conn": 25
-    },
-    "browser": {
-      "enable": 0,
-      "max_memory": 60,
-      "max_tabs": 20,
-      "log_validation": 0
-    },
-    "https": {
-      "enable": 1,
-      "duration_sec": 0,
-      "count": 120,
-      "concurrent_conn": 30,
-      "log_validation": 0,
-      "log_validation_ratio": 3
-    },
-    "udp": {
-      "enable": 0,
-      "duration_sec": 20,
-      "count": 0,
-      "concurrent_conn": 10,
-      "target_ip": "192.168.15.17",
-      "target_ipv6": "",
-      "target_port": 8080
-    },
-    "ab": {
-      "enable": 0,
-      "duration_sec": 0,
-      "total_conn": 2000,
-      "concurrent_conn": 100,
-      "target_urls": [
-        "http://192.168.15.17/"
-      ]
-    },
-    "ftp": {
-      "enable": 0,
-      "target_ip": "127.0.0.1",
-      "target_port": 21,
-      "user": "test",
-      "password": "password",
-      "file_size_mb": 10,
-      "duration_sec": 0,
-      "count": 10,
-      "concurrent_conn": 5
-    },
-    "ftps": {
-      "enable": 0,
-      "target_ip": "127.0.0.1",
-      "target_port": 990,
-      "user": "test",
-      "password": "password",
-      "file_size_mb": 10,
-      "duration_sec": 0,
-      "count": 10,
-      "concurrent_conn": 5
-    },
-    "sftp": {
-      "enable": 0,
-      "target_ip": "127.0.0.1",
-      "target_port": 2222,
-      "user": "test",
-      "password": "password",
-      "file_size_mb": 10,
-      "duration_sec": 0,
-      "count": 10,
-      "concurrent_conn": 5
-    }
-  }
 }

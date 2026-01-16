@@ -68,6 +68,8 @@ pip install -r requirement.txt
 
 2. Configure proper values in `data\config.json` to match your testing requirements.
 
+   > **Warning:** Do not modify `data\state.json`. This file is auto-generated to store runtime state (iteration count, log directory) and is critical for the resume-after-reboot feature.
+
 3. Run the script:
    ```cmd
    python.exe stress_test.py
@@ -84,6 +86,8 @@ pip install -r requirement.txt
 
 `stop_drv_interval`: Iteration frequency to restart the driver (nested within service stop). Set to 0 to disable.
 
+`reboot_interval`: Iteration frequency to reboot the machine. The tool will automatically create a scheduled task to resume execution after login. Set to 0 to disable.
+
 ### Client Feature Toggling (client_feature_toggling)
 
 This section controls various client state toggles. Each feature has an `enable` flag (1 for on, 0 for off).
@@ -99,10 +103,23 @@ This section controls various client state toggles. Each feature has an `enable`
 *   `disable_ratio`: Ratio of disable duration relative to the enable duration (Valid: 0.0-1.0).
     *   *Example*: If enabled for 200s and ratio is 0.15, it will disable for 30s.
 
-#### AOAC Sleep (`aoac_sleep`)
-*   `enable`: (0/1) Enable system sleep triggers.
-*   `interval`: Iteration frequency to trigger system sleep (S0 state).
+#### AOAC S0 Standby (`aoac_s0_standby`)
+*   `enable`: (0/1) Enable system sleep triggers (S0 Low Power Idle).
+*   `interval`: Iteration frequency to trigger system sleep.
 *   `duration_sec`: Duration in seconds to stay in sleep mode before waking.
+
+#### AOAC S4 Hibernate (`aoac_s4_hibernate`)
+*   `enable`: (0/1) Enable system hibernation triggers (S4).
+*   `interval`: Iteration frequency to trigger system hibernation.
+*   `duration_sec`: Duration in seconds to stay in hibernation before waking.
+
+#### WebUI Login (`webui_login`)
+*   `tenant_username`: NetSkope Tenant Username for login simulation.
+
+#### WebUI On-Prem (`webui_on_prem`)
+*   `enable`: (0/1) Enable On-Prem WebUI features.
+*   `onprem_use_dns`: (0/1) Toggle using DNS for On-Prem setup.
+*   `onprem_http_host`: Host URL for On-Prem simulation.
 
 ### Traffic Generation Settings (traffic_gen)
 
@@ -112,12 +129,15 @@ All traffic modules support `duration_sec` and `count`. If `duration_sec` > 0, i
 *   `enable`: (0/1) If 1, enables the browser tab opening feature based on memory usage.
 *   `max_memory`: System memory threshold (50-99%). If exceeded, browser tabs stop opening.
 *   `max_tabs`: Maximum number of concurrent browser tabs allowed.
+*   `log_validation`: (0/1) Enable validation of browser traffic logs (Requires valid steering config).
 
 #### HTTPS Flood (`https`)
 *   `enable`: (0/1) Enable HTTPS traffic generation using curl.
 *   `duration_sec`: Duration to run the flood.
 *   `count`: Number of requests (if duration is 0).
 *   `concurrent_conn`: Number of concurrent threads.
+*   `log_validation`: (0/1) Enable validation of curl traffic logs.
+*   `log_validation_ratio`: Percentage (0-100) of curl requests to validate (to reduce overhead).
 
 #### DNS Flood (`dns`)
 *   `enable`: (0/1) Enable random subdomain queries to bypass local DNS cache.

@@ -4,9 +4,16 @@ import os
 from datetime import datetime
 
 class LogSetup:
-    def __init__(self):
-        self.timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
-        self.log_folder = os.path.join("log", self.timestamp)
+    def __init__(self, existing_log_dir=None):
+        if existing_log_dir:
+            self.log_folder = existing_log_dir
+            if os.path.basename(existing_log_dir):
+                self.timestamp = os.path.basename(existing_log_dir)
+            else:
+                self.timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+        else:
+            self.timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+            self.log_folder = os.path.join("log", self.timestamp)
 
     def get_timestamp(self):
         return self.timestamp

@@ -1,5 +1,6 @@
 import json
 import sys
+import os
 import logging
 
 logger = logging.getLogger()
@@ -112,10 +113,14 @@ class ToolConfig:
 
     def __init__(self, config_file: str):
         self.config_file = config_file
+        self.state_file = r"data\state.json"
 
         self.loop_times = 1000
         self.stop_svc_interval = 1
         self.stop_drv_interval = 0
+        self.reboot_interval = 0
+        self.cur_iter = 0
+        self.cur_log_dir = ""
         self.custom_dump_path = ""
 
         self.failclose_enabled = True
@@ -208,7 +213,18 @@ class ToolConfig:
             self.loop_times = config.get('loop_times', self.loop_times)
             self.stop_svc_interval = config.get('stop_svc_interval', self.stop_svc_interval)
             self.stop_drv_interval = config.get('stop_drv_interval', self.stop_drv_interval)
+            self.reboot_interval = config.get('reboot_interval', self.reboot_interval)
             self.custom_dump_path = config.get('custom_dump_path', self.custom_dump_path)
+
+            if os.path.exists(self.state_file):
+                try:
+                    with open(self.state_file, 'r', encoding='utf-8') as f:
+                        state_data = json.load(f)
+                    self.cur_iter = state_data.get('cur_iter', 0)
+                    self.cur_log_dir = state_data.get('cur_log_dir', "")
+                    logger.info(f"Loaded state from {self.state_file}")
+                except Exception as e:
+                    logger.warning(f"Failed to load state: {e}")
             self.long_idle_interval = config.get('long_idle_interval', self.long_idle_interval)
             self.long_idle_time_min = config.get('long_idle_time_min', self.long_idle_time_min)
             self.long_idle_time_max = config.get('long_idle_time_max', self.long_idle_time_max)
@@ -280,12 +296,26 @@ class ToolConfig:
 
         self._validate()
 
+    def save(self):
+        try:
+            state_data = {
+                "cur_iter": self.cur_iter,
+                "cur_log_dir": self.cur_log_dir
+            }
+            with open(self.state_file, 'w', encoding='utf-8') as f:
+                json.dump(state_data, f, indent=4)
+        except Exception as e:
+            logger.error(f"Failed to save state: {e}")
+
     def _validate(self):
         if not isinstance(self.loop_times, int) or self.loop_times <= 0:
             logger.error(f"invalid 'loop_times'. Exiting.")
             sys.exit(1)
         if self.stop_svc_interval < 0:
             logger.error(f"invalid 'stop_svc_interval'. Exiting.")
+            sys.exit(1)
+        if self.reboot_interval < 0:
+            logger.error(f"invalid 'reboot_interval'. Exiting.")
             sys.exit(1)
         if self.failclose_interval < 0:
             logger.error(f"invalid 'failclose_interval'. Exiting.")

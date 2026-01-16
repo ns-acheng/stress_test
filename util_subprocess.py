@@ -98,6 +98,51 @@ def nsdiag_collect_log(timestamp: str, is_64bit: bool, output_dir: str) -> None:
     if success:
         logger.info(f"Log bundle created: {output_file}")
 
+
+def reboot_now():
+    logger.info("Triggering System Reboot Now!")
+    try:
+        subprocess.run(["shutdown", "/r", "/t", "0"], check=False)
+    except Exception as e:
+        logger.error(f"Failed to trigger reboot: {e}")
+
+
+def create_startup_task(task_name: str, command: str, delay_sec: int = 30):
+    logger.info(f"Creating Scheduled Task '{task_name}'...")
+    
+    delete_task(task_name)
+    
+    delay_str = "0000:30"
+    if delay_sec == 0:
+        delay_str = "0000:00"
+    
+    cmd_str = f'schtasks /Create /TN "{task_name}" /TR "{command}" /SC ONLOGON /RL HIGHEST /F /DELAY {delay_str}'
+    
+    try:
+        res = subprocess.run(cmd_str, shell=True, capture_output=True, text=True)
+        if res.returncode == 0:
+            logger.info(f"Task '{task_name}' created successfully.")
+            return True
+        else:
+            logger.error(f"Failed to create task. {res.stderr}")
+            return False
+    except Exception as e:
+        logger.error(f"Exception creating task: {e}")
+        return False
+
+
+def delete_task(task_name: str):
+    try:
+        cmd_str = f'schtasks /Delete /TN "{task_name}" /F'
+        subprocess.run(
+            cmd_str,
+            shell=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+    except Exception:
+        pass
+
 def nsdiag_update_config(is_64bit: bool = True) -> None:
     nsdiag_path = _get_nsdiag_path(is_64bit)
     _run_nsdiag_generic(nsdiag_path, ["-u"], "config update")
@@ -128,13 +173,13 @@ def enable_wake_timers() -> bool:
         logger.info("Enabling 'Allow wake timers' in Power Settings...")
         for cmd in commands:
             subprocess.run(
-                cmd,
-                check=True,
-                stdout=subprocess.DEVNULL,
+                cmd, check=True, stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL
             )
-        logger.info("Wake timers successfully enabled.")
         return True
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Failed to enable wake timers: {e}")
+    except subprocess.CalledProcessError:
+        logger.warning(
+            "Failed to enable wake timers. "
+            "Ensure you run as Admin and schema allows modification."
+        )
         return False
