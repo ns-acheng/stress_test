@@ -2,7 +2,7 @@
     "loop_times": 200,
     "stop_svc_interval": 0,
     "stop_drv_interval": 0,
-    "reboot_interval": 0,
+    "reboot_interval": 2,
     "custom_dump_path": "C:\\dump\\stAgentSvc.exe\\*.dmp",
     "long_idle_interval": 100,
     "long_idle_time_min": 300,
@@ -53,7 +53,7 @@
         "https": {
             "enable": 1,
             "duration_sec": 0,
-            "count": 120,
+            "count": 60,
             "concurrent_conn": 30,
             "log_validation": 0,
             "log_validation_ratio": 3
