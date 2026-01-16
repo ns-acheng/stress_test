@@ -136,15 +136,19 @@ class StressTest:
         delete_task(task_name)
 
         if self.config.reboot_interval > 0:
-            py_exe = sys.executable
-            if sys.platform == "win32" and sys.prefix != sys.base_prefix:
-                pot_path = os.path.join(sys.prefix, "Scripts", "python.exe")
-                if os.path.exists(pot_path):
-                    py_exe = pot_path
-
+            py_exe = os.path.join(sys.base_prefix, "python.exe")
             script_path = os.path.abspath(sys.argv[0])
-            cmd = f'"{py_exe}" "{script_path}" -continue'
             
+            cmd = f'"{py_exe}" "{script_path}" -continue'
+
+            if sys.prefix != sys.base_prefix:
+                activate_script = os.path.join(sys.prefix, "Scripts", "Activate.ps1")
+                if os.path.exists(activate_script):
+                    cmd = (
+                        f'powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -Command '
+                        f'\\"& \'{activate_script}\'; & \'{py_exe}\' \'{script_path}\' -continue\\"'
+                    )
+
             create_startup_task(task_name, cmd, delay_sec=30)
 
     def tear_down(self):

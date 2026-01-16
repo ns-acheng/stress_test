@@ -298,11 +298,7 @@ class ToolConfig:
 
     def save(self):
         try:
-            py_path = sys.executable
-            if sys.platform == "win32" and sys.prefix != sys.base_prefix:
-                pot_path = os.path.join(sys.prefix, "Scripts", "python.exe")
-                if os.path.exists(pot_path):
-                    py_path = pot_path
+            py_path = os.path.join(sys.base_prefix, "python.exe")
 
             state_data = {
                 "cur_iter": self.cur_iter,
