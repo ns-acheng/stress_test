@@ -116,10 +116,20 @@ def create_startup_task(task_name: str, command: str, delay_sec: int = 30):
     if delay_sec == 0:
         delay_str = "0000:00"
     
-    cmd_str = f'schtasks /Create /TN "{task_name}" /TR "{command}" /SC ONLOGON /RL HIGHEST /F /DELAY {delay_str}'
+    # Use list format to avoid quoting/escaping issues with the command string.
+    # This ensures paths with spaces or internal quotes in 'command' are handled correctly.
+    cmd_args = [
+        "schtasks", "/Create",
+        "/TN", task_name,
+        "/TR", command,
+        "/SC", "ONLOGON",
+        "/RL", "HIGHEST",
+        "/F",
+        "/DELAY", delay_str
+    ]
     
     try:
-        res = subprocess.run(cmd_str, shell=True, capture_output=True, text=True)
+        res = subprocess.run(cmd_args, shell=False, capture_output=True, text=True)
         if res.returncode == 0:
             logger.info(f"Task '{task_name}' created successfully.")
             return True

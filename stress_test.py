@@ -144,9 +144,13 @@ class StressTest:
             if sys.prefix != sys.base_prefix:
                 activate_script = os.path.join(sys.prefix, "Scripts", "Activate.ps1")
                 if os.path.exists(activate_script):
+                    # Construct PowerShell command.
+                    # We use single quotes for paths to handle spaces.
+                    # We wrap the entire command block in double quotes for PowerShell.
+                    # schtasks /TR will receive this string intact via util_subprocess.
                     cmd = (
-                        f'powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -Command '
-                        f'\\"& \'{activate_script}\'; & \'{py_exe}\' \'{script_path}\' -continue\\"'
+                        f'powershell.exe -ExecutionPolicy Bypass -WindowStyle Normal -NoExit -Command '
+                        f'"& \'{activate_script}\'; & \'{py_exe}\' \'{script_path}\' -continue"'
                     )
 
             create_startup_task(task_name, cmd, delay_sec=30)
