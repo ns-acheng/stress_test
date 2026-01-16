@@ -106,20 +106,24 @@ class StressTest:
 
         self.load_urls()
 
-        st_cfg = util_validate.get_steering_config()
-        if not st_cfg:
-            logger.warning("Steering config empty/not found. Validation disabled.")
+        # Only enable validation if at least one module requests it
+        if self.config.browser_log_validation or self.config.curl_flood_log_validation:
+            st_cfg = util_validate.get_steering_config()
+            if not st_cfg:
+                logger.warning("Steering config empty/not found. Validation disabled.")
 
-        mode = st_cfg.get("firewall_traffic_mode")
-        if not mode:
-            mode = st_cfg.get("traffic_mode")
+            mode = st_cfg.get("firewall_traffic_mode") if st_cfg else None
+            if not mode and st_cfg:
+                mode = st_cfg.get("traffic_mode")
 
-        if mode == "all" or mode == "web":
-            self.validation_enabled = True
-            logger.info(f"Validation Enabled. Mode: {mode}")
-            util_validate.get_validator().update_pos_with_time_buffer(10)
+            if mode == "all" or mode == "web":
+                self.validation_enabled = True
+                logger.info(f"Validation Enabled. Mode: {mode}")
+                util_validate.get_validator().update_pos_with_time_buffer(10)
+            else:
+                logger.info(f"Validation Disabled. Mode: '{mode}' (Requires 'all' or 'web')")
         else:
-            logger.info(f"Validation Disabled. Mode: '{mode}' (Requires 'all' or 'web')")
+            logger.info("Validation Disabled (Not enabled in config.json for any module).")
 
         if self.config.aoac_s0_standby_enabled or self.config.aoac_s4_hibernate_enabled:
             enable_wake_timers()
@@ -144,13 +148,10 @@ class StressTest:
             if sys.prefix != sys.base_prefix:
                 activate_script = os.path.join(sys.prefix, "Scripts", "Activate.ps1")
                 if os.path.exists(activate_script):
-                    # Construct PowerShell command.
-                    # We use single quotes for paths to handle spaces.
-                    # We wrap the entire command block in double quotes for PowerShell.
-                    # schtasks /TR will receive this string intact via util_subprocess.
+                    script_dir = os.path.dirname(script_path)
                     cmd = (
                         f'powershell.exe -ExecutionPolicy Bypass -WindowStyle Normal -NoExit -Command '
-                        f'"& \'{activate_script}\'; & \'{py_exe}\' \'{script_path}\' -continue"'
+                        f'"Set-Location \'{script_dir}\'; & \'{activate_script}\'; & \'{py_exe}\' \'{script_path}\' -continue"'
                     )
 
             create_startup_task(task_name, cmd, delay_sec=30)
@@ -683,6 +684,12 @@ class StressTest:
         logger.info(f"Total 0-byte dumps deleted: {self.total_zero_dumps}")
 
 if __name__ == "__main__":
+    # Ensure execution from the script's directory so relative paths (data/...) work.
+    try:
+        os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    except Exception:
+        pass
+
     is_continue_mode = False
     existing_log_dir = None
     if len(sys.argv) > 1 and "-continue" in sys.argv:
